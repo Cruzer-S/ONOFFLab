@@ -1,0 +1,34 @@
+=========================================================================================
+1. Pico 설정
+=========================================================================================
+wget https://raw.githubusercontent.com/raspberrypi/pico-setup/master/pico_setup.sh
+(wget 이 없다면 sudo apt or yum install wget)
+chmod +x pico_setup.sh
+./pico_setup.sh
+=========================================================================================
+다음 스크립트는...
+- pico 디렉터리를 생성
+- 필요로 하는 의존성 설치
+- pico-sdk, pico-examples, pico-extras 그리고 pico-playground 저장소를 다운로드
+- PICO_SDK_PATH, PICO_EXAMPLES_PATH, PICO_EXTRAS_PATH 그리고 PICO_PLAYGROUND_PATH 경로를 ~/.bashrc 파일에 정의
+- blink 와 hello_world 예제를 각각 pico-examples/build/blink 그리고 pico-examples/build/hello_world 에 빌드
+- picotool 을 다운로드하고 빌드하여 /usr/local/bin 에 복사
+- picoprobe 를 다운로드하고 빌드
+- OpenOCD 를 다운로드하고 컴파일 (디버그 서포트를 위한)
+- Visual Studio Code 를 다운로드하고 설치
+- Visual Studio Code 확장 프로그램을 설치
+- Raspberry Pi Pico 사용을 위한 Raspberry Pi UART 를 구성
+=========================================================================================
+스크립트가 한번 실행되고 나면 컴퓨터 반드시 재부팅
+sudo reboot -h now
+다음 명령어를 실행해야 UART 가 재구성된다. Raspberry Pi 가 재부팅 되면 Visual Studio Code 의 "Programming" 메뉴와 섹션 6.2 의 명령을 열 수 있게 된다.
+=========================================================================================
+2. SDK (Software Development Kit)
+=========================================================================================
+pico-examples 저장소는 pico-sdk 를 이용해 작성된 몇 가지 예제 프로그램을 제공한다.
+=========================================================================================
+2-1.
+cd ~/
+mkdir pico
+cd pico
+=========================================================================================
