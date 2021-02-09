@@ -13,6 +13,8 @@ fi
 
 if [ $? -eq 0 ]; then
 	echo "Convert Successfully. => $1.out"
+else
+	echo "Failed to convert $1"
 fi
 
 rm a.out
