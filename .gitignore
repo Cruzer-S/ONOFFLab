@@ -1,3 +1,6 @@
+# bdf file
+*.bdf
+
 # Prerequisites
 *.d
 
