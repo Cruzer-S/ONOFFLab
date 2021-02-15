@@ -1,9 +1,23 @@
 #include <stdio.h>
 #include <stdarg.h>
+#include <stdint.h>
+#include <stdalign.h>
 #include <threads.h>
 
 #include <wiringPi.h>
-#include <WiringSerial.h>
+#include <wiringSerial.h>
+
+typedef byte uint8_t;
+
+struct alignas(1) packet {
+	byte header[2];
+	
+	byte size;
+	byte id;
+	byte command;
+
+	byte check[2];
+};
 
 _Noreturn void error_handling(const char *format, ...);
 
