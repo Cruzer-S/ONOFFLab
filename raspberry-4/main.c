@@ -1,13 +1,14 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include <stdint.h>
+#include <stdlib.h>
 #include <stdalign.h>
 #include <threads.h>
 
 #include <wiringPi.h>
 #include <wiringSerial.h>
 
-typedef byte uint8_t;
+typedef uint8_t byte;
 
 struct alignas(1) packet {
 	byte header[2];
