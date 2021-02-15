@@ -5,34 +5,29 @@
 #include <stdalign.h>
 #include <threads.h>
 
-#include <wiringPi.h>
-#include <wiringSerial.h>
+//#include <wiringPi.h>
+//#include <wiringSerial.h>
 
 typedef uint8_t byte;
 
 struct packet {
 	byte header[2];
-	
 	byte size;
 	byte id;
 	byte command;
-
+	double x;
 	byte check[2];
-} alignas(1) packet;
+};
+
+alignas(8) struct packet packet1;
+struct packet packet2;
 
 _Noreturn void error_handling(const char *format, ...);
 
 int main(void)
 {
-	int serial;
-
-	int ((serial = serialOpen("/dev/ttyAMA0", 115200)) < 0)
-		error_handling("failed to open serial device \n");
-
-	if (wiringPiSetup() == -1)
-		error_handling("failed to call wiringPiSetup() \n");
-
-	serialClose(serial);
+	printf("sizeof(packet1): %zu\n", sizeof packet1);
+	printf("sizeof(packet2): %zu\n", sizeof packet2);
 
 	return 0;
 }
