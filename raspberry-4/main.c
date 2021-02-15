@@ -10,7 +10,7 @@
 
 typedef uint8_t byte;
 
-struct alignas(1) packet {
+struct packet {
 	byte header[2];
 	
 	byte size;
@@ -18,7 +18,7 @@ struct alignas(1) packet {
 	byte command;
 
 	byte check[2];
-};
+} alignas(1) packet;
 
 _Noreturn void error_handling(const char *format, ...);
 
