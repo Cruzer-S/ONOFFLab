@@ -1,4 +1,4 @@
-#ifndef _HRX_DEF_H__
+ifndef _HRX_DEF_H__
 #define _HRX_DEF_H__
 
 #include <stdint.h>
@@ -181,6 +181,5 @@ struct motor {
 	int id;
 	int serial;
 };
-
 
 #endif
