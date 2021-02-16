@@ -208,6 +208,9 @@ int main(int argc, char *argv[])
 
 	hrx_connect_serial(&main_motor, main_serial);
 
+	while (true)
+		hrx_set_one_position(main_motor, 255, 100, HRX_LED_RED);
+	
 	hrx_delete_motor(main);
 
 	return 0;
@@ -242,11 +245,12 @@ void hrx_calc_checksum(struct packet *pk, int n, byte data[n])
 	pk->check[1] = (~result) & 0xFE;
 }
 
-void hrx_set_one_position(struct motor motor, unsigned position, unsigned time, enum color color)
+void hrx_set_one_position(struct motor motor, int position, unsigned time, enum color color)
 {
 	struct {
 		//JOG (LSB + MSB)
-		unsigned data		:15;
+		unsigned data		:14;
+		unsigned inf		: 1;
 		unsigned reserved1	: 1;
 
 		// SET
@@ -263,12 +267,14 @@ void hrx_set_one_position(struct motor motor, unsigned position, unsigned time, 
 		unsigned time		: 8;
 	} IJOG_TAG = {
 		.data = position,	// set position
+		.inf = (position < 0) 1 : 0,
+							// infinite
 
 		.stop = 0,			// Don't stop
 		.mode = 0,			// position mode
 		.led  = color,		// set color
-		.invalid =  0,
-
+		.invalid =  0,		// when invalid is true,
+							// it means no action.
 		.id = motor.id,		// Motor ID
 
 		.time = time		// Playtime
