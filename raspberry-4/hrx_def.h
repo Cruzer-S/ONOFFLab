@@ -1,6 +1,8 @@
 #ifndef _HRX_DEF_H__
 #define _HRX_DEF_H__
 
+#include <stdint.h>
+
 #define BROADCAST_ID 0xFE
 
 #define PFX_COMMAND(PFX)		\
@@ -164,5 +166,21 @@
 		PFX##GARBAGE_DETECTED	= 0x20,	\
 		PFX##MONITOR_ON_FLAG	= 0x40	\
 	};
+
+typedef uint8_t byte;
+
+struct packet {
+	byte header[2];
+	byte size;
+	byte id;
+	byte command;
+	byte check[2];
+};
+
+struct motor {
+	int id;
+	int serial;
+};
+
 
 #endif

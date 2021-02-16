@@ -1,41 +1,13 @@
 #include <stdio.h>
 #include <stdarg.h>
-#include <stdint.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include <stdalign.h>
 #include <threads.h>
 
-#include <wiringPi.h>
-#include <wiringSerial.h>
-
 #include "servo_hrx.h"
 
-PFX_COMMAND(HRX_CMD_);
-PFX_RAM_REGISTER(HRX_RAM_REG_);
-PFX_NVT_REGISTER(HRX_NVT_REG_);
-PFX_LED_COLOR(HRX_LED_);
-PFX_CONTROL_MODE(HRX_CONTROL_);
-PFX_STATUS_ERROR(HRX_STAT_ERR_);
-PFX_STATUS_DETAIL(HRX_STAT_DTL_);
-
-typedef uint8_t byte;
-
-struct packet {
-	byte header[2];
-	byte size;
-	byte id;
-	byte command;
-	byte check[2];
-};
-
-struct motor {
-	int id;
-	int serial;
-};
-
 _Noreturn void error_handling(const char *format, ...);
-struct motor hrx_create_motor(byte id);
 
 int main(int argc, char *argv[])
 {
@@ -50,7 +22,8 @@ int main(int argc, char *argv[])
 	while (true)
 		hrx_set_one_position(main_motor, 255, 100, HRX_LED_RED);
 	
-	hrx_delete_motor(main);
+	hrx_delete_motor(&main_motor);
+	close_serial(main_serial);
 
 	return 0;
 }
@@ -144,6 +117,12 @@ bool hrx_send_data(struct motor motor, enum command command, int n, byte data[n]
 	return true;
 }
 
+void hrx_delete_motor(struct motor *motor)
+{
+	motor->id = -1;
+	motor->serial = -1;
+}
+
 int open_serial(int baud)
 {
 	int serial = serialOpen("/dev/ttyAMA0", baud);
@@ -158,6 +137,5 @@ void close_serial(int serial)
 
 struct motor hrx_connect_serial(struct motor *motor, int serial)
 {
-	motor->serial = serial;
-	
+	motor->serial = serial;	
 }
