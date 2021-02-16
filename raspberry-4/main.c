@@ -154,7 +154,7 @@
 	enum status_error {					\
 		PFX##EXCEED_VOLTAGE		= 0x01,	\
 		PFX##EXCEED_POT			= 0x02,	\
-		PFX##EXCEED+TEMPERATURE = 0x04,	\
+		PFX##EXCEED_TEMPERATURE = 0x04,	\
 		PFX##INVALID_PACKET		= 0x08,	\
 		PFX##OVLD_DETECTED		= 0x10,	\
 		PFX##DV_FAULT_DETECTED	= 0x20,	\
@@ -194,7 +194,7 @@ _Noreturn void error_handling(const char *format, ...);
 
 int main(int argc, char *argv[])
 {
-	printf("%zu \n", sizeof struct packet);
+	printf("%zu \n", sizeof(struct packet));
 
 	return 0;
 }
