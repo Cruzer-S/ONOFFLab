@@ -41,6 +41,14 @@ _Noreturn void error_handling(const char *fmt, ...)
 	exit(1);
 }
 
+struct motor hrx_create_motor(byte id)
+{
+	return (struct motor) {
+		.id = id,
+		.serial = -1
+	};
+}
+
 void hrx_calc_checksum(struct packet *pk, int n, byte data[n])
 {
 	byte result = pk->size;
