@@ -5,8 +5,25 @@
 #include <stdalign.h>
 #include <threads.h>
 
-//#include <wiringPi.h>
-//#include <wiringSerial.h>
+#include <wiringPi.h>
+#include <wiringSerial.h>
+
+#define BROADCAST_ID 0xFE
+
+#define DECLARE_ENUM_COMMAND(PREFIX)\
+	enum command {					\
+		PREFIX##EEP_WRITE = 0x01,	\
+		PREFIX##EEP_READ,			\
+		PREFIX##RAM_READ,			\
+		PREFIX##RAM_WRITE,			\
+		PREFIX##I_JOG,				\
+		PREFIX##S_JOG,				\
+		PREFIX##STAT,				\
+		PREFIX##ROLLBACK,			\
+		PREFIX##REBOOT				\
+	};
+
+DECLARE_ENUM_COMMAND(CMD_)
 
 typedef uint8_t byte;
 
@@ -15,19 +32,14 @@ struct packet {
 	byte size;
 	byte id;
 	byte command;
-	double x;
 	byte check[2];
 };
 
-alignas(8) struct packet packet1;
-struct packet packet2;
-
 _Noreturn void error_handling(const char *format, ...);
 
-int main(void)
+int main(int argc, char *argv[])
 {
-	printf("sizeof(packet1): %zu\n", sizeof packet1);
-	printf("sizeof(packet2): %zu\n", sizeof packet2);
+	printf("%d", CMD_EEP_WRITE);
 
 	return 0;
 }
