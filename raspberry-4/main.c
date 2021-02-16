@@ -24,7 +24,9 @@ int main(int argc, char *argv[])
 
 	while (true) {
 		hrx_set_one_position(main_motor, 255, 100, HRX_LED_RED);
-		putchar(serialGetChar(main_motor.serial));
+
+		if (serialDataAvail(main_motor.serial) > 0)
+			putchar(serialGetchar(main_motor.serial));
 	}
 	
 	hrx_delete_motor(&main_motor);
