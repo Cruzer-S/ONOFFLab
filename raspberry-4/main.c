@@ -79,7 +79,7 @@ void hrx_set_one_position(struct motor motor, int position, unsigned time, enum 
 		unsigned time		: 8;
 	} IJOG_TAG = {
 		.data = position,	// set position
-		.inf = (position < 0) 1 : 0,
+		.inf = (position < 0) ? 1 : 0,
 							// infinite
 
 		.stop = 0,			// Don't stop
@@ -92,7 +92,7 @@ void hrx_set_one_position(struct motor motor, int position, unsigned time, enum 
 		.time = time		// Playtime
 	};
 
-	hrx_send_data(motor, HRX_CMD_I_JOG, sizeof(IJOG_TAG), (byte [])&IJOG_TAG);
+	hrx_send_data(motor, HRX_CMD_I_JOG, sizeof(IJOG_TAG), (byte *)&IJOG_TAG);
 }
 
 bool hrx_send_data(struct motor motor, enum command command, int n, byte data[n])
