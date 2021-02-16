@@ -8,8 +8,6 @@
 int main ()
 {
   int fd ;
-  int count ;
-  unsigned int nextTime ;
 
   if ((fd = serialOpen ("/dev/ttyAMA0", 115200)) < 0)
   {
@@ -23,24 +21,10 @@ int main ()
     return 1 ;
   }
 
-  nextTime = millis () + 300 ;
-
-  for (count = 0 ; count < 256 ; )
+  for (unsigned count = 0 ; count < 256 ; count++)
   {
-    if (millis () > nextTime)
-    {
-      printf ("\nOut: %3d: ", count) ;
-      fflush (stdout) ;
-      serialPutchar (fd, count) ;
-      nextTime += 300 ;
-      ++count ;
-    }
-
-    delay (3) ;
-
-    while (serialDataAvail (fd))
-    {
-      printf (" -> %3d", serialGetchar (fd)) ;
+    if (serialDataAvail (fd)) {
+      printf ("%02x ", serialGetchar (fd)) ;
       fflush (stdout) ;
     }
   }
