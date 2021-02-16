@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include <stdint.h>
+#include <stdbool.h>
 #include <stdlib.h>
 #include <stdalign.h>
 #include <threads.h>
@@ -137,7 +138,7 @@
 	};
 
 #define PFX_LED_COLOR(PFX)	\
-	enum colors {			\
+	enum color {			\
 		PFX##GREEN	= 0x01,	\
 		PFX##BLUE	= 0x02,	\
 		PFX##RED	= 0x04	\
@@ -190,11 +191,24 @@ struct packet {
 	byte check[2];
 };
 
+struct motor {
+	int id;
+	int serial;
+};
+
 _Noreturn void error_handling(const char *format, ...);
 
 int main(int argc, char *argv[])
 {
-	printf("%zu \n", sizeof(struct packet));
+	struct motor main_motor;
+	int main_serial;
+
+	main_motor = hrx_create_motor(0xFD);
+	main_serial = open_serial(115200);
+
+	hrx_connect_serial(&main_motor, main_serial);
+
+	hrx_delete_motor(main);
 
 	return 0;
 }
@@ -228,4 +242,76 @@ void hrx_calc_checksum(struct packet *pk, int n, byte data[n])
 	pk->check[1] = (~result) & 0xFE;
 }
 
+void hrx_set_one_position(struct motor motor, unsigned position, unsigned time, enum color color)
+{
+	struct {
+		//JOG (LSB + MSB)
+		unsigned data		:15;
+		unsigned reserved1	: 1;
 
+		// SET
+		unsigned stop		: 1;
+		unsigned mode		: 1;
+		unsigned led		: 3;
+		unsigned invalid	: 1;
+		unsigned reserved2	: 2;
+
+		// ID
+		unsigned id			: 8;
+
+		// playtime
+		unsigned time		: 8;
+	} IJOG_TAG = {
+		.data = position,	// set position
+
+		.stop = 0,			// Don't stop
+		.mode = 0,			// position mode
+		.led  = color,		// set color
+		.invalid =  0,
+
+		.id = motor.id,		// Motor ID
+
+		.time = time		// Playtime
+	};
+
+	hrx_send_data(motor, HRX_CMD_I_JOG, sizeof(IJOG_TAG), (byte [])&IJOG_TAG);
+}
+
+bool hrx_send_data(struct motor motor, enum command command, int n, byte data[n])
+{
+	struct packet packet;
+
+	packet = (struct packet) {
+		.header = { 0xFF, 0xFF },
+		.size = sizeof(struct packet) + n,
+		.id = motor.id,
+		.command = command
+	};
+
+	hrx_calc_checksum(&packet, n, data);
+
+	for (int i = 0; i < sizeof(struct packet); i++)
+		serialPutchar(motor.serial, *((char *)&packet + i));
+	
+	for (int i = 0; i < n; i++)
+		serialPutchar(motor.serial, data[i]);
+
+	return true;
+}
+
+int open_serial(int baud)
+{
+	int serial = serialOpen("/dev/ttyAMA0", baud);
+
+	return (serial < 0) ? -1 : serial;
+}
+
+void close_serial(int serial)
+{
+	serialClose(serial);
+}
+
+void hrx_connect_serial(struct motor *motor, int serial)
+{
+	motor->serial = serial;
+}
