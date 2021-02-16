@@ -22,8 +22,10 @@ int main(int argc, char *argv[])
 
 	hrx_connect_serial(&main_motor, main_serial);
 
-	while (true)
+	while (true) {
 		hrx_set_one_position(main_motor, 255, 100, HRX_LED_RED);
+		putchar(serialGetChar(main_motor.serial));
+	}
 	
 	hrx_delete_motor(&main_motor);
 	close_serial(main_serial);
