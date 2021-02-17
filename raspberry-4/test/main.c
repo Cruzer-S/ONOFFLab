@@ -10,11 +10,12 @@
 #include <wiringSerial.h>
 
 #define LINE_PER_BYTE 20
+#define DEBUG_DELAY 100
 #define SERIAL_PORT_DEVICE	"/dev/ttyS0"
 
 _Noreturn void error_handling(const char *formatted, ...);
 
-void scrape_input_serial(int serial_port);
+void scrape_input_serial(int serial, int delay, int maxline);
 
 int main(void)
 {
@@ -29,7 +30,7 @@ int main(void)
 
 	while (true)
 	{
-		scrape_input_serial(serial_port);
+		scrape_input_serial(serial_port, DEBUG_DELAY, LINE_PER_BYTE);
 	}
 
 	serialClose(serial_port);
@@ -37,15 +38,13 @@ int main(void)
 	return 0;
 }
 
-void scrape_input_serial(int serial_port, int maxline)
+void scrape_input_serial(int serial, int delay, int maxline)
 {
-	int maxline;
-
-	if (serialDataAvail(serial_port) > 0) {
+	if (serialDataAvail(serial) > 0) {
 		fputs("<-- ", stdout);
-		for (int i = 1; serialDataAvail(serial_port) > 0; i++) {	
-			printf("%02X ", serialGetchar(serial_port));
-			delayMicroseconds(200);
+		for (int i = 1; serialDataAvail(serial) > 0; i++) {	
+			printf("%02X ", serialGetchar(serial));
+			delayMicroseconds(100);
 
 			if (i == maxline) {
 				fputs("\n    ", stdout);
