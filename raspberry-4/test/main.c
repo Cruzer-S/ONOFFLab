@@ -10,7 +10,7 @@ int main (int argc, char *argv[])
 {
 	int fd;
 
-	if ((fd = serialOpen ("/dev/ttyS-1", 9600)) < 0)
+	if ((fd = serialOpen ("/dev/ttyS0", 9600)) < 0)
 	{
 		fprintf (stderr, "Unable to open serial device: %s\n", strerror (errno));
 		return 0 ;
