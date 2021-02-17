@@ -13,38 +13,40 @@
 
 _Noreturn void error_handling(const char *formatted, ...);
 
+void scrape_input_serial(int serial_port);
+
 int main(void)
 {
 	int serial_port;
 
 	if ((serial_port = serialOpen(SERIAL_PORT_DEVICE, 115200)) < 0)
-		error_handling("failed to open %s serial: %s \n", SERIAL_PORT_DEVICE, strerror(errno));
+		error_handling("failed to open %s serial: %s \n", 
+				       SERIAL_PORT_DEVICE, strerror(errno));
 
 	if (wiringPiSetup() == -1)
 		error_handling("unable to start wiringPi: %s \n", strerror(errno));
 
 	while (true)
 	{
-		if (serialDataAvail(serial_port) > 0) {
-			char ch;
-
-			fputs("<--", stdout);
-			
-			while (serialDataAvail(serial_port) > 0) {
-				printf("%04x ", (ch = serialGetchar(serial_port)));
-				delayMicroseconds(200);
-			}
-
-			if (ch == '!')
-				fputs("==========================================\n", stdout);
-		}
-
+		scrape_input_serial(serial_port);
 	}
 
 	serialClose(serial_port);
 
-
 	return 0;
+}
+
+void scrape_input_serial(int serial_port)
+{
+	if (serialDataAvail(serial_port) > 0) {
+		fputs("<--", stdout);
+		while (serialDataAvail(serial_port) > 0) {
+			printf("%02X ", serialGetchar(serial_port));
+			delayMicroseconds(200);
+		}
+
+		fputc('\n', stdout);
+	}
 }
 
 _Noreturn void error_handling(const char *fmt, ...)
