@@ -40,6 +40,13 @@ int main(void)
 
 void scrape_input_serial(int serial, int delay, int maxline)
 {
+	const char *padding = "\n    ";
+
+	fputs(padding, stdout);
+	for (int i = 0; i < maxline; i++)
+		printf("%2d ", i);
+	fputc('\n', stdout);
+
 	if (serialDataAvail(serial) > 0) {
 		fputs("<-- ", stdout);
 		for (int i = 1; serialDataAvail(serial) > 0; i++) {	
@@ -47,7 +54,7 @@ void scrape_input_serial(int serial, int delay, int maxline)
 			delayMicroseconds(100);
 
 			if (i == maxline) {
-				fputs("\n    ", stdout);
+				fputs(padding, stdout);
 				i = 0;
 			}
 		}
