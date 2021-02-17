@@ -9,6 +9,7 @@
 #include <wiringPi.h>
 #include <wiringSerial.h>
 
+#define LINE_PER_BYTE 20
 #define SERIAL_PORT_DEVICE	"/dev/ttyS0"
 
 _Noreturn void error_handling(const char *formatted, ...);
@@ -36,13 +37,20 @@ int main(void)
 	return 0;
 }
 
-void scrape_input_serial(int serial_port)
+void scrape_input_serial(int serial_port, int maxline)
 {
+	int maxline;
+
 	if (serialDataAvail(serial_port) > 0) {
-		fputs("<--", stdout);
-		while (serialDataAvail(serial_port) > 0) {
+		fputs("<-- ", stdout);
+		for (int i = 1; serialDataAvail(serial_port) > 0; i++) {	
 			printf("%02X ", serialGetchar(serial_port));
 			delayMicroseconds(200);
+
+			if (i == maxline) {
+				fputs("\n    ", stdout);
+				i = 0;
+			}
 		}
 
 		fputc('\n', stdout);
