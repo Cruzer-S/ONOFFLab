@@ -54,7 +54,7 @@ void scrape_input_serial(int serial, int delay, int maxline)
 			delayMicroseconds(delay);
 
 			if (i == maxline) {
-				printf("0x%X \n", ++k);
+				printf("\n0x%X ", ++k);
 				i = 0;
 			}
 		}
