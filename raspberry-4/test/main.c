@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
+#include <stdbool.h>
 
 #include <wiringPi.h>
 #include <wiringSerial.h>
@@ -25,10 +26,10 @@ int main (int argc, char *argv[])
 
 	while (true) 
 	{
-		if (serialDataAvail(fd)) 
+		if (serialDataAvail(fd) != -1)
 		{
 			printf("<-");
-			while (serialDataAvail(fd))
+			while (serialDataAvail(fd) > 0)
 				printf ("%02x ", serialGetchar (fd));
 
 			printf("\n");
