@@ -15,7 +15,7 @@ int main(int argc, char *argv[])
 	int main_serial;
 
 	main_motor = hrx_create_motor(0xFD);
-	main_serial = open_serial(115200);
+	main_serial = open_serial(115200); 
 
 	if (main_serial == -1)
 		error_handling("failed to open serial\n");
