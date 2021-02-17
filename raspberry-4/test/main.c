@@ -35,6 +35,7 @@ int main (int argc, char *argv[])
 				delayMicroseconds(51);
 			}
 			printf("\n");
+			serialFlush(fd);
 		}
 	}
 
