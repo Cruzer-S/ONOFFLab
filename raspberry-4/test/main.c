@@ -30,8 +30,10 @@ int main (int argc, char *argv[])
 		{
 			printf("<-");
 			while (serialDataAvail(fd) > 0)
+			{
 				printf ("%02x ", serialGetchar (fd));
-
+				delayMicroseconds(200);
+			}
 			printf("\n");
 			fflush (stdout) ;
 		}
