@@ -34,7 +34,7 @@ int main(void)
 		serialPuts(serial_port, 
 		"hello, world! my name is yeounsu moon good to see you :)");
 
-		delay(2);
+		delay(2000);
 	}
 
 	serialClose(serial_port);
