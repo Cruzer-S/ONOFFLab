@@ -25,13 +25,18 @@ int main(void)
 
 	while (true)
 	{
-		if (serialDataAvail(serial_port) > 0)
-		{
+		if (serialDataAvail(serial_port) > 0) {
+			char ch;
+
 			fputs("<--", stdout);
 			
 			while (serialDataAvail(serial_port) > 0)
-				printf("%04x ", serialGetchar(serial_port));
+				printf("%04x ", (ch = serialGetchar(serial_port)));
+
+			if (ch == '!')
+				fputs("==========================================\n", stdout);
 		}
+
 	}
 
 	serialClose(serial_port);
