@@ -30,8 +30,10 @@ int main(void)
 
 			fputs("<--", stdout);
 			
-			while (serialDataAvail(serial_port) > 0)
+			while (serialDataAvail(serial_port) > 0) {
 				printf("%04x ", (ch = serialGetchar(serial_port)));
+				delayMicroseconds(100);
+			}
 
 			if (ch == '!')
 				fputs("==========================================\n", stdout);
