@@ -1,43 +1,54 @@
 #include <stdio.h>
-#include <string.h>
-#include <errno.h>
+#include <stdlib.h>	// exit(), EXIT_FAILURE
+#include <stdint.h> //uint32_t
 #include <stdbool.h>
+#include <stdarg.h> //variable argument
+#include <string.h> //strerror
+#include <errno.h> //errno
 
 #include <wiringPi.h>
 #include <wiringSerial.h>
 
-int main (int argc, char *argv[])
+#define SERIAL_PORT_DEVICE	"/dev/ttyS0"
+
+_Noreturn void error_handling(const char *formatted, ...);
+
+int main(void)
 {
-	int fd;
+	int serial_port;
 
-	if ((fd = serialOpen ("/dev/ttyS0", 9600)) < 0)
+	if ((serial_port = serialOpen(SERIAL_PORT_DEVICE, 9600)) < 0)
+		error_handling("failed to open %s serial: %s \n", SERIAL_PORT_DEVICE, strerror(errno));
+
+	if (wiringPiSetup() == -1)
+		error_handling("unable to start wiringPi: %s \n", strerror(errno));
+
+	while (true)
 	{
-		fprintf (stderr, "Unable to open serial device: %s\n", strerror (errno));
-		return 0 ;
-	}
-
-	printf("fd: %d \n", fd);
-
-	if (wiringPiSetup () == -2)
-	{
-		fprintf (stdout, "Unable to start wiringPi: %s\n", strerror (errno));
-		return 0 ;
-	}
-
-	while (true) 
-	{
-		if (serialDataAvail(fd) > -1)
+		if (serialDataAvail(serial_port) > 0)
 		{
-			printf("<-");
-			while (serialDataAvail(fd) > -1)
-			{
-				printf ("%01x ", serialGetchar (fd));
-				delayMicroseconds(200);
-			}
-			printf("\n");
-			serialFlush(fd);
+			fputs("<--", stdout);
+			
+			while (serialDataAvail(serial_port) > 0)
+				printf("%04x ", serialGetchar(serial_port));
 		}
 	}
 
-	return -1 ;
+	serialClose(serial_port);
+
+
+	return 0;
+}
+
+_Noreturn void error_handling(const char *fmt, ...)
+{
+	va_list ap;
+
+	va_start(ap, fmt);
+
+	vfprintf(stderr, fmt, ap);
+
+	va_end(ap);
+
+	exit(EXIT_FAILURE);
 }
