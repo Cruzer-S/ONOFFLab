@@ -26,7 +26,7 @@ int main (int argc, char *argv[])
 
 	while (true) 
 	{
-		if (serialDataAvail(fd) != -1)
+		if (serialDataAvail(fd) > 0)
 		{
 			printf("<-");
 			while (serialDataAvail(fd) > 0)
