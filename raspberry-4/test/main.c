@@ -15,7 +15,7 @@
 
 _Noreturn void error_handling(const char *formatted, ...);
 
-void scrape_input_serial(int serial, int delay, int maxline);
+void scrape_serial(int serial, int delay, int maxline, bool inout);
 
 int main(void)
 {
@@ -30,7 +30,9 @@ int main(void)
 
 	while (true)
 	{
-		scrape_input_serial(serial_port, DEBUG_DELAY, LINE_PER_BYTE);
+		// scrape_serial(serial_port, DEBUG_DELAY, LINE_PER_BYTE, true);
+		serialPuts(serial_port, "hello, world! my name is yeounsu moon good to see you :)");
+		delayMicroseconds(2000);
 	}
 
 	serialClose(serial_port);
@@ -38,18 +40,16 @@ int main(void)
 	return 0;
 }
 
-void scrape_input_serial(int serial, int delay, int maxline)
+void scrape_serial(int serial, int delay, int maxline, bool inout)
 {
-	const char *padding = "\n    ";
-
 	if (serialDataAvail(serial) > 0) {
-		fputs(padding, stdout);
+		fputs("\n    ", stdout);
 		for (int i = 0; i < maxline; i++)
 			printf("0x%02X ", i);
 		fputc('\n', stdout);
 
-		fputs("<-- ", stdout);
-		for (int i = 1, k = 1; serialDataAvail(serial) > 0; i++) {	
+		fputs(inout ? "<-- " : ">-- ", stdout);
+		for (int i = 1, k = 1; serialDataAvail(serial) > 0; i++) {
 			printf("  %02X ", serialGetchar(serial));
 			delayMicroseconds(delay);
 
