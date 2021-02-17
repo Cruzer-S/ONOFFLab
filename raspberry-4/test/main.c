@@ -32,7 +32,7 @@ int main (int argc, char *argv[])
 			while (serialDataAvail(fd) > 0)
 			{
 				printf ("%02x ", serialGetchar (fd));
-				delayMicroseconds(200);
+				delayMicroseconds(51);
 			}
 			printf("\n");
 			fflush (stdout) ;
