@@ -17,7 +17,7 @@ int main(void)
 {
 	int serial_port;
 
-	if ((serial_port = serialOpen(SERIAL_PORT_DEVICE, 9600)) < 0)
+	if ((serial_port = serialOpen(SERIAL_PORT_DEVICE, 115200)) < 0)
 		error_handling("failed to open %s serial: %s \n", SERIAL_PORT_DEVICE, strerror(errno));
 
 	if (wiringPiSetup() == -1)
@@ -32,7 +32,7 @@ int main(void)
 			
 			while (serialDataAvail(serial_port) > 0) {
 				printf("%04x ", (ch = serialGetchar(serial_port)));
-				delayMicroseconds(100);
+				delayMicroseconds(200);
 			}
 
 			if (ch == '!')
