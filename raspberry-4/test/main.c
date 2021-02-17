@@ -9,7 +9,7 @@
 #include <wiringPi.h>
 #include <wiringSerial.h>
 
-#define LINE_PER_BYTE 20
+#define LINE_PER_BYTE 16
 #define DEBUG_DELAY 100
 #define SERIAL_PORT_DEVICE	"/dev/ttyS0"
 
@@ -45,12 +45,12 @@ void scrape_input_serial(int serial, int delay, int maxline)
 	if (serialDataAvail(serial) > 0) {
 		fputs(padding, stdout);
 		for (int i = 0; i < maxline; i++)
-			printf("%2d ", i);
+			printf("0x%02x ", i);
 		fputc('\n', stdout);
 
 		fputs("<-- ", stdout);
 		for (int i = 1; serialDataAvail(serial) > 0; i++) {	
-			printf("%02X ", serialGetchar(serial));
+			printf("  %02X ", serialGetchar(serial));
 			delayMicroseconds(delay);
 
 			if (i == maxline) {
