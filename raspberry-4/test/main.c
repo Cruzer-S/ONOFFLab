@@ -31,8 +31,10 @@ int main(void)
 	while (true)
 	{
 		scrape_serial(serial_port, DEBUG_DELAY, LINE_PER_BYTE, true);
-		serialPuts(serial_port, "hello, world! my name is yeounsu moon good to see you :)");
-		delayMicroseconds(5000);
+		serialPuts(serial_port, 
+		"hello, world! my name is yeounsu moon good to see you :)");
+
+		delay(2);
 	}
 
 	serialClose(serial_port);
