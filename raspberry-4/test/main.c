@@ -44,7 +44,9 @@ void send_data(struct packet packet);
 int main(int argc, char *argv[])
 {
 	int serial_port;
-	int serv_sock, clnt_sock;
+
+	if (argc != 3)
+		error_handling("usage: <%s> <ssid> <passwd>\n", **argv);
 
 	if ((serial_port = serialOpen(SERIAL_PORT_DEVICE, BOAD_RATE)) < 0)
 		error_handling("failed to open %s serial: %s \n",
@@ -53,16 +55,7 @@ int main(int argc, char *argv[])
 	if (wiringPiSetup() == -1)
 		error_handling("unable to start wiringPi: %s \n", strerror(errno));
 
-	while (true)
-	{
-		serialPuts(serial_port,
-		"hello, world! my name is yeounsu moon good to see you :)");
-
-		delay(30);
-		scrape_serial(serial_port, DEBUG_DELAY, LINE_PER_BYTE, true);
-
-		delay(2000);
-	}
+	change_wifi(argv[1], argv[2]);
 
 	serialClose(serial_port);
 
