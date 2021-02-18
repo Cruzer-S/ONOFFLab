@@ -136,7 +136,7 @@ bool change_wifi(const char *name, const char *passwd)/*{{{*/
 		if (i == SIZEOF(wpa_keywords))
 			fputs(line, tmp);
 		else	
-			fprintf(tmp, "%s = "%s" \n",
+			fprintf(tmp, "%s = \"%s\" \n",
 					wpa_keywords[i], 
 					(i == 0) ? name : passwd);
 	}
