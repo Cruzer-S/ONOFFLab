@@ -30,6 +30,8 @@ int main(int argc, char *argv[])
 					   "ssid: %s \n"	"psk : %s \n",
 					   argv[1],			argv[2]);
 
+	printf("test auto commit");
+
 	serialClose(serial_port);
 
 	return 0;
