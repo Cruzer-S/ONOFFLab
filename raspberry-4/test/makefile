@@ -2,7 +2,7 @@ CC = gcc
 CFLAGS = -lwiringPi
 OUTPUT = output
 
-output: main.o debugger.o wifi_manager.o
+${OUTPUT}: main.o debugger.o wifi_manager.o
 	${CC} -o ${OUTPUT} $^ ${CFLAGS}
 
 main.o: main.c wifi_manager.h debugger.h
@@ -15,6 +15,11 @@ wifi_manager.o: wifi_manager.c wifi_manager.h
 	${CC} -c wifi_manager.c -o wifi_manager.o
 
 clean:
-	rm *.o ${OUTPUT}
+	rm ${wildcard *.o} ${OUTPUT}
 
-all: main.o debugger.o wifi_manager.o output 
+all: ${wildcard *.o} ${OUTPUT} 
+
+# placeholder
+# $@ = target
+# $^ = prerequisities
+#
