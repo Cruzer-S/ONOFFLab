@@ -89,15 +89,15 @@ bool change_wifi(const char *name, const char *passwd)/*{{{*/
 {
 	FILE *fp;
 	const char *form = {
-		"country = US\n"
-		"ctrl_interface = DIR=/var/run/wpa_supplicant GROUP=netdev\n"
-		"update_config = 1\n"
+		"country=US\n"
+		"ctrl_interface=DIR=/var/run/wpa_supplicant GROUP=netdev\n"
+		"update_config=1\n"
 		"\n"
-		"network = {\n"
-		"\tssid = \"%s\"\n"
-		"\tscan_ssid = 1\n"
-		"\tpsk = \"%s\"\n"
-		"\tkey_mgmt = WPA-PSK\n"
+		"network={\n"
+		"\tssid=\"%s\"\n"
+		"\tscan_ssid=1\n"
+		"\tpsk=\"%s\"\n"
+		"\tkey_mgmt=WPA-PSK\n"
 		"}"
 	};
 
