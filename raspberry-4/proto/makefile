@@ -2,7 +2,7 @@ CC = gcc
 CFLAGS = -lwiringPi
 OUTPUT = output
 
-${OUTPUT}: main.o debugger.o wifi_manager.o 
+${OUTPUT}: main.o debugger.o wifi_manager.o server_ipc.o
 	${CC} -o ${OUTPUT} $^ ${CFLAGS}
 
 main.o: main.c wifi_manager.h debugger.h server_ipc.h
