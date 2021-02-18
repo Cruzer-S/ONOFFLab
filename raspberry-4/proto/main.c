@@ -15,11 +15,12 @@
 
 int main(int argc, char *argv[])
 {
-	int serial_port;
+	int serial_port, serv_sock;
 
 	if (argc != 3)
 		error_handling("usage: <%s> <ssid> <psk>\n", argv[0]);
 
+	/*
 	if ((serial_port = serialOpen(SERIAL_PORT_DEVICE, BOAD_RATE)) < 0)
 		error_handling("failed to open %s serial: %s \n",
 				       SERIAL_PORT_DEVICE, strerror(errno));
@@ -31,10 +32,17 @@ int main(int argc, char *argv[])
 		error_handling("failed to change wifi... \n"
 					   "ssid: %s \n"	"psk : %s \n",
 					   argv[1],			argv[2]);
+	*/
 
-	if (connect_server(
+	if ((serv_sock = connect_server(argv[1], strtol(argv[2], NULL, 10))) == -1)
+		error_handling("connect_server() error");
 
+	if (send_server(serv_sock, sizeof("Hello World!"), "Hello World!") == -1)
+		error_handling("connect_server() error");
+
+	/*
 	serialClose(serial_port);
+	*/
 
 	return 0;
 }
