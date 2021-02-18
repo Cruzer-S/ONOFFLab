@@ -131,9 +131,12 @@ bool change_wifi(const char *name, const char *passwd)/*{{{*/
 
 	while (readline(line, MAXLINE, fp) > 0) {
 		int i;
+
 		for (i = 0; i < SIZEOF(wpa_keywords); i++)
-			if (!strstr(line, wpa_keywords[i]))
+			if (strstr(line, wpa_keywords[i]))
 				break;
+
+		printf("line[%d]: %s", i, line);
 
 		if (i == SIZEOF(wpa_keywords))
 			fputs(line, tmp);
