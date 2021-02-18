@@ -145,9 +145,11 @@ bool change_wifi(const char *name, const char *passwd)/*{{{*/
 
 	fclose(fp); fclose(tmp);
 
+	return true;
+
 	fp = tmp = NULL;
 	if (( fp = fopen( WPA_DIRECTORY, "w")) == NULL
-	||  (tmp = fopen( "test.txt", "r")) == NULL)
+	||  (tmp = fopen( TEMP_DIRECTORY, "r")) == NULL)
 		goto FAIL;
 	else
 		copy_file(tmp, /* > to > */ fp);
