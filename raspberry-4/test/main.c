@@ -1,17 +1,18 @@
-#include <stdio.h>
-#include <stdlib.h>	// exit(), EXIT_FAILURE
-#include <stdint.h> //uint32_t
-#include <stdbool.h>
-#include <stdarg.h> //variable argument
-#include <string.h> //strerror
-#include <errno.h> //errno
+#include <stdio.h>		// standard I/O
+#include <stdlib.h>		// exit(), EXIT_FAILURE
+#include <stdint.h>		// uint32_t
+#include <stdbool.h>	// true, false, bool
+#include <stdarg.h>		// variable argument
+#include <string.h>		// strerror
+#include <errno.h>		// errno
 
-#include <sys/socket.h>
+#include <sys/socket.h>	// socket
 
 #include <wiringPi.h>
 #include <wiringSerial.h>
 
 #include "wifi_manager.h"
+#include "json_parser.h"
 
 #define LINE_PER_BYTE 16
 #define DEBUG_DELAY 100
@@ -20,14 +21,24 @@
 
 #define SIZEOF(X) (sizeof(X) / sizeof(X[0]))
 #define MAXLINE BUFSIZ 
-#define WPA_DIRECTORY "/etc/wpa_supplicant/wpa_supplicant.conf"
+#define WPA_DIRECTORY	"/etc/wpa_supplicant/wpa_supplicant.conf"
+#define TEMP_DIRECTORY	"tmp.txt"
+
+struct packet {
+	uint32_t size;
+	void *ptr;
+};
 
 _Noreturn void error_handling(const char *formatted, ...);
 
 void scrape_serial(int serial, int delay, int maxline, bool inout);
+
+bool change_wifi(const char *name, const char *passwd);
+bool refresh_wifi(void);
 int readline(char *line, int maxline, FILE *fp);
 
-void change_wifi(const char *name, const char *passwd);
+void receive_data(struct packet packet);
+void send_data(struct packet packet);
 
 int main(int argc, char *argv[])
 {
@@ -35,7 +46,7 @@ int main(int argc, char *argv[])
 	int serv_sock, clnt_sock;
 
 	if ((serial_port = serialOpen(SERIAL_PORT_DEVICE, BOAD_RATE)) < 0)
-		error_handling("failed to open %s serial: %s \n", 
+		error_handling("failed to open %s serial: %s \n",
 				       SERIAL_PORT_DEVICE, strerror(errno));
 
 	if (wiringPiSetup() == -1)
@@ -43,7 +54,7 @@ int main(int argc, char *argv[])
 
 	while (true)
 	{
-		serialPuts(serial_port, 
+		serialPuts(serial_port,
 		"hello, world! my name is yeounsu moon good to see you :)");
 
 		delay(30);
@@ -80,12 +91,12 @@ void scrape_serial(int serial, int delay, int maxline, bool inout)/*{{{*/
 	}
 }/*}}}*/
 
-int readline(char *line, int maxline, FILE *fp)/*{{{*/
+int readline(char *line, int maxline, file *fp)/*{{{*/
 {
 	const char *origin = line;
 	int ch;
 
-	while ((ch = fgetc(fp)) != EOF
+	while ((ch = fgetc(fp)) != eof
 		&& (line - origin) < maxline) 
 	{
 		*line++ = ch;
@@ -97,6 +108,14 @@ int readline(char *line, int maxline, FILE *fp)/*{{{*/
 	return line - origin;
 }/*}}}*/
 
+void copy_file(FILE *origin, FILE *dest)/*{{{*/
+{
+	char buffer[BUFSIZ];
+
+	while (fgets(buffer, BUFSIZ, origin) != NULL)
+		fputs(buffer, dest);
+}/*}}}*/
+
 bool change_wifi(const char *name, const char *passwd)/*{{{*/
 {
 	const char *wpa_keywords[] = {
@@ -105,34 +124,63 @@ bool change_wifi(const char *name, const char *passwd)/*{{{*/
 
 	char line[MAXLINE];
 
-	FILE *fp = fopen(WPA_DIRECTORY, "r");
-	FILE *tmp = fopen("tmp.txt", "w");
+	FILE *fp, *tmp = fp = NULL;
 
-	if (fp == NULL)
-		return false;
+	fp = fopen(WPA_DIRECTORY, "r");
+	tmp = fopen(TEMP_DIRECTORY, "w");
+
+	if (( fp = fopen( WPA_DIRECTORY, "r")) == NULL
+	||  (tmp = fopen(TEMP_DIRECTORY, "w")) == NULL)
+		goto FAIL;
 
 	while (readline(line, MAXLINE, fp) > 0)
-	{
-		for (int i = 0; i < SIZEOF(wpa_keywords); i++) {
-			if (!strstr(line, wpa_keywords[i])) {
-				fputs(wpa_keywords[i], tmp);
-				fputs(" = \"", tmp);
-				fputs(name, tmp);
-				fputs("\"\n", tmp);
-			} else {
-				fputs(line, tmp);
-			}
-		}
-	}
+		for (int i = 0; i < SIZEOF(wpa_keywords); i++) 
+			if (!strstr(line, wpa_keywords[i]))
+				fprintf(tmp, "%s = %s \n",
+						wpa_keywords[i], 
+						(i == 0) ? name : passwd);
+			else fputs(line, tmp);
 
-	fclose(tmp);
-	fclose(fp);
+	fclose(fp); fclose(tmp);
+
+	fp = tmp = NULL;
+	if (( fp = fopen( WPA_DIRECTORY, "w")) == NULL
+	||  (tmp = fopen(TEMP_DIRECTORY, "r")) == NULL)
+		goto FAIL;
+
+	if (copy_file(tmp, /* > to > */ fp))
+		goto FAIL;
+
+	fclose(fp); fclose(tmp);
+
+	if (!refresh_wifi())
+		goto FAIL;
+
+WHEN_IT:; SUCCESS:; return true;
+OTHERWISE:;  FAIL:; THEN:;
+	if (fp != NULL) fclose(fp);
+	if (tmp != NULL) fclose(tmp);
+
+	remove(TEMP_DIRECTORY);
+	return false;
+}/*}}}*/
+
+bool refresh_wifi(void)/*{{{*/
+{
+	// alert changing of /etc/wpa_supplicant/wpa_supplicant.conf
+	if (system("sudo systemctl daemon-reload"))
+		return false;
+
+	// restart dhcpcd which is parent of wpa_supplicant daemon 
+	if (system("sudo systemctl restart dhcpcd"))
+		return false;
 
 	return true;
 }/*}}}*/
 
 _Noreturn void error_handling(const char *fmt, ...)/*{{{*/
 {
+WHEN_IT: ;
 	va_list ap;
 
 	va_start(ap, fmt);
@@ -143,3 +191,5 @@ _Noreturn void error_handling(const char *fmt, ...)/*{{{*/
 
 	exit(EXIT_FAILURE);
 }/*}}}*/
+
+
