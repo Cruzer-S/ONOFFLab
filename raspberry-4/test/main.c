@@ -22,7 +22,7 @@
 #define SIZEOF(X) (sizeof(X) / sizeof(X[0]))
 #define MAXLINE BUFSIZ 
 #define WPA_DIRECTORY	"/etc/wpa_supplicant/wpa_supplicant.conf"
-#define TEMP_DIRECTORY	"tmp.txt"
+#define TMP_DIRECTORY	"test.txt"
 
 struct packet {
 	uint32_t size;
@@ -114,57 +114,32 @@ void copy_file(FILE *origin, FILE *dest)/*{{{*/
 
 bool change_wifi(const char *name, const char *passwd)/*{{{*/
 {
-	const char *wpa_keywords[] = {
-		"ssid", "psk"
+	FILE *fp;
+	const char *form = {
+		"country=US\n"
+		"ctrl_interface=DIR=/var/run/wpa_supplicant GROUP=netdev\n"
+		"update_config=1\n"
+		"\n"
+		"network={\n"
+		"ssid=\"%s\"\n"
+		"scan_ssid=1\n"
+		"psk=\"%s\"\n"
+		"key_mgmt=WPA-PSK\n"
+		"}"
 	};
 
-	char line[MAXLINE];
+	fp = fopen(TMP_DIRECTORY, "w");
+	if (fp == NULL)
+		return false;
 
-	FILE *fp, *tmp = fp = NULL;
+	fprintf(fp, form, name, passwd);
 
-	fp = fopen(WPA_DIRECTORY, "r");
-	tmp = fopen(TEMP_DIRECTORY, "w");
-
-	if (( fp = fopen( WPA_DIRECTORY, "r")) == NULL
-	||  (tmp = fopen(TEMP_DIRECTORY, "w")) == NULL)
-		goto FAIL;
-
-	while (readline(line, MAXLINE, fp) > 0) {
-		int i;
-
-		for (i = 0; i < SIZEOF(wpa_keywords); i++)
-			if (strstr(line, wpa_keywords[i]))
-				break;
-
-		if (i == SIZEOF(wpa_keywords))
-			fputs(line, tmp);
-		else	
-			fprintf(tmp, "%s = \"%s\" \n",
-					wpa_keywords[i], 
-					(i == 0) ? name : passwd);
-	}
-
-	fclose(fp); fclose(tmp);
-
-	fp = tmp = NULL;
-	if (( fp = fopen( WPA_DIRECTORY, "w")) == NULL
-	||  (tmp = fopen( TEMP_DIRECTORY, "r")) == NULL)
-		goto FAIL;
-	else
-		copy_file(tmp, /* > to > */ fp);
-
-	fclose(fp); fclose(tmp);
+	fclose(fp);
 
 	if (!refresh_wifi())
-		goto FAIL;
+		return false;
 
-WHEN_IT:; SUCCESS:; return true;
-OTHERWISE:;  FAIL:; THEN:;
-	if (fp != NULL) fclose(fp);
-	if (tmp != NULL) fclose(tmp);
-
-	remove(TEMP_DIRECTORY);
-	return false;
+	return true;
 }/*}}}*/
 
 bool refresh_wifi(void)/*{{{*/
