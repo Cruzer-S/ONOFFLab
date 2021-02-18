@@ -5,7 +5,8 @@
 #include <stdio.h>			// vfprintf
 #include <stdlib.h>			// exit, EXIT_FAILURE
 #include <stdbool.h>		// bool
-#include <wiringSerial.h>	// serialDataAvail, serialGetchar, delayMicroseconds
+#include <wiringSerial.h>	// serialDataAvail, serialGetchar
+#include <wiringPi.h>		// delayMicroseconds
 
 _Noreturn void error_handling(const char *formatted, ...);
 void scrape_serial(int serial, int delay, int maxline, bool inout);
