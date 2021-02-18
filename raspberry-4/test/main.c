@@ -36,6 +36,7 @@ void scrape_serial(int serial, int delay, int maxline, bool inout);
 bool change_wifi(const char *name, const char *passwd);
 bool refresh_wifi(void);
 int readline(char *line, int maxline, FILE *fp);
+void copy_file(FILE *origin, FILE *dest);
 
 void receive_data(struct packet packet);
 void send_data(struct packet packet);
@@ -96,7 +97,7 @@ int readline(char *line, int maxline, FILE *fp)/*{{{*/
 	const char *origin = line;
 	int ch;
 
-	while ((ch = fgetc(fp)) != eof
+	while ((ch = fgetc(fp)) != EOF 
 		&& (line - origin) < maxline) 
 	{
 		*line++ = ch;
