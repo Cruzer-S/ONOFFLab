@@ -19,10 +19,7 @@
 #define BOAD_RATE 115200
 #define SERIAL_PORT_DEVICE	"/dev/ttyS0"
 
-#define SIZEOF(X) (sizeof(X) / sizeof(X[0]))
-#define MAXLINE BUFSIZ 
 #define WPA_DIRECTORY	"/etc/wpa_supplicant/wpa_supplicant.conf"
-#define TMP_DIRECTORY	"test.txt"
 
 struct packet {
 	uint32_t size;
@@ -56,8 +53,9 @@ int main(int argc, char *argv[])
 		error_handling("unable to start wiringPi: %s \n", strerror(errno));
 
 	if (!change_wifi(argv[1], argv[2]))
-		error_handling("failed to change wifi: %s %s \n",
-					   argv[1], argv[2]);
+		error_handling("failed to change wifi... \n"
+					   "ssid: %s \n"	"psk : %s \n",
+					   argv[1],			argv[2]);
 
 	serialClose(serial_port);
 
@@ -87,31 +85,6 @@ void scrape_serial(int serial, int delay, int maxline, bool inout)/*{{{*/
 	}
 }/*}}}*/
 
-int readline(char *line, int maxline, FILE *fp)/*{{{*/
-{
-	const char *origin = line;
-	int ch;
-
-	while ((ch = fgetc(fp)) != EOF 
-		&& (line - origin) < maxline) 
-	{
-		*line++ = ch;
-		if (ch == '\n') break;
-	}
-
-	*line = '\0';
-
-	return line - origin;
-}/*}}}*/
-
-void copy_file(FILE *origin, FILE *dest)/*{{{*/
-{
-	char buffer[BUFSIZ];
-
-	while (fgets(buffer, BUFSIZ, origin) != NULL)
-		fputs(buffer, dest);
-}/*}}}*/
-
 bool change_wifi(const char *name, const char *passwd)/*{{{*/
 {
 	FILE *fp;
@@ -128,7 +101,7 @@ bool change_wifi(const char *name, const char *passwd)/*{{{*/
 		"}"
 	};
 
-	fp = fopen(TMP_DIRECTORY, "w");
+	fp = fopen(WPA_DIRECTORY, "w");
 	if (fp == NULL)
 		return false;
 
