@@ -30,7 +30,7 @@ int make_server(short port, int backlog)
 	sock_adr.sin_addr.s_addr = inet_addr("127.0.0.1");
 	sock_adr.sin_port = htons(port);
 
-	if (bind(sock, (struct sockaddr *)&sock, sizeof(sock)) == -1)
+	if (bind(sock, (struct sockaddr *)&sock_adr, sizeof(sock)) == -1)
 		return -2;
 
 	if (listen(sock, backlog) == -1)
