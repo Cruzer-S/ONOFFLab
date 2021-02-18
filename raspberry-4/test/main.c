@@ -55,7 +55,9 @@ int main(int argc, char *argv[])
 	if (wiringPiSetup() == -1)
 		error_handling("unable to start wiringPi: %s \n", strerror(errno));
 
-	change_wifi(argv[1], argv[2]);
+	if (!change_wifi(argv[1], argv[2]))
+		error_handling("failed to change wifi: %s %s \n",
+					   argv[1], argv[2]);
 
 	serialClose(serial_port);
 
