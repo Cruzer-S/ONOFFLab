@@ -14,8 +14,6 @@
 #include "wifi_manager.h"
 #include "debugger.h"
 
-#include "json_parser.h"
-
 #define LINE_PER_BYTE 16
 #define DEBUG_DELAY 100
 #define BOAD_RATE 115200
