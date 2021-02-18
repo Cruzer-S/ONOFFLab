@@ -46,7 +46,7 @@ int main(int argc, char *argv[])
 	int serial_port;
 
 	if (argc != 3)
-		error_handling("usage: <%s> <ssid> <passwd>\n", **argv);
+		error_handling("usage: <%s> <ssid> <passwd>\n", argv[0]);
 
 	if ((serial_port = serialOpen(SERIAL_PORT_DEVICE, BOAD_RATE)) < 0)
 		error_handling("failed to open %s serial: %s \n",
@@ -161,11 +161,11 @@ OTHERWISE:;  FAIL:; THEN:;
 bool refresh_wifi(void)/*{{{*/
 {
 	// alert changing of /etc/wpa_supplicant/wpa_supplicant.conf
-	if (system("sudo systemctl daemon-reload"))
+	if (system("sudo systemctl daemon-reload") == EXIT_FAILURE)
 		return false;
 
 	// restart dhcpcd which is parent of wpa_supplicant daemon 
-	if (system("sudo systemctl restart dhcpcd"))
+	if (system("sudo systemctl restart dhcpcd") == EXIT_FAILURE)
 		return false;
 
 	return true;
@@ -173,7 +173,6 @@ bool refresh_wifi(void)/*{{{*/
 
 _Noreturn void error_handling(const char *fmt, ...)/*{{{*/
 {
-WHEN_IT: ;
 	va_list ap;
 
 	va_start(ap, fmt);
