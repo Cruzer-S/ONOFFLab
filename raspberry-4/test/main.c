@@ -148,9 +148,8 @@ bool change_wifi(const char *name, const char *passwd)/*{{{*/
 	if (( fp = fopen( WPA_DIRECTORY, "w")) == NULL
 	||  (tmp = fopen(TEMP_DIRECTORY, "r")) == NULL)
 		goto FAIL;
-
-	if (copy_file(tmp, /* > to > */ fp))
-		goto FAIL;
+	else
+		copy_file(tmp, /* > to > */ fp);
 
 	fclose(fp); fclose(tmp);
 
