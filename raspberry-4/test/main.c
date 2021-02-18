@@ -91,7 +91,7 @@ void scrape_serial(int serial, int delay, int maxline, bool inout)/*{{{*/
 	}
 }/*}}}*/
 
-int readline(char *line, int maxline, file *fp)/*{{{*/
+int readline(char *line, int maxline, FILE *fp)/*{{{*/
 {
 	const char *origin = line;
 	int ch;
