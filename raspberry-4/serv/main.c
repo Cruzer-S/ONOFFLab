@@ -94,6 +94,28 @@ struct epoll_event *wait_epoll_event(int epfd, int maxevent, int timeout)
 
 int client_handler(int clnt)
 {
+	char buffer[BUFSIZ];
+	int size, ret;
+
+	if (recv(clnt, &size, sizeof(uint32_t), MSG_WAITALL) == -1)
+		return false;
+
+	printf("Client %d said that: ");
+	while (size > 0) {
+		if (size >= BUFSIZ)
+			size -= (ret = recv(clnt, buffer, BUFSIZ - 1, 0));
+		else
+			size -= (ret = recv(clnt, buffer, size, 0));
+
+		if (ret == -1)
+			return false;
+
+		buffer[ret] = '\0';
+
+		fputs(buffer, stdout);
+	}
+	fputc('\n', stdout);
+
 	return true;
 }
 
@@ -125,9 +147,14 @@ int main(int argc, char *argv[])
 
 	while (true)
 	{
-		struct epoll_event *epev = wait_epoll_event(epfd, MAX_EVENT, timeout);
+		struct epoll_event *epev = wait_epoll_event(epfd, MAX_EVENT, 5000);
 		if (epev == NULL)
 			error_handling("wait_epoll_event() error \n");
+
+		if (epev->data.ptr == NULL) { // time-out
+			printf("time-out\n");
+			continue;
+		}
 
 		do {
 			if (epev->data.fd == serv_sock) {
@@ -137,10 +164,12 @@ int main(int argc, char *argv[])
 					continue;
 				}
 
+				/*
 				if ((ret = change_flag(clnt_sock, O_NONBLOCK)) == -1) {
 					fprintf(stderr, "change_flag(clnt_sock) error: %d \n", ret);
 					continue;
 				}
+				*/
 
 				if (register_epoll_fd(epfd, clnt_sock, EPOLLIN | EPOLLET) == -1) {
 					fprintf(stderr, "register_epoll_fd(clnt_sock) error \n");
