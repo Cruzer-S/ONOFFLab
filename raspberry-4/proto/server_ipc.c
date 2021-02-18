@@ -3,6 +3,7 @@
 int connect_server(const char *host, short port)
 {
 	int sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+	
 	struct sockaddr_in sock_adr;
 
 	if (sock == -1)

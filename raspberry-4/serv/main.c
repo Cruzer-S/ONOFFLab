@@ -1,3 +1,4 @@
+#include <netinet/in.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
@@ -25,12 +26,12 @@ int make_server(short port, int backlog)
 	if (sock == -1)
 		return -1;
 
-	memset(&sock_adr, 0x00, sizeof(sock_adr));	
+	memset(&sock_adr, 0, sizeof(sock_adr));	
 	sock_adr.sin_family = AF_INET;
-	sock_adr.sin_addr.s_addr = inet_addr("127.0.0.1");
+	sock_adr.sin_addr.s_addr = htonl(INADDR_ANY);
 	sock_adr.sin_port = htons(port);
 
-	if (bind(sock, (struct sockaddr *)&sock_adr, sizeof(sock)) == -1)
+	if (bind(sock, (struct sockaddr *)&sock_adr, sizeof(sock_adr)) == -1)
 		return -2;
 
 	if (listen(sock, backlog) == -1)

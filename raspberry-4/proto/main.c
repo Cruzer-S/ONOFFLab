@@ -33,6 +33,9 @@ int main(int argc, char *argv[])
 					   argv[1],			argv[2]);
 	*/
 
+	printf("argv[1]: %s\n", argv[1]);
+	printf("strtol(argv[2], NULL, 10): %hd \n", (short) strtol(argv[2], NULL, 10));
+
 	if ((serv_sock = connect_server(argv[1], strtol(argv[2], NULL, 10))) == -1)
 		error_handling("connect_server() error");
 
