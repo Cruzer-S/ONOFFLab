@@ -1,12 +1,4 @@
 #include <stdio.h>		// standard I/O
-#include <stdlib.h>		// exit(), EXIT_FAILURE
-#include <stdint.h>		// uint32_t
-#include <stdbool.h>	// true, false, bool
-#include <stdarg.h>		// variable argument
-#include <string.h>		// strerror
-#include <errno.h>		// errno
-
-#include <sys/socket.h>	// socket
 
 #include <wiringPi.h>
 #include <wiringSerial.h>
@@ -19,13 +11,12 @@
 #define BOAD_RATE 115200
 #define SERIAL_PORT_DEVICE	"/dev/ttyS0"
 
-
 int main(int argc, char *argv[])
 {
 	int serial_port;
 
 	if (argc != 3)
-		error_handling("usage: <%s> <ssid> <passwd>\n", argv[0]);
+		error_handling("usage: <%s> <ssid> <psk>\n", argv[0]);
 
 	if ((serial_port = serialOpen(SERIAL_PORT_DEVICE, BOAD_RATE)) < 0)
 		error_handling("failed to open %s serial: %s \n",
@@ -43,6 +34,3 @@ int main(int argc, char *argv[])
 
 	return 0;
 }
-
-
-
