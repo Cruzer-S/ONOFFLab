@@ -14,7 +14,7 @@ int connect_server(const char *host, short port)
 	sock_adr.sin_port = htons(port);
 
 	if (connect(sock, (struct sockaddr *)&sock_adr, sizeof(sock_adr)) == -1)
-		error_handling("connect() error \n");
+		return -2;
 
 	return sock;
 }
@@ -25,7 +25,7 @@ int send_server(int serv, uint32_t size, char *data)
 		return -1;
 
 	if (send(serv, data, size, 0) == -1)
-		return -1;
+		return -2;
 
 	return 0;
 }
