@@ -101,7 +101,7 @@ int client_handler(int clnt)
 	if (recv(clnt, &size, sizeof(uint32_t), MSG_WAITALL) == -1)
 		return false;
 
-	printf("Client %d said that: ");
+	printf("Client %d said that: ", clnt);
 	while (size > 0) {
 		if (size >= BUFSIZ)
 			size -= (ret = recv(clnt, buffer, BUFSIZ - 1, 0));
@@ -200,4 +200,6 @@ _Noreturn void error_handling(const char *fmt, ...)
 	vfprintf(stderr, fmt, ap);
 
 	va_end(ap);
+
+	exit(EXIT_FAILURE);
 }
