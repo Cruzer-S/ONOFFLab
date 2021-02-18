@@ -127,19 +127,25 @@ bool change_wifi(const char *name, const char *passwd)/*{{{*/
 	||  (tmp = fopen(TEMP_DIRECTORY, "w")) == NULL)
 		goto FAIL;
 
-	while (readline(line, MAXLINE, fp) > 0)
-		for (int i = 0; i < SIZEOF(wpa_keywords); i++) 
+	while (readline(line, MAXLINE, fp) > 0) {
+		int i;
+		for (i = 0; i < SIZEOF(wpa_keywords); i++)
 			if (!strstr(line, wpa_keywords[i]))
-				fprintf(tmp, "%s = %s \n",
-						wpa_keywords[i], 
-						(i == 0) ? name : passwd);
-			else fputs(line, tmp);
+				break;
+
+		if (i == SIZEOF(wpa_keywords))
+			fputs(line, tmp);
+		else	
+			fprintf(tmp, "%s = "%s" \n",
+					wpa_keywords[i], 
+					(i == 0) ? name : passwd);
+	}
 
 	fclose(fp); fclose(tmp);
 
 	fp = tmp = NULL;
 	if (( fp = fopen( WPA_DIRECTORY, "w")) == NULL
-	||  (tmp = fopen(TEMP_DIRECTORY, "r")) == NULL)
+	||  (tmp = fopen( "test.txt", "r")) == NULL)
 		goto FAIL;
 	else
 		copy_file(tmp, /* > to > */ fp);
