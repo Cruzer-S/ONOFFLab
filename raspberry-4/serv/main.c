@@ -24,7 +24,7 @@ int make_server(short port, int backlog)
 	if (sock == -1)
 		return -1;
 
-	memset(&sock, 0x00, sizeof(sock));	
+	memset(&sock_adr, 0x00, sizeof(sock_adr));	
 	sock_adr.sin_family = AF_INET;
 	sock_adr.sin_addr.s_addr = htonl(INADDR_ANY);
 	sock_adr.sin_port = htons(port);
