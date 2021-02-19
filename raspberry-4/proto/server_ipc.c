@@ -1,6 +1,4 @@
 #include "server_ipc.h"
-#include <netdb.h>
-#include <netinet/in.h>
 
 int connect_server(const char *host, short port)
 {
