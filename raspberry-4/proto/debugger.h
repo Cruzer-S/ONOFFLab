@@ -11,4 +11,8 @@
 _Noreturn void error_handling(const char *formatted, ...);
 void scrape_serial(int serial, int delay, int maxline, bool inout);
 
+#ifdef DEBUG
+#define DPRINT(D, X) printf(#X " = %" #D " \n", X)
+#endif
+
 #endif
