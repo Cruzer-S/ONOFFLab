@@ -15,7 +15,6 @@ build
 *.d
 
 # Object files
-output
 *.o
 *.ko
 *.obj
