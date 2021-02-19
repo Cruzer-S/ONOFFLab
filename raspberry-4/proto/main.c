@@ -25,7 +25,7 @@ int main(int argc, char *argv[])
 
 	printf("strtol(argv[1]): %ld \n", strtol(argv[1], NULL, 10));
 
-	if ((serv_sock = connect_server(SERVER_DOMAIN, strtol(argv[1], NULL, 10))) < 0)
+	if ((serv_sock = connect_server(SERVER_DOMAIN, (short) strtol(argv[1], NULL, 10))) < 0)
 		error_handling("connect_server() error: %d \n", serv_sock);
 	
 	printf("Connect Successfully !\n");
