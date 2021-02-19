@@ -19,7 +19,7 @@ int connect_server(const char *host, short port)
 
 	memset(&sock_adr, 0x00, sizeof(sock_adr));
 	sock_adr.sin_family = AF_INET;
-	sock_adr.sin_addr = *(struct in_addr*) gethostbyname(host)->h_addr_list[0];
+	memcpy(&sock_adr.sin_addr, entry->h_addr_list[0], entry->h_length);
 	sock_adr.sin_port = htons(port);
 
 	if (connect(sock, (struct sockaddr *)&sock_adr, sizeof(sock_adr)) == -1)
