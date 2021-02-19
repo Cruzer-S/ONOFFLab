@@ -6,6 +6,7 @@
 #include "wifi_manager.h"
 #include "debugger.h"
 #include "server_ipc.h"
+#include "bluetooth_handler.h"
 
 #define LINE_PER_BYTE 16
 #define DEBUG_DELAY 100
