@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -lwiringPi
+CFLAGS = 
 OUTPUT = output
 
 ${OUTPUT}: main.o server_handler.o

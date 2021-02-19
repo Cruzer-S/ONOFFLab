@@ -12,7 +12,8 @@ _Noreturn void error_handling(const char *format, ...);
 int client_handler(int clnt)
 {
 	char buffer[BUFSIZ];
-	int size, ret;
+	uint32_t size;
+	int ret;
 
 	if (recv(clnt, &size, sizeof(uint32_t), MSG_WAITALL) < 0)
 		return false;

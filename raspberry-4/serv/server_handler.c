@@ -77,7 +77,6 @@ int register_epoll_fd(int epfd, int tgfd, int flag)
 	return 0;
 }
 
-
 struct epoll_event *wait_epoll_event(int epfd, int maxevent, int timeout)
 {
 	static struct epoll_event events[MAX_EVENT];
@@ -91,4 +90,3 @@ struct epoll_event *wait_epoll_event(int epfd, int maxevent, int timeout)
 
 	return events;
 }
-
