@@ -18,12 +18,16 @@
 
 int main(int argc, char *argv[])
 {
-	int serial_port, serv_sock;
+	int serv_sock;
+	short port_num;
 
 	if (argc != 2)
 		error_handling("usage: <%s> <port> \n", argv[0]);
 
-	if ((serv_sock = connect_server(SERVER_DOMAIN, (short) strtol(argv[1], NULL, 10))) < 0)
+	port_num = (short) strtol(argv[1], NULL, 10);
+	printf("port_num: %hd \n", port_num);
+
+	if ((serv_sock = connect_server(SERVER_DOMAIN, port_num)) < 0)
 		error_handling("connect_server() error: %d \n", serv_sock);
 	
 	printf("Connect Successfully !\n");
