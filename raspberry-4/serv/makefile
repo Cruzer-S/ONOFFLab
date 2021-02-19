@@ -1,6 +1,6 @@
 CC = gcc
 CFLAGS = 
-OUTPUT = output
+OUTPUT = output.out
 
 ${OUTPUT}: main.o server_handler.o
 	${CC} -o ${OUTPUT} $^ ${CFLAGS}
