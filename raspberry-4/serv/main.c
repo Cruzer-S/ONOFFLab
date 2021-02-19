@@ -21,11 +21,11 @@ int client_handler(int clnt)
 	printf("Client %d said that: ", clnt);
 	while (size > 0) {
 		if (size >= BUFSIZ)
-			size -= (ret = recv(clnt, buffer, BUFSIZ - 1, 0));
+			size -= (ret = recv(clnt, buffer, BUFSIZ - 1, MSG_WAITALL));
 		else
-			size -= (ret = recv(clnt, buffer, size, 0));
+			size -= (ret = recv(clnt, buffer, size, MSG_WAITALL));
 
-		if (ret == -1)
+		if (ret < 0)
 			return false;
 
 		buffer[ret] = '\0';
@@ -33,6 +33,9 @@ int client_handler(int clnt)
 		fputs(buffer, stdout);
 	}
 	fputc('\n', stdout);
+
+	if (size == 0)
+		return false;
 
 	return true;
 }
