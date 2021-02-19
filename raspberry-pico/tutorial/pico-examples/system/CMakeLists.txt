@@ -1,6 +1,0 @@
-if (NOT PICO_NO_HARDWARE)
-    add_subdirectory(double_tap_usb_boot)
-    add_subdirectory(narrow_io_write)
-    add_subdirectory(hello_double_tap)
-    add_subdirectory(unique_board_id)
-endif ()
