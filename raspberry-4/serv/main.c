@@ -18,6 +18,7 @@ int client_handler(int clnt)
 	if (recv(clnt, &size, sizeof(uint32_t), MSG_WAITALL) < 0)
 		return false;
 
+	printf("recevied size: %d \n", size);
 	if (send(clnt, &size, sizeof(uint32_t), MSG_WAITALL) < 0)
 		return false;
 
@@ -42,6 +43,8 @@ int client_handler(int clnt)
 			return false;
 	}
 	fputc('\n', stdout);
+
+	printf("remaining size: %d \n", size);
 
 	if (size == 0)
 		return false;
