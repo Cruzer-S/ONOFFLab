@@ -55,6 +55,8 @@ int main(int argc, char *argv[])
 
 			fputs(buffer, stdout);
 		}
+
+		fputc('\n', stdout);
 	}
 	
 	/*
