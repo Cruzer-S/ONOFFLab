@@ -57,7 +57,11 @@ int main(int argc, char *argv[])
 		}
 
 		fputc('\n', stdout);
+		
+		break;
 	}
+
+	close(serv_sock);
 	
 	/*
 	serialClose(serial_port);
