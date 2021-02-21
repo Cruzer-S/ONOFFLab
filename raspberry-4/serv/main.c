@@ -31,7 +31,14 @@ int client_handler(int clnt)
 		buffer[ret] = '\0';
 
 		fputs(buffer, stdout);
+
+		for (int i = 0; i < ret; i++)
+			buffer[i]++;
+
+		if (send(clnt, buffer, ret, MSG_WAITALL) < 0)
+			return false;
 	}
+
 	fputc('\n', stdout);
 
 	if (size == 0)
