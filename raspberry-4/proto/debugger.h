@@ -14,7 +14,7 @@ void scrape_serial(int serial, int delay, int maxline, bool inout);
 #ifdef DEBUG
 #define DPRINT(D, X) printf(#X " = %" #D " \n", X)
 #else
-#define DPRINTF(D, X) /* empty */
+#define DPRINT(D, X) /* empty */
 #endif
 
 #endif
