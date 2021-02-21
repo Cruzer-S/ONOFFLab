@@ -34,18 +34,27 @@ int main(int argc, char *argv[])
 
 	while (true) {
 		char buffer[BUFSIZ];
+		int ret;
 
 		printf("Enter the message: ");
 		scanf("%s", buffer);
 
 		if (server_send_data(serv_sock, strlen(buffer) + 1, buffer) == -1)
-			error_handling("server_send_data() error");
+			error_handling("server_send_data() error \n");
 
-		for (int ret = server_recv_data(serv_sock, sizeof(buffer), buffer);
-			 ret == -1 ? error_handling("server_recv_data() error"), 0 : 
-			 ret  >  0 ? true : false, 0;
-			 ret -= server_recv_data(-1, sizeof(buffer), buffer))
+		printf("recv message from server: ");
+		ret = server_recv_data(serv_sock, sizeof(buffer), buffer);
+		if (ret == -1)
+			error_handling("serv_recv_data() error \n");
+
+		fputs(buffer, stdout);
+
+		while (ret > 0) {
+			if ((ret = server_recv_data(-1, sizeof(buffer), buffer)) == -1)
+				error_handling("serv_recv_data() error \n");
+
 			fputs(buffer, stdout);
+		}
 	}
 	
 	/*

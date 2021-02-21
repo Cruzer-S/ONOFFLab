@@ -18,11 +18,9 @@ int connect_server(const char *host, short port)
 	if (entry == NULL)
 		return -2;
 
-	DPRINT(s, inet_ntoa(*(struct in_addr *)entry->h_addr_list[0]));
-
 	memset(&sock_adr, 0x00, sizeof(sock_adr));
 	sock_adr.sin_family = AF_INET;
-	sock_adr.sin_addr.s_addr = inet_addr(inet_ntoa(*(struct in_addr *)entry->h_addr_list[0]));
+	memcpy(&sock_adr.sin_addr, entry->h_addr_list[0], entry->h_length);
 	sock_adr.sin_port = htons(port);
 
 	if (connect(sock, (struct sockaddr *)&sock_adr, sizeof(sock_adr)) == -1)
@@ -45,9 +43,12 @@ int server_send_data(int serv, uint32_t size, char *data)
 int server_recv_data(int serv, uint32_t max, char *data)
 {
 	uint32_t size;
-	int rem = 0;
+	static int rem;
 
-	if (serv > 0) { // first-call
+	if (serv >= 0) { // first-call
+		rem = 0;
+
+		// recv data size
 		if (recv(serv, &size, sizeof(uint32_t), MSG_WAITALL) == -1)
 			return -1;
 
@@ -55,6 +56,7 @@ int server_recv_data(int serv, uint32_t max, char *data)
 			rem = (size - max), size = max;
 	} else { // scrape remaining data
 		size = max;
+		rem -= (rem < size) ? rem : size;
 	}
 
 	if (recv(serv, data, size, MSG_WAITALL) == -1)
