@@ -45,8 +45,8 @@ int change_sockopt(int fd, int level, int flag, int value)
 	switch (flag) {
 	case SO_RCVTIMEO: ;
 		struct timeval tv = {
-			.tv_sec = 5,
-			.tv_usec = 5
+			.tv_sec = value / 1000,
+			.tv_usec = value % 1000
 		};
 
 		ret = setsockopt(fd, level, flag, &tv, sizeof(tv)); 

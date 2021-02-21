@@ -4,6 +4,7 @@
 #include <sys/socket.h>		// socket
 #include <sys/unistd.h>		// close
 #include <sys/epoll.h>		// epoll
+#include <sys/time.h>		// struct timeval
 #include <string.h>			// memset
 #include <arpa/inet.h>		// htonl, htons
 #include <fcntl.h>			// fcntl
