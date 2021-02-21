@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = 
+CFLAGS = -std=c11
 OUTPUT = output.out
 
 ${OUTPUT}: main.o server_handler.o

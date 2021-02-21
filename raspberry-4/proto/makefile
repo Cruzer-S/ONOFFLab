@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -lwiringPi
+CFLAGS = -lwiringPi -std=c11
 OUTPUT = output
 DEBUG = 
 
