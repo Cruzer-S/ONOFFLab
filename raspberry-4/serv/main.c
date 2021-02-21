@@ -18,6 +18,9 @@ int client_handler(int clnt)
 	if (recv(clnt, &size, sizeof(uint32_t), MSG_WAITALL) < 0)
 		return false;
 
+	if (send(clnt, &size, sizeof(uint32_t), MSG_WAITALL) < 0)
+		return false;
+
 	printf("Client %d said that: ", clnt);
 	while (size > 0) {
 		if (size >= BUFSIZ)
@@ -38,7 +41,6 @@ int client_handler(int clnt)
 		if (send(clnt, buffer, ret, MSG_WAITALL) < 0)
 			return false;
 	}
-
 	fputc('\n', stdout);
 
 	if (size == 0)

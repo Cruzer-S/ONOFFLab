@@ -52,6 +52,8 @@ int server_recv_data(int serv, uint32_t max, char *data)
 		if (recv(serv, &size, sizeof(uint32_t), MSG_WAITALL) == -1)
 			return -1;
 
+		printf("recved size: %d \n", size);
+
 		if (size > max)
 			rem = (size - max), size = max;
 	} else { // scrape remaining data
