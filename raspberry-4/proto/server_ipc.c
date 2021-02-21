@@ -22,7 +22,7 @@ int connect_server(const char *host, short port)
 
 	memset(&sock_adr, 0x00, sizeof(sock_adr));
 	sock_adr.sin_family = AF_INET;
-	memcpy(&sock_adr.sin_addr, entry->h_addr_list[0], entry->h_length);
+	sock_adr.sin_addr.s_addr = inet_addr(inet_ntoa(*(struct in_addr *)entry->h_addr_list[0]));
 	sock_adr.sin_port = htons(port);
 
 	if (connect(sock, (struct sockaddr *)&sock_adr, sizeof(sock_adr)) == -1)
