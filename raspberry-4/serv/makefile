@@ -6,15 +6,15 @@ ${OUTPUT}: main.o server_handler.o
 	${CC} -o ${OUTPUT} $^ ${CFLAGS}
 
 main.o: main.c server_handler.h
-	${CC} -c main.c -o main.o
+	${CC} -c main.c -o main.o ${CFLAGS}
 
 server_handler.o: server_handler.c server_handler.h
-	${CC} -c server_handler.c -o server_handler.o
+	${CC} -c server_handler.c -o server_handler.o ${CFLAGS}
 
 clean:
 	rm ${wildcard *.o} ${OUTPUT}
 
-all: ${wildcard *.o} ${OUTPUT} 
+all: ${wildcard *.o} ${OUTPUT}
 
 # placeholder
 # $@ = target
