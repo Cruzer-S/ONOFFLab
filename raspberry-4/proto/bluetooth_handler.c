@@ -26,9 +26,6 @@ int make_bluetooth(int port, int backlog)
 	if (sock == -1)
 		return -1;
 
-	if (port < 0)
-		port = hci_get_route(NULL);
-
 	memset(&loc_addr, 0x00, sizeof(loc_addr));
 	loc_addr.rc_family = AF_BLUETOOTH;
 	loc_addr.rc_bdaddr = *BDADDR_ANY;

@@ -42,7 +42,7 @@ int main(int argc, char *argv[])
 	if (start_bluetooth() < 0)
 		error_handling("start_bluetooth() error");
 
-	if ((serv_sock = make_bluetooth(-1, 10)) < 0)
+	if ((serv_sock = make_bluetooth(0, 10)) < 0)
 		error_handling("make_bluetooth() error");
 
 	DPRINT(d, serv_sock);
