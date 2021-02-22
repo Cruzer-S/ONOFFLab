@@ -20,9 +20,6 @@ int main(int argc, char *argv[])
 {
 	int serial_port;
 
-	if (argc != 2)
-		error_handling("usage: <%s> <port> \n", argv[0]);
-
 	if ((serial_port = serialOpen(SERIAL_PORT_DEVICE, BOAD_RATE)) < 0)
 		error_handling("failed to open %s serial: %s \n",
 				       SERIAL_PORT_DEVICE, strerror(errno));
