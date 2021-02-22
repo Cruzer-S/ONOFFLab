@@ -41,6 +41,8 @@ int simplescan(void)
     num_rsp = hci_inquiry(dev_id, len, max_rsp, NULL, &ii, flags);
     if( num_rsp < 0 ) perror("hci_inquiry");
 
+	printf("number of response: %d \n", num_rsp);
+
     for (i = 0; i < num_rsp; i++) {
         ba2str(&(ii+i)->bdaddr, addr);
         memset(name, 0, sizeof(name));
