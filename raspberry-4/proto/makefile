@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -lwiringPi -std=c11
+CFLAGS = -lwiringPi -std=c11 -lbluetooth
 OUTPUT = output
 DEBUG = 
 
