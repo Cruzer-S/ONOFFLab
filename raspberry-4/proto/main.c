@@ -24,21 +24,32 @@ int main(int argc, char *argv[])
 	if (argc != 2)
 		error_handling("usage: <%s> <port> \n", argv[0]);
 
-	/* =====================================================================
 	if ((serial_port = serialOpen(SERIAL_PORT_DEVICE, BOAD_RATE)) < 0)
 		error_handling("failed to open %s serial: %s \n",
 				       SERIAL_PORT_DEVICE, strerror(errno));
+
 	if (wiringPiSetup() == -1)
 		error_handling("unable to start wiringPi: %s \n", strerror(errno));
+
+	/*
 	if (!change_wifi(argv[1], argv[2]))
 		error_handling("failed to change wifi... \n"
 					   "ssid: %s \n"	"psk : %s \n",
 					   argv[1],			argv[2]);
+	*/
+
+	while (true) {
+		int ch;
+		if ((ch = serialGetchar(serial_port)) == '\n')
+			break;
+		else
+			fputc(ch, stdout);
+	}
 
 	serialClose(serial_port);
 
-	===================================================================== */
 
+	/* =====================================================================
 	simplescan();
 
 	if (start_bluetooth() < 0)
@@ -55,6 +66,7 @@ int main(int argc, char *argv[])
 
 		printf("accept clinet: %d \n", clnt_sock);
 	}
+	===================================================================== */
 
 	/* =====================================================================
 	port_num = (short) strtol(argv[1], NULL, 10);
