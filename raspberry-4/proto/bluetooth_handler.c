@@ -1,7 +1,14 @@
 #include "bluetooth_handler.h"
+#include <stdlib.h>
 
 int start_bluetooth(void)
 {
+	if (system("bluetoothctl power off") == EXIT_FAILURE)
+		return -3;
+
+	if (system("bluetoothctl discoverable off") == EXIT_FAILURE)
+		return -4;
+
 	if (system("bluetoothctl power on") == EXIT_FAILURE)
 		return -1;
 
