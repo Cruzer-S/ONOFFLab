@@ -11,6 +11,8 @@
 #include <bluetooth/hci.h>
 #include <bluetooth/hci_lib.h>
 
+int simplescan(void);
+
 int start_bluetooth(void);
 int make_bluetooth(int port, int backlog);
 int accept_bluetooth(int sock);

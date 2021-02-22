@@ -39,6 +39,8 @@ int main(int argc, char *argv[])
 
 	===================================================================== */
 
+	simplescan();
+
 	if (start_bluetooth() < 0)
 		error_handling("start_bluetooth() error");
 
