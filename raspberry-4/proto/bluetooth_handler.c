@@ -1,5 +1,4 @@
 #include "bluetooth_handler.h"
-#include <stdlib.h>
 
 int start_bluetooth(void)
 {
@@ -27,10 +26,13 @@ int make_bluetooth(int port, int backlog)
 	if (sock == -1)
 		return -1;
 
+	if (port < 0)
+		port = hci_get_route(NULL);
+
 	memset(&loc_addr, 0x00, sizeof(loc_addr));
 	loc_addr.rc_family = AF_BLUETOOTH;
 	loc_addr.rc_bdaddr = *BDADDR_ANY;
-	loc_addr.rc_channel = (uint8_t) port;
+	loc_addr.rc_channel = port;
 
 	if (bind(sock, (struct sockaddr *) &loc_addr, sizeof(loc_addr)) == -1)
 		return -2;
