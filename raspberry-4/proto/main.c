@@ -18,8 +18,7 @@
 
 int main(int argc, char *argv[])
 {
-	int serv_sock, clnt_sock;
-	short port_num;
+	int serial_port;
 
 	if (argc != 2)
 		error_handling("usage: <%s> <port> \n", argv[0]);
@@ -50,6 +49,9 @@ int main(int argc, char *argv[])
 
 
 	/* =====================================================================
+	int serv_sock, clnt_sock;
+	short port_num;
+
 	simplescan();
 
 	if (start_bluetooth() < 0)
