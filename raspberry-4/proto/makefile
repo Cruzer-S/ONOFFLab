@@ -3,10 +3,10 @@ CFLAGS = -lwiringPi -std=c11
 OUTPUT = output
 DEBUG = 
 
-${OUTPUT}: main.o debugger.o wifi_manager.o server_ipc.o
+${OUTPUT}: main.o debugger.o wifi_manager.o server_ipc.o bluetooth_handler.o
 	${CC} -o ${OUTPUT} $^ ${CFLAGS} ${DEBUG}
 
-main.o: main.c wifi_manager.h debugger.h server_ipc.h
+main.o: main.c wifi_manager.h debugger.h server_ipc.h bluetooth_handler.h
 	${CC} -c main.c -o main.o ${CFLAGS} ${DEBUG}
 
 debugger.o: debugger.c debugger.h
