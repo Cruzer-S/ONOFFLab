@@ -18,6 +18,9 @@ wifi_manager.o: wifi_manager.c wifi_manager.h
 server_ipc.o: server_ipc.c server_ipc.h
 	${CC} -c server_ipc.c -o server_ipc.o ${CFLAGS} ${DEBUG}
 
+bluetooth_handler.o: bluetooth_handler.c bluetooth_handler.h
+	${CC} -c bluetooth_handler.c -o bluetooth_handler.o ${CFLAGS} ${DEBUG}
+
 clean:
 	rm ${wildcard *.o} ${OUTPUT}
 
