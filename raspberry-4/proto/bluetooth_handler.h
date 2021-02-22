@@ -2,6 +2,7 @@
 #define BLUETOOTH_HANDLER_H__
 
 #include <sys/socket.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
@@ -10,6 +11,7 @@
 #include <bluetooth/rfcomm.h>
 #include <bluetooth/hci.h>
 #include <bluetooth/hci_lib.h>
+#include <errno.h>
 
 int simplescan(void);
 
