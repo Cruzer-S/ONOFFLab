@@ -25,7 +25,7 @@ int make_bluetooth(int port, int backlog)
 	loc_addr.rc_bdaddr = *BDADDR_ANY;
 	loc_addr.rc_channel = (uint8_t) port;
 
-	if (bind(sock, (struct sockaddr *) &loc_addr, sizeof(loc_adrr)) == -1)
+	if (bind(sock, (struct sockaddr *) &loc_addr, sizeof(loc_addr)) == -1)
 		return -2;
 
 	if (listen(sock, backlog) == -1)
