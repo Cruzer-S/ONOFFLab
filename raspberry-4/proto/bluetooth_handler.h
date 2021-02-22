@@ -9,5 +9,6 @@
 
 int start_bluetooth(void);
 int make_bluetooth(int port, int backlog);
+int accept_bluetooth(int sock);
 
 #endif

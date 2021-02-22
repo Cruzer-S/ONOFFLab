@@ -33,3 +33,15 @@ int make_bluetooth(int port, int backlog)
 
 	return sock;
 }
+
+int accept_bluetooth(int server)
+{
+	struct sockaddr_rc clnt_addr;
+	int client;
+	socklen_t opt;
+
+	memset(&clnt_addr, 0x00, sizeof(clnt_addr));
+	client = accept(server, (struct sockaddr *)&clnt_addr, &opt);
+	
+	return client;
+}

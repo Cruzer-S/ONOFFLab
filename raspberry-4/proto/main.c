@@ -18,7 +18,7 @@
 
 int main(int argc, char *argv[])
 {
-	int serv_sock;
+	int serv_sock, clnt_sock;
 	short port_num;
 
 	if (argc != 2)
@@ -44,6 +44,13 @@ int main(int argc, char *argv[])
 
 	if ((serv_sock = make_bluetooth(1, 10)) < 0)
 		error_handling("make_bluetooth() error");
+
+	while (true) {
+		if ((clnt_sock = accept_bluetooth(serv_sock)) < 0)
+			error_handling("accept_bluetooth() error");
+
+		printf("accept clinet: %d \n", clnt_sock);
+	}
 
 	DPRINT(d, serv_sock);
 
