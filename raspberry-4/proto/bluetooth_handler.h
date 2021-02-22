@@ -7,29 +7,7 @@
 #include <bluetooth/bluetooth.h>
 #include <bluetooth/rfcomm.h>
 
-#define BLUETOOTH_PORT_DEVICE "/dev/rfcomm0"
-
-static int start_bluetooth(void)
-{
-	if (system("bluetoothctl power on") == EXIT_FAILURE)
-		return -1;
-	if (system("bluetoothctl discoverable on") == EXIT_FAILURE)
-		return -2;
-
-	return 0;
-}
-
-int make_bluetooth(void)
-{
-	inquiry_info *ii = NULL;
-	int max_rsp, num_rsp;
-	int dev_id, sock, len, flags;
-	int i;
-
-	char addr[19] = { 0 };
-	char name[248] = { 0 };
-
-	dev_id = hci
-}
+int start_bluetooth(void);
+int make_bluetooth(int port, int backlog);
 
 #endif
