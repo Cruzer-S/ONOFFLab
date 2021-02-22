@@ -8,6 +8,8 @@
 #include <stdlib.h>
 #include <bluetooth/bluetooth.h>
 #include <bluetooth/rfcomm.h>
+#include <bluetooth/hci.h>
+#include <bluetooth/hci_lib.h>
 
 int start_bluetooth(void);
 int make_bluetooth(int port, int backlog);
