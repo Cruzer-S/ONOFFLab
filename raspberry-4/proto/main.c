@@ -34,6 +34,8 @@ int main(int argc, char *argv[])
 	while (true) {
 		if (serialDataAvail(serial_port)) {
 			if (is_initiate(serial_port)) {
+				fprintf(stderr, "initiate comes from bluetooth \n");
+
 				char ssid[SSID_SIZ + 1];
 				char psk[PSK_SIZ + 1];
 
