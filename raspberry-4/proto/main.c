@@ -37,7 +37,7 @@ int main(int argc, char *argv[])
 	while (true) {
 		int ch;
 
-		if (serialAvaiable(serial_port)) {
+		if (serialDataAvail(serial_port)) {
 			if ((ch = serialGetchar(serial_port)) == '\n')
 				break;
 			else
