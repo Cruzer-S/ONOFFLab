@@ -13,7 +13,7 @@
 #define DEBUG_DELAY 100
 #define BOAD_RATE 9600 
 
-#define SERIAL_PORT_DEVICE	"/dev/ttyS0"
+#define SERIAL_PORT_DEVICE	"/dev/ttyAMA0"
 #define SERVER_DOMAIN	"www.mythos.ml"
 
 int main(int argc, char *argv[])
