@@ -125,13 +125,13 @@ int parse_data(int serial, char *ssid, char *psk)
 
 		case 2: *ssid++ = ch;
 				if (ssid_size-- <= 0) {
-					*ssid = '\0';
+					*--ssid = '\0';
 					step++;
 				} else break;
 
 		case 3: *psk++ = ch;
 				if (psk_size-- <= 0) {
-					*psk = '\0';
+					*--psk = '\0';
 					step++;
 				} else break;
 
