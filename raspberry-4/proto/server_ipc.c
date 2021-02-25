@@ -1,4 +1,3 @@
-#include "debugger.h"
 #include "server_ipc.h"
 
 int connect_server(const char *host, short port)
@@ -11,8 +10,6 @@ int connect_server(const char *host, short port)
 	sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 	if (sock == -1)
 		return -1;
-
-	DPRINT(d, sock);
 
 	entry = gethostbyname(host);
 	if (entry == NULL)
@@ -51,8 +48,6 @@ int server_recv_data(int serv, uint32_t max, char *data)
 		// recv data size
 		if (recv(serv, &size, sizeof(uint32_t), MSG_WAITALL) == -1)
 			return -1;
-
-		printf("recved size: %d \n", size);
 
 		if (size > max)
 			rem = (size - max), size = max;
