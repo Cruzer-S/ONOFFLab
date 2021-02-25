@@ -36,7 +36,7 @@ int main(int argc, char *argv[])
 
 	while (true) {
 		if (serialDataAvail(serial_port) > 0)
-			fputc(serialGetchar(), stdout);
+			fputc(serialGetchar(serial_port), stdout);
 	}
 
 	serialClose(serial_port);
