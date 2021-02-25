@@ -40,9 +40,9 @@ int main(int argc, char *argv[])
 				char psk[PSK_SIZ + 1];
 
 				if (parse_data(serial_port, ssid, psk)) {
-					// if (!change_wifi(ssid, psk))
-					//	error_handling("change_wifi(%s, %s) \n", ssid, psk);
 					fprintf(stderr, "parse success! (%s, %s) \n", ssid, psk);
+					if (!change_wifi(ssid, psk))
+						fprintf(stderr, "failed to change wifi \n");
 				} else fprintf(stderr, "parse_data(serial_port, ssid, psk) error! \n");
 			} else fprintf(stderr, "is_initiate(serial_port) error! \n");
 		}
@@ -135,8 +135,7 @@ int parse_data(int serial, char *ssid, char *psk)
 					step++;
 				} else break;
 
-		case 4: fprintf(stderr, "%s, %s\n", ssid, psk);
-				return 1;
+		case 4: return 1;
 		}
 	}
 
