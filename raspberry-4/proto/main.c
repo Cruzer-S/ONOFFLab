@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <limits.h>
 #include <time.h>
+#include <errno.h>
 
 #include <wiringPi.h>
 #include <wiringSerial.h>
