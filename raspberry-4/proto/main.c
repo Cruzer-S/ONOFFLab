@@ -11,7 +11,7 @@
 
 #define LINE_PER_BYTE 16
 #define DEBUG_DELAY 100
-#define BOAD_RATE 115200 
+#define BOAD_RATE 9600
 
 #define SERIAL_PORT_DEVICE	"/dev/ttyS0"
 #define SERVER_DOMAIN	"www.mythos.ml"
