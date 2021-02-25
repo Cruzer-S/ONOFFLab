@@ -11,7 +11,7 @@
 
 #define LINE_PER_BYTE 16
 #define DEBUG_DELAY 100
-#define BOAD_RATE 9600 
+#define BOAD_RATE 115200 
 
 #define SERIAL_PORT_DEVICE	"/dev/ttyS0"
 #define SERVER_DOMAIN	"www.mythos.ml"
@@ -35,16 +35,8 @@ int main(int argc, char *argv[])
 	*/
 
 	while (true) {
-		int ch;
-
-		if (serialDataAvail(serial_port)) {
-			if ((ch = serialGetchar(serial_port)) == '\n')
-				break;
-			else
-				fputc(ch, stdout);
-		}
-
-		sleep(1000);
+		if (serialDataAvail(serial_port) > 0)
+			fputc(serialGetchar(), stdout);
 	}
 
 	serialClose(serial_port);
