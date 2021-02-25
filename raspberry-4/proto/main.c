@@ -32,15 +32,17 @@ int main(int argc, char *argv[])
 		error_handling("unable to start wiringPi: %s \n", strerror(errno));
 
 	while (true) {
-		if (serialDataAvail(serial_port) && is_initiate(serial_port)) {
-			char ssid[SSID_SIZ + 1];
-			char psk[PSK_SIZ + 1];
+		if (serialDataAvail(serial_port)) {
+			if (is_initiate(serial_port)) {
+				char ssid[SSID_SIZ + 1];
+				char psk[PSK_SIZ + 1];
 
-			if (parse_data(serial_port, ssid, psk)) {
-				if (!change_wifi(ssid, psk))
-					error_handling("change_wifi(%s, %s) \n", ssid, psk);
-			} else error_handling("parse_data(ssid, psk) \n");
-		} else error_handling("check_initiate(serial_port)\n");
+				if (parse_data(serial_port, ssid, psk)) {
+					if (!change_wifi(ssid, psk))
+						error_handling("change_wifi(%s, %s) \n", ssid, psk);
+				} else error_handling("parse_data(ssid, psk) \n");
+			} else error_handling("check_initiate(serial_port)\n");
+		}
 	}
 
 	serialClose(serial_port);
