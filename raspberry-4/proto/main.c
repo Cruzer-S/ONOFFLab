@@ -32,7 +32,7 @@ int main(int argc, char *argv[])
 		error_handling("unable to start wiringPi: %s \n", strerror(errno));
 
 	while (true) {
-		if (is_initiate(serial_port)) {
+		if (serialDataAvail(serial_port) && is_initiate(serial_port)) {
 			char ssid[SSID_SIZ + 1];
 			char psk[PSK_SIZ + 1];
 
