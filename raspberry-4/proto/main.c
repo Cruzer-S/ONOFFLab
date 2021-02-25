@@ -40,8 +40,8 @@ int main(int argc, char *argv[])
 				if (parse_data(serial_port, ssid, psk)) {
 					if (!change_wifi(ssid, psk))
 						error_handling("change_wifi(%s, %s) \n", ssid, psk);
-				} else error_handling("parse_data(ssid, psk) \n");
-			} else error_handling("check_initiate(serial_port)\n");
+				} else fprintf(stderr, "parse_data(serial_port, ssid, psk) error! \n");
+			} else fprintf(stderr, "is_initiate(serial_port) error! \n");
 		}
 	}
 
@@ -91,7 +91,7 @@ int main(int argc, char *argv[])
 	return 0;
 }
 
-#define INITIATE_TIMEOUT		((clock_t) CLOCKS_PER_SEC * 2)
+#define INITIATE_TIMEOUT		((clock_t) CLOCKS_PER_SEC * 1024)
 #define PROTOCOL_KEY_SIZE		((size_t) sizeof(BLUETOOTH_PROTOCOL_KEY) * CHAR_BIT)
 
 int parse_data(int serial, char *ssid, char *psk)
