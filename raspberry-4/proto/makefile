@@ -4,10 +4,10 @@ FLAGS = -lwiringPi -std=c11
 OUTPUT = output
 
 # ============================================================================= #
-${OUTPUT}: main.o debugger.o wifi_manager.o server_ipc.o bluetooth_manager.o
+${OUTPUT}: main.o debugger.o wifi_manager.o server_ipc.o
 	${CC} -o ${OUTPUT} $^ ${FLAGS}
 
-main.o: main.c wifi_manager.h debugger.h server_ipc.h bluetooth_manager.o
+main.o: main.c wifi_manager.h debugger.h server_ipc.h
 	${CC} -c main.c -o main.o ${FLAGS}
 
 # ============================================================================= #
@@ -19,9 +19,6 @@ wifi_manager.o: wifi_manager.c wifi_manager.h
 
 server_ipc.o: server_ipc.c server_ipc.h
 	${CC} -c server_ipc.c -o server_ipc.o ${FLAGS}
-
-bluetooth_manager.o: bluetooth_manager.c bluetooth_manager.h
-	${CC} -c bluetooth_manager.c -o bluetooth_manager.o ${FLAGS}
 
 # ============================================================================= #
 clean:
