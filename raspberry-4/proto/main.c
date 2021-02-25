@@ -123,21 +123,17 @@ int parse_data(int serial, char *ssid, char *psk)
 				fprintf(stderr, "psk size: %u \n", psk_size);
 				break;
 
-		case 2: if (ssid_size-- <= 0) {
+		case 2: *ssid++ = ch;
+				if (ssid_size-- <= 0) {
 					*ssid = '\0';
 					step++;
-					continue;
-				}
-				*ssid++ = ch;
-				break;
+				} else break;
 
-		case 3: if (psk_size-- <= 0) {
+		case 3: *psk++ = ch;
+				if (psk_size-- <= 0) {
 					*psk = '\0';
 					step++;
-					continue;
-				}
-				*psk++ = ch;
-				break;
+				} else break;
 
 		case 4: fprintf(stderr, "%s, %s\n", ssid, psk);
 				return 1;
