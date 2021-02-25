@@ -93,7 +93,7 @@ int main(int argc, char *argv[])
 	return 0;
 }
 
-#define INITIATE_TIMEOUT		((clock_t) CLOCKS_PER_SEC * 1024)
+#define INITIATE_TIMEOUT		((clock_t) CLOCKS_PER_SEC * 2)
 #define PROTOCOL_KEY_SIZE		((size_t) sizeof(BLUETOOTH_PROTOCOL_KEY) * CHAR_BIT)
 
 int parse_data(int serial, char *ssid, char *psk)
@@ -114,10 +114,12 @@ int parse_data(int serial, char *ssid, char *psk)
 		switch (step) {
 		case 0: ssid_size = ch;
 				step++;
+				fprintf(stderr, "ssid size: %u \n", ssid_size);
 				break;
 
 		case 1: psk_size = ch;
 				step++;
+				fprintf(stderr, "psk size: %u \n", psk_size);
 				break;
 
 		case 2: if (ssid_size-- > 0) {
@@ -134,7 +136,8 @@ int parse_data(int serial, char *ssid, char *psk)
 				} else *psk++ = ch;
 				break;
 
-		case 4: return 1;
+		case 4: fprintf(stderr, "%s, %s\n", ssid, psk);
+				return 1;
 		}
 	}
 
@@ -145,7 +148,6 @@ bool is_initiate(int serial)
 {
 	static const uint8_t key[] = { 0x12, 0x34, 0x56, 0x78, (uint8_t) '\0'};
 	const uint8_t *ptr = key;
-	int ch;
 
 	for (clock_t end, start = end = clock();
 		 (end - start) < INITIATE_TIMEOUT;
@@ -154,9 +156,7 @@ bool is_initiate(int serial)
 		if (serialDataAvail(serial) == -1)
 			continue;
 
-		ch = serialGetchar(serial);
-		printf("%02X vs. %02X\n", ch, *ptr);
-		if (ch != *ptr++)
+		if (serialGetchar(serial) != *ptr++)
 			return false;
 
 		if (!*ptr) return true;
