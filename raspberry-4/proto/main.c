@@ -107,6 +107,7 @@ int parse_data(int serial, char *ssid, char *psk)
 			continue;
 
 		ch = (uint8_t) serialGetchar(serial);
+		printf("%02X ", ch);
 
 		switch (step) {
 		case 0: ssid_size = ch;
