@@ -4,7 +4,7 @@
 int connect_server(const char *host, short port)
 {
 	int sock;
-	
+
 	struct sockaddr_in sock_adr;
 	struct hostent *entry;
 

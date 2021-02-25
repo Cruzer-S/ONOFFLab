@@ -9,12 +9,14 @@
 #include <wiringPi.h>		// delayMicroseconds
 
 _Noreturn void error_handling(const char *formatted, ...);
-void scrape_serial(int serial, int delay, int maxline, bool inout);
+void scrape_serial(int serial, bool inout);
 
 #ifdef DEBUG
-#define DPRINT(D, X) printf(#X " = %" #D " \n", X)
+	#define DSHOW(D, X) printf(#X " = %" #D " \n", X)
+	#define DPRINT(FMT, ...) printf(FMT "\n", __VA_ARGS__)
 #else
-#define DPRINT(D, X) /* empty */
+	#define DSHOW(D, X) /* empty */
+	#define DPRINT(FMT, ...) /* empty */
 #endif
 
 #endif

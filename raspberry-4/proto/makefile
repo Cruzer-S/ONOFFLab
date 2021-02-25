@@ -1,33 +1,39 @@
+# ============================================================================= #
 CC = gcc
-CFLAGS = -lwiringPi -std=c11 -lbluetooth
+FLAGS = -lwiringPi -std=c11
 OUTPUT = output
-DEBUG = 
 
-${OUTPUT}: main.o debugger.o wifi_manager.o server_ipc.o bluetooth_handler.o
-	${CC} -o ${OUTPUT} $^ ${CFLAGS} ${DEBUG}
+# ============================================================================= #
+${OUTPUT}: main.o debugger.o wifi_manager.o server_ipc.o bluetooth_manager.o
+	${CC} -o ${OUTPUT} $^ ${FLAGS}
 
-main.o: main.c wifi_manager.h debugger.h server_ipc.h bluetooth_handler.h
-	${CC} -c main.c -o main.o ${CFLAGS} ${DEBUG}
+main.o: main.c wifi_manager.h debugger.h server_ipc.h bluetooth_manager.o
+	${CC} -c main.c -o main.o ${FLAGS}
 
+# ============================================================================= #
 debugger.o: debugger.c debugger.h
-	${CC} -c debugger.c -o debugger.o ${CFLAGS} ${DEBUG}
+	${CC} -c debugger.c -o debugger.o ${FLAGS}
 
 wifi_manager.o: wifi_manager.c wifi_manager.h
-	${CC} -c wifi_manager.c -o wifi_manager.o ${CLFAGS} ${DEBUG}
+	${CC} -c wifi_manager.c -o wifi_manager.o ${CLFAGS}
 
 server_ipc.o: server_ipc.c server_ipc.h
-	${CC} -c server_ipc.c -o server_ipc.o ${CFLAGS} ${DEBUG}
+	${CC} -c server_ipc.c -o server_ipc.o ${FLAGS}
 
-bluetooth_handler.o: bluetooth_handler.c bluetooth_handler.h
-	${CC} -c bluetooth_handler.c -o bluetooth_handler.o ${CFLAGS} ${DEBUG}
+bluetooth_manager.o: bluetooth_manager.c bluetooth_manager.h
+	${CC} -c bluetooth_manager.c -o bluetooth_manager.o ${FLAGS}
 
+# ============================================================================= #
 clean:
 	rm ${wildcard *.o} ${OUTPUT}
 
-all: ${wildcard *.o} ${OUTPUT} 
+all: ${wildcard *.o} ${OUTPUT}
 
-debug: DEBUG += -g -DDEBUG
+debug: FLAGS += -g -DDEBUG
 debug: ${OUTPUT}
+
+# ============================================================================= #
+
 
 # placeholder
 # $@ = target

@@ -1,10 +1,8 @@
 #include "wifi_manager.h"
 
-#define WPA_DIRECTORY	"/etc/wpa_supplicant/wpa_supplicant.conf"
-
 static bool refresh_wifi(void);
 
-extern bool change_wifi(const char *ssid, const char *psk)/*{{{*/
+extern bool change_wifi(const char *ssid, const char *psk)
 {
 	FILE *fp;
 	const char *form = {
@@ -32,18 +30,18 @@ extern bool change_wifi(const char *ssid, const char *psk)/*{{{*/
 		return false;
 
 	return true;
-}/*}}}*/
+}
 
-static bool refresh_wifi(void)/*{{{*/
+static bool refresh_wifi(void)
 {
 	// alert changing of /etc/wpa_supplicant/wpa_supplicant.conf
 	if (system("sudo systemctl daemon-reload") == EXIT_FAILURE)
 		return false;
 
-	// restart dhcpcd which is parent of wpa_supplicant daemon 
+	// restart dhcpcd which is parent of wpa_supplicant daemon
 	if (system("sudo systemctl restart dhcpcd") == EXIT_FAILURE)
 		return false;
 
 	return true;
-}/*}}}*/
+}
 

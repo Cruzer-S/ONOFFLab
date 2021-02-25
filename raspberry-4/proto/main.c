@@ -1,5 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <limits.h>
+#include <time.h>
 
 #include <wiringPi.h>
 #include <wiringSerial.h>
@@ -7,14 +9,15 @@
 #include "wifi_manager.h"
 #include "debugger.h"
 #include "server_ipc.h"
-#include "bluetooth_handler.h"
 
-#define LINE_PER_BYTE 16
-#define DEBUG_DELAY 100
-#define BOAD_RATE 9600
-
+#define BOAD_RATE			9600
 #define SERIAL_PORT_DEVICE	"/dev/ttyS0"
+
 #define SERVER_DOMAIN	"www.mythos.ml"
+#define SERVER_PORT		1584
+
+bool is_initiate(int serial);
+int parse_data(int serial, char *ssid, char *psk);
 
 int main(int argc, char *argv[])
 {
@@ -27,42 +30,19 @@ int main(int argc, char *argv[])
 	if (wiringPiSetup() == -1)
 		error_handling("unable to start wiringPi: %s \n", strerror(errno));
 
-	/*
-	if (!change_wifi(argv[1], argv[2]))
-		error_handling("failed to change wifi... \n"
-					   "ssid: %s \n"	"psk : %s \n",
-					   argv[1],			argv[2]);
-	*/
-
 	while (true) {
-		if (serialDataAvail(serial_port) > 0)
-			fputc(serialGetchar(serial_port), stdout);
+		if (is_initiate(serial_port)) {
+			char ssid[SSID_SIZ + 1];
+			char psk[PSK_SIZ + 1];
+
+			if (parse_data(serial_port, ssid, psk)) {
+				if (!change_wifi(ssid, psk))
+					error_handling("change_wifi(%s, %s) \n", ssid, psk);
+			} else error_handling("parse_data(ssid, psk) \n");
+		} else error_handling("check_initiate(serial_port)\n");
 	}
 
 	serialClose(serial_port);
-
-
-	/* =====================================================================
-	int serv_sock, clnt_sock;
-	short port_num;
-
-	simplescan();
-
-	if (start_bluetooth() < 0)
-		error_handling("start_bluetooth() error");
-
-	if ((serv_sock = make_bluetooth(0, 10)) < 0)
-		error_handling("make_bluetooth() error");
-
-	DPRINT(d, serv_sock);
-
-	while (true) {
-		if ((clnt_sock = accept_bluetooth(serv_sock)) < 0)
-			error_handling("accept_bluetooth() error");
-
-		printf("accept clinet: %d \n", clnt_sock);
-	}
-	===================================================================== */
 
 	/* =====================================================================
 	port_num = (short) strtol(argv[1], NULL, 10);
@@ -70,7 +50,7 @@ int main(int argc, char *argv[])
 
 	if ((serv_sock = connect_server(SERVER_DOMAIN, port_num)) < 0)
 		error_handling("connect_server() error: %d \n", serv_sock);
-	
+
 	printf("Connect Successfully !\n");
 
 	while (true) {
@@ -98,7 +78,7 @@ int main(int argc, char *argv[])
 		}
 
 		fputc('\n', stdout);
-		
+
 		break;
 	}
 
@@ -106,4 +86,72 @@ int main(int argc, char *argv[])
 	===================================================================== */
 
 	return 0;
+}
+
+#define INITIATE_TIMEOUT		((clock_t) CLOCKS_PER_SEC * 2)
+#define PROTOCOL_KEY_SIZE		((size_t) sizeof(BLUETOOTH_PROTOCOL_KEY) * CHAR_BIT)
+
+int parse_data(int serial, char *ssid, char *psk)
+{
+	int step = 0, ch;
+	uint8_t ssid_size, psk_size;
+
+	for (clock_t end, start = end = clock();
+		 (end - start) < INITIATE_TIMEOUT;
+		 end = clock())
+	{
+		if (serialDataAvail(serial) == -1)
+			continue;
+
+		ch = (uint8_t) serialGetchar(serial);
+
+		switch (step) {
+		case 0: ssid_size = ch;
+				step++;
+				break;
+
+		case 1: psk_size = ch;
+				step++;
+				break;
+
+		case 2: if (ssid_size-- > 0) {
+					*ssid = '\0';
+					step++;
+					continue;
+				} else *ssid++ = ch;
+				break;
+
+		case 3: if (psk_size-- > 0) {
+					*psk = '\0';
+					step++;
+					continue;
+				} else *psk++ = ch;
+				break;
+
+		case 4: return 1;
+		}
+	}
+
+	return -1;
+}
+
+bool is_initiate(int serial)
+{
+	static const uint8_t key[] = { 0x12, 0x34, 0x56, 0x78, (uint8_t) '\0'};
+	const uint8_t *ptr = key;
+
+	for (clock_t end, start = end = clock();
+		 (end - start) < INITIATE_TIMEOUT;
+		 end = clock())
+	{
+		if (serialDataAvail(serial) == -1)
+			continue;
+
+		if (serialGetchar(serial) != *ptr++)
+			return false;
+
+		if (!*ptr) true;
+	}
+
+	return false;
 }
