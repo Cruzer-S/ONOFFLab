@@ -37,10 +37,12 @@ int main(int argc, char *argv[])
 	while (true) {
 		int ch;
 
-		if ((ch = serialGetchar(serial_port)) == '\n')
-			break;
-		else
-			fputc(ch, stdout);
+		if (serialAvaiable(serial_port)) {
+			if ((ch = serialGetchar(serial_port)) == '\n')
+				break;
+			else
+				fputc(ch, stdout);
+		}
 	}
 
 	serialClose(serial_port);
