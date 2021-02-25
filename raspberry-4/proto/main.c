@@ -159,7 +159,7 @@ bool is_initiate(int serial)
 		if (ch != *ptr++)
 			return false;
 
-		if (!*ptr) true;
+		if (*ptr == (uint8_t) '\0') true;
 	}
 
 	return false;
