@@ -143,6 +143,7 @@ bool is_initiate(int serial)
 {
 	static const uint8_t key[] = { 0x12, 0x34, 0x56, 0x78, (uint8_t) '\0'};
 	const uint8_t *ptr = key;
+	int ch;
 
 	for (clock_t end, start = end = clock();
 		 (end - start) < INITIATE_TIMEOUT;
@@ -151,7 +152,9 @@ bool is_initiate(int serial)
 		if (serialDataAvail(serial) == -1)
 			continue;
 
-		if (serialGetchar(serial) != *ptr++)
+		ch = serialGetchar(serial);
+		printf("%02X vs. %02X\n", ch, *ptr);
+		if (ch != *ptr++)
 			return false;
 
 		if (!*ptr) true;
