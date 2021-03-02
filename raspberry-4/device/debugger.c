@@ -39,7 +39,7 @@ _Noreturn void error_handling(const char *fmt, ...)
 
 	va_end(ap);
 
-	fprintf(stderr, "%s: %s\n", fmt, strerror(errno));
+	fprintf(stderr, "%s: %s\n", message, strerror(errno));
 
 	exit(EXIT_FAILURE);
 }
