@@ -1,4 +1,5 @@
 #include "server_ipc.h"
+#include "debugger.h"
 #include <netinet/in.h>
 
 int connect_server(const char *host, short port)
@@ -13,6 +14,7 @@ int connect_server(const char *host, short port)
 		return -1;
 
 	entry = gethostbyname(host);
+	DSHOW(p, entry);
 
 	memset(&sock_adr, 0x00, sizeof(sock_adr));
 	if (entry) {

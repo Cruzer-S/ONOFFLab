@@ -14,7 +14,7 @@ main.o: main.c wifi_manager.h debugger.h server_ipc.h
 debugger.o: debugger.c debugger.h
 	${CC} -c debugger.c -o debugger.o ${FLAGS}
 
-wifi_manager.o: wifi_manager.c wifi_manager.h
+wifi_manager.o: wifi_manager.c wifi_manager.h debugger.h
 	${CC} -c wifi_manager.c -o wifi_manager.o ${CLFAGS}
 
 server_ipc.o: server_ipc.c server_ipc.h
