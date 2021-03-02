@@ -1,5 +1,7 @@
 #include "wifi_manager.h"
 
+#define WPA_DIRECTORY	"/etc/wpa_supplicant/wpa_supplicant.conf"
+
 static bool refresh_wifi(void);
 
 extern bool change_wifi(const char *ssid, const char *psk)
@@ -44,4 +46,3 @@ static bool refresh_wifi(void)
 
 	return true;
 }
-
