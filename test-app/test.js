@@ -7,7 +7,7 @@ let tcp = net.createServer(connection => {
 	connection.setTimeout(1000);
 
 	connection.on('data', data => {
-		fs.writeFile('data.bin', data, function (err) {
+		fs.writeFile('data.bin', data, 'binary', function (err) {
 			if (err) {
 				console.log(err);
 			}

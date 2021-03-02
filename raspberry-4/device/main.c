@@ -64,7 +64,7 @@ int main(int argc, char *argv[])
 					fprintf(stderr, "parse success! (%s, %s) \n", ssid, psk);
 					if (!change_wifi(ssid, psk)) {
 						fprintf(stderr, "failed to change wifi \n");
-						serialPutchar(serial_data, 0x00);
+						serialPutchar(serial_port, 0x00);
 					} else {
 						serialPutchar(serial_port, 0x01);
 					}
