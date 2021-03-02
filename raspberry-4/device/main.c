@@ -15,7 +15,7 @@
 #define BOAD_RATE			9600
 #define SERIAL_PORT_DEVICE	"/dev/ttyS0"
 
-#define SERVER_DOMAIN		"localhost"
+#define SERVER_DOMAIN		"127.0.0.1"
 #define SERVER_PORT			1584
 
 #define SERVER_SYNC_TIME	(CLOCKS_PER_SEC * 5)
