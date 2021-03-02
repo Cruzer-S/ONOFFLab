@@ -27,7 +27,7 @@ int connect_server(const char *host, short port)
 	}
 
 	if (connect(sock, (struct sockaddr *)&sock_adr, sizeof(sock_adr)) == -1)
-		return -3;
+		return -3 + !!entry;
 
 	return sock;
 }
