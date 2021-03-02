@@ -3,6 +3,8 @@
 #define LINE_PER_BYTE 16
 #define DEBUG_DELAY 100
 
+#define DEBUG_BUFFER 1024
+
 void debug_serial(int serial, bool inout)
 {
 	if (serialDataAvail(serial) > 0) {
@@ -29,12 +31,15 @@ void debug_serial(int serial, bool inout)
 _Noreturn void error_handling(const char *fmt, ...)
 {
 	va_list ap;
+	char message[DEBUG_BUFFER];
 
 	va_start(ap, fmt);
 
-	vfprintf(stderr, fmt, ap);
+	vsprintf(message, fmt, ap);
 
 	va_end(ap);
+
+	fprintf(stderr, "%s: %s\n", fmt, strerror(errno));
 
 	exit(EXIT_FAILURE);
 }

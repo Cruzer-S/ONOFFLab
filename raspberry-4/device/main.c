@@ -31,19 +31,19 @@ int main(int argc, char *argv[])
 	unsigned short port_num;
 
 	if (argc != 2)
-		error_handling("usage: %s <port> \n", argv[0]);
+		error_handling("usage: %s <port>", argv[0]);
 
 	if (wiringPiSetup() == -1)
-		error_handling("unable to start wiringPi: %s \n", strerror(errno));
+		error_handling("unable to start wiringPi: %s", strerror(errno));
 
 	if ((serial_port = serialOpen(SERIAL_PORT_DEVICE, BOAD_RATE)) < 0)
-		error_handling("failed to open %s serial: %s \n",
+		error_handling("failed to open %s serial: %s",
 				       SERIAL_PORT_DEVICE, strerror(errno));
 
 	do {
 		long test = strtol(argv[1], NULL, 10);
 		if (test < 0 || test > USHRT_MAX)
-			error_handling("port number(%ld) out of range \n", test);
+			error_handling("port number(%ld) out of range", test);
 
 		port_num = (unsigned short) test;
 	} while (false);
@@ -55,7 +55,7 @@ int main(int argc, char *argv[])
 		// ========================================================================
 		if (serialDataAvail(serial_port)) {
 			if (is_initiate(serial_port)) {
-				fprintf(stderr, "initiate comes from bluetooth \n");
+				fprintf(stderr, "initiate comes from bluetooth");
 
 				char ssid[SSID_SIZ + 1];
 				char psk[PSK_SIZ + 1];

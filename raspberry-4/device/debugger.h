@@ -5,6 +5,9 @@
 #include <stdio.h>			// vfprintf
 #include <stdlib.h>			// exit, EXIT_FAILURE
 #include <stdbool.h>		// bool
+#include <errno.h>			// errno
+#include <string.h>			// strerror
+
 #include <wiringSerial.h>	// serialDataAvail, serialGetchar
 #include <wiringPi.h>		// delayMicroseconds
 
