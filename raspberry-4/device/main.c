@@ -80,7 +80,7 @@ int main(int argc, char *argv[])
 		//
 		// ========================================================================
 		if ((serv_sock = connect_server(SERVER_DOMAIN, port_num)) < 0)
-			error_handling("connect_server() error: %d \n", serv_sock);
+			error_handling("connect_server() error: %d", serv_sock);
 	}
 
 	close(serv_sock);
