@@ -20,6 +20,8 @@
 
 #define SERVER_SYNC_TIME	(CLOCKS_PER_SEC * 5)
 
+#define DEVICE_ID			0x00000001
+
 bool is_initiate(int serial);
 int parse_data(int serial, char *ssid, char *psk);
 
