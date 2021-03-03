@@ -12,6 +12,9 @@ int command_to_server(enum SERVER_IPC_COMMAND cmd, ...)
 	switch (cmd)
 	{
 	case SIC_REG:
+		if (send(serv, data, size, MSG_WAITALL) == -1)
+			return -2;
+
 		break;
 
 	case SIC_REQ:

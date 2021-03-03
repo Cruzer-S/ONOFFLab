@@ -47,6 +47,7 @@ int main(int argc, char *argv[])
 {
 	int bluetooth_port, serv_sock;
 	unsigned short port_num;
+	struct device_state dev_stat;
 
 	if (argc != 2)
 		error_handling("usage: %s <port>", argv[0]);
@@ -98,8 +99,21 @@ int main(int argc, char *argv[])
 		if ((end - start) > SERVER_SYNC_TIME) {
 			start = end;
 
-			if (connect_to_server(NULL, 0) < 0)
+			if ((serv_sock = connect_to_server(NULL, 0)) < 0)
 				continue;
+
+			FILE *fp = fopen("gcode.dat", "w");
+			if (!fp) continue;
+
+			if (command_to_server(SIC_REQ, serv_sock, fp) < 0)
+				/* empty body */ ;
+
+			fclose(fp);
+
+			if (command_to_server(SIC_SYN, serv_sock, dev_stat) < 0)
+				/* empty body */ ;
+
+			close(serv_sock);
 		}
 	}
 
@@ -124,17 +138,14 @@ int parse_data(int serial, char *ssid, char *psk)
 			continue;
 
 		ch = (uint8_t) serialGetchar(serial);
-		printf("%02X ", ch);
 
 		switch (step) {
 		case 0: ssid_size = ch;
 				step++;
-				fprintf(stderr, "ssid size: %u \n", ssid_size);
 				break;
 
 		case 1: psk_size = ch;
 				step++;
-				fprintf(stderr, "psk size: %u \n", psk_size);
 				break;
 
 		case 2: *ssid++ = ch;
@@ -200,8 +211,6 @@ int request_data_to_server(int sock, uint8_t data[])
 	if (server_send_data(sock, sizeof(uint8_t),
 				        (uint8_t []) { SIC_REQ }) < 0)
 		return -1;
-
-	server_recv_data(
 
 	return 0;
 }
