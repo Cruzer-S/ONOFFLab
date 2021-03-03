@@ -15,8 +15,8 @@ _Noreturn void error_handling(const char *formatted, ...);
 void scrape_serial(int serial, bool inout);
 
 #ifdef DEBUG
-	#define DSHOW(D, X) printf(#X " = %" #D " \n", X)
-	#define DPRINT(FMT, ...) printf(FMT "\n", __VA_ARGS__)
+	#define DSHOW(D, X) fprintf(stderr, #X " = %" #D " \n", X)
+	#define DPRINT(FMT, ...) fprintf(stderr, FMT "\n", __VA_ARGS__)
 #else
 	#define DSHOW(D, X) /* empty */
 	#define DPRINT(FMT, ...) /* empty */

@@ -2,9 +2,35 @@
 #include "debugger.h"
 #include <netinet/in.h>
 
-int connect_server(const char *host, short port)
+int command_to_server(enum SERVER_IPC_COMMAND cmd, ...)
 {
-	struct sockaddr_in sock_adr;
+	int ret = 0;
+	va_list args;
+
+	va_start(args, cmd);
+
+	switch (cmd)
+	{
+	case SIC_REG:
+		break;
+
+	case SIC_REQ:
+		break;
+
+	case SIC_SYN:
+		break;
+
+	default: ret = -1;
+	}
+
+	va_end(args);
+
+	return ret;
+}
+
+int connect_to_server(const char *host, unsigned short port)
+{
+	static struct sockaddr_in sock_adr;
 	struct hostent *entry;
 
 	int sock;
@@ -13,20 +39,22 @@ int connect_server(const char *host, short port)
 	if (sock == -1)
 		return -1;
 
-	entry = gethostbyname(host);
-	DSHOW(p, entry);
+	if (!host) {
+		entry = gethostbyname(host);
+		DSHOW(p, entry);
 
-	memset(&sock_adr, 0x00, sizeof(sock_adr));
-	if (entry) {
-		sock_adr.sin_family = AF_INET;
-		memcpy(&sock_adr.sin_addr, entry->h_addr_list[0], entry->h_length);
-		sock_adr.sin_port = htons(port);
-	} else { // Failed to convert hostname,
-			 // it may means that host will be ip address
-		sock_adr.sin_family = AF_INET;
-		sock_adr.sin_addr.s_addr = inet_addr(host);
-		sock_adr.sin_port = htons(port);
-	}
+		memset(&sock_adr, 0x00, sizeof(sock_adr));
+		if (entry) {
+			sock_adr.sin_family = AF_INET;
+			memcpy(&sock_adr.sin_addr, entry->h_addr_list[0], entry->h_length);
+			sock_adr.sin_port = htons(port);
+		} else { // Failed to convert hostname,
+				 // it may means that host will be ip address
+			sock_adr.sin_family = AF_INET;
+			sock_adr.sin_addr.s_addr = inet_addr(host);
+			sock_adr.sin_port = htons(port);
+		}
+	} else entry = NULL;
 
 	if (connect(sock, (struct sockaddr *)&sock_adr, sizeof(sock_adr)) == -1)
 		return -3 + !!entry;
