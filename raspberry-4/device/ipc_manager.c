@@ -1,26 +1,35 @@
 #include "ipc_manager.h"
 
+#define HEADER_SIZE 1024
+
+#define ASSIGN(ptr, value) memcpy(ptr, &value, sizeof(value)), ptr += sizeof(value)
+
 int ipc_to_target(int sock, enum IPC_COMMAND cmd, ...)
 {
-	uint32_t command = (uint32_t) cmd;
 	va_list args;
+	uint8_t header[HEADER_SIZE], *hp = header;
 
 	va_start(args, cmd);
 
-	if (send(sock, &command, sizeof(uint32_t), 0) != sizeof(uint32_t))
-		return -1;
+	do { // Extract command and assign to header
+		uint32_t command = (uint32_t) cmd;
+		hp = ASSIGN(hp, command);
+	} while (false);
 
-	switch (command) {
-	case IPC_REGISTER_DEVICE: {
+	switch (cmd) {
+	case IPC_REGISTER_DEVICE: ;
 		uint32_t dev_id = va_arg(args, uint32_t);
-		if (send(sock, &dev_id, sizeof(uint32_t), 0) != sizeof(uint32_t))
-			return -2;
-	} break;
+		hp = ASSIGN(hp, dev_id);
+		break;
 
 	default: break;
 	}
 
+	if (send(sock, header, sizeof(header), 0) != sizeof(header))
+		return -1;
+
 	va_end(args);
+
 	return 0;
 }
 

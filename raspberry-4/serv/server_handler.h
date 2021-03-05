@@ -10,6 +10,9 @@
 #include <fcntl.h>			// fcntl
 
 #define MAX_EVENT 1024
+#define HEADER_SIZE 1024
+
+#define EXTRACT(ptr, value) memcpy(&value, ptr, sizeof(value)), ptr += sizeof(value);
 
 enum IPC_COMMAND {
 	IPC_REGISTER_DEVICE = 0x01,

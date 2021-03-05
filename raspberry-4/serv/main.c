@@ -32,7 +32,7 @@ int main(int argc, char *argv[])
 
 	printf("create server \n");
 
-	epfd = epoll_create(1024);
+	epfd = epoll_create1(0);
 	if (epfd == -1)
 		error_handling("epoll_create() error \n");
 
@@ -72,7 +72,7 @@ int start_epoll_thread(int epfd, int serv_sock)
 						continue;
 					}
 
-					if (register_epoll_fd(epfd, clnt_sock, EPOLLIN | EPOLLET | EPOLLONESHOT) == -1) {
+					if (register_epoll_fd(epfd, clnt_sock, EPOLLIN | EPOLLET) == -1) {
 						fprintf(stderr, "register_epoll_fd(clnt_sock) error \n");
 						continue;
 					}
@@ -101,6 +101,25 @@ int start_epoll_thread(int epfd, int serv_sock)
 
 int client_handling(int sock)
 {
+	uint32_t command;
+	uint8_t header[HEADER_SIZE], *hp = header;
+
+	if (recv(sock, header, sizeof(header), MSG_PEEK) != sizeof(header))
+		return -1;
+
+	EXTRACT(hp, command);
+
+	switch (command) {
+	case IPC_REGISTER_DEVICE: {
+		uint32_t dev_id;
+
+		EXTRACT(hp, dev_id);
+		printf("device registered: %d \n", dev_id);
+		break;
+
+	default: break;
+	}
+	}
 
 	return 0;
 }
