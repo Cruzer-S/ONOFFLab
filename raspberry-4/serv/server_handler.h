@@ -11,10 +11,17 @@
 
 #define MAX_EVENT 1024
 
+enum IPC_COMMAND {
+	IPC_REGISTER_DEVICE = 0x01,
+};
+
 int make_server(short port, int backlog);
+
 int change_flag(int fd, int flag);
 int change_sockopt(int fd, int level, int flag, int value);
+
 int register_epoll_fd(int epfd, int tgfd, int flag);
 struct epoll_event *wait_epoll_event(int epfd, int maxevent, int timeout);
+int delete_epoll_fd(int epfd, int tgfd);
 
 #endif

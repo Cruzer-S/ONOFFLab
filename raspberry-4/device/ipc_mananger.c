@@ -2,7 +2,47 @@
 #include "debugger.h"
 #include <netinet/in.h>
 
-int connect_to_server(const char *host, unsigned short port)
+int change_flag(int fd, int flag)
+{
+	int flags = fcntl(fd, F_GETFL);
+
+	if (flags == -1)
+		return -1;
+
+	flags |= flag;
+
+	if (fcntl(fd, F_SETFL, flags) == -1)
+		return -2;
+
+	return 0;
+}
+
+int change_sockopt(int fd, int level, int flag, int value)
+{
+	int ret;
+
+	switch (flag) {
+	case SO_RCVTIMEO: ;
+		struct timeval tv = {
+			.tv_sec = value / 1000,
+			.tv_usec = value % 1000
+		};
+
+		ret = setsockopt(fd, level, flag, &tv, sizeof(tv));
+		break;
+
+	default:
+		ret = setsockopt(fd, level, flag, &value, sizeof(value));
+		break;
+	}
+
+	if (ret == -1)
+		return -1;
+
+	return 0;
+}
+
+int connect_to_target(const char *host, unsigned short port)
 {
 	static struct sockaddr_in sock_adr;
 	struct hostent *entry;
@@ -34,24 +74,4 @@ int connect_to_server(const char *host, unsigned short port)
 		return -3 + !!entry;
 
 	return sock;
-}
-
-int ipc_to_target(int sock, enum IPC_COMMAND cmd, ...)
-{
-	va_list args;
-
-	va_start(args, cmd);
-
-	switch (cmd) {
-	case IPC_REGISTER_DEVICE:
-		sendall
-		break;
-	}
-
-	va_end(args);
-}
-
-int sendall(int sock, size_t size, const uint8_t *data)
-{
-	setsockopt(sock, 
 }

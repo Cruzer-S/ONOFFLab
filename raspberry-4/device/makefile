@@ -4,7 +4,7 @@ FLAGS = -lwiringPi -std=c11
 OUTPUT = output
 
 # ============================================================================= #
-${OUTPUT}: main.o debugger.o wifi_manager.o server_ipc.o
+${OUTPUT}: main.o debugger.o ipc_manager.o server_ipc.o
 	${CC} -o ${OUTPUT} $^ ${FLAGS}
 
 main.o: main.c wifi_manager.h debugger.h server_ipc.h
@@ -17,8 +17,8 @@ debugger.o: debugger.c debugger.h
 wifi_manager.o: wifi_manager.c wifi_manager.h debugger.h
 	${CC} -c wifi_manager.c -o wifi_manager.o ${CLFAGS}
 
-server_ipc.o: server_ipc.c server_ipc.h
-	${CC} -c server_ipc.c -o server_ipc.o ${FLAGS}
+ipc_mananger.o: ipc_manager.c ipc_manager.h
+	${CC} -c ipc_manager.c -o ipc_manager.o ${FLAGS}
 
 # ============================================================================= #
 clean:
@@ -31,8 +31,6 @@ debug: ${OUTPUT}
 
 # ============================================================================= #
 
-
 # placeholder
 # $@ = target
 # $^ = prerequisities
-#

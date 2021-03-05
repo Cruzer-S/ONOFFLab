@@ -9,7 +9,7 @@ int make_server(short port, int backlog)
 	if (sock == -1)
 		return -1;
 
-	memset(&sock_adr, 0, sizeof(sock_adr));	
+	memset(&sock_adr, 0, sizeof(sock_adr));
 	sock_adr.sin_family = AF_INET;
 	sock_adr.sin_addr.s_addr = htonl(INADDR_ANY);
 	sock_adr.sin_port = htons(port);
@@ -49,7 +49,7 @@ int change_sockopt(int fd, int level, int flag, int value)
 			.tv_usec = value % 1000
 		};
 
-		ret = setsockopt(fd, level, flag, &tv, sizeof(tv)); 
+		ret = setsockopt(fd, level, flag, &tv, sizeof(tv));
 		break;
 
 	default:
@@ -89,4 +89,13 @@ struct epoll_event *wait_epoll_event(int epfd, int maxevent, int timeout)
 	events[count].data.ptr = NULL;
 
 	return events;
+}
+
+int delete_epoll_fd(int epfd, int tgfd)
+{
+	int ret = epoll_ctl(epfd, EPOLL_CTL_DEL, tgfd, NULL);
+
+	close(tgfd);
+
+	return ret;
 }

@@ -1,3 +1,4 @@
+#include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <limits.h>
@@ -10,7 +11,7 @@
 
 #include "wifi_manager.h"
 #include "debugger.h"
-#include "server_ipc.h"
+#include "ipc_mananger.h"
 
 #define BOAD_RATE			9600
 #define SERIAL_DEVICE		"/dev/ttyS0"
@@ -43,6 +44,9 @@ struct device_state {
 	struct timestp predict;
 } __attribute__((packed));
 
+struct header {
+} __attribute__((packed));
+
 int main(int argc, char *argv[])
 {
 	int bluetooth_port, serv_sock;
@@ -68,14 +72,15 @@ int main(int argc, char *argv[])
 
 		port_num = (unsigned short) test;
 
-		if ((serv_sock = connect_to_server(SERVER_DOMAIN, port_num)) < 0)
-			error_handling("connect_server() error: %d", serv_sock);
+		if ((serv_sock = connect_to_target(SERVER_DOMAIN, port_num)) < 0)
+			error_handling("connect_to_target() error: %d", serv_sock);
 	} while (false);
 
-	if (register_device_to_server(serv_sock, DEVICE_ID) < 0)
-		error_handling("register_device_to_server() error");
+	if (change_flag(serv_sock, O_NONBLOCK) < 0)
+		error_handling("change_flag() error");
 
-	close(serv_sock);
+	if (ipc_to_target(serv_sock, IPC_REGISTER_DEVICE, DEVICE_ID) < 0)
+		error_handling("ipc_to_target() error");
 
 	for (clock_t start, end = start = clock(); ; end = clock()) {
 		// ========================================================================
@@ -91,29 +96,6 @@ int main(int argc, char *argv[])
 				else
 					serialPutchar(bluetooth_port, false);
 			}
-		}
-
-		// ========================================================================
-		// syncronize to server
-		// ========================================================================
-		if ((end - start) > SERVER_SYNC_TIME) {
-			start = end;
-
-			if ((serv_sock = connect_to_server(NULL, 0)) < 0)
-				continue;
-
-			FILE *fp = fopen("gcode.dat", "w");
-			if (!fp) continue;
-
-			if (command_to_server(SIC_REQ, serv_sock, fp) < 0)
-				/* empty body */ ;
-
-			fclose(fp);
-
-			if (command_to_server(SIC_SYN, serv_sock, dev_stat) < 0)
-				/* empty body */ ;
-
-			close(serv_sock);
 		}
 	}
 
@@ -189,28 +171,4 @@ bool is_initiate(int serial)
 	}
 
 	return false;
-}
-
-int register_device_to_server(int sock, uint32_t id)
-{
-	char buffer[sizeof(uint8_t) + sizeof(uint32_t)];
-
-	// set command (register device)
-	memcpy(&buffer[0], (uint8_t []) { SIC_REG }, sizeof(uint8_t));
-
-	// set device id
-	memcpy(&buffer[1], &id, sizeof(uint32_t));
-
-	return server_send_data(sock, sizeof(buffer), buffer);
-}
-
-int request_data_to_server(int sock, uint8_t data[])
-{
-	int length;
-
-	if (server_send_data(sock, sizeof(uint8_t),
-				        (uint8_t []) { SIC_REQ }) < 0)
-		return -1;
-
-	return 0;
 }
