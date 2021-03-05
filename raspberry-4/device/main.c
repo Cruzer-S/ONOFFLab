@@ -44,13 +44,13 @@ int main(int argc, char *argv[])
 	do {
 		long check;
 		const char *host;
-		short port;
+		uint16_t port;
 
 		check = (argc == 3) ? strtol(argv[2], NULL, 10) : SERVER_PORT;
 		if (check < 0 || check > USHRT_MAX)
 			error_handling("port number out of range", check);
 
-		port = (unsigned short) check;
+		port = (uint16_t) check;
 		host = (argc == 3) ? argv[1] : SERVER_DOMAIN;
 
 		if ((serv_sock = connect_to_target(host, port)) < 0)

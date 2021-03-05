@@ -22,7 +22,7 @@ enum IPC_COMMAND {
 int change_sockopt(int fd, int level, int flag, int value);
 int change_flag(int fd, int flag);
 
-int connect_to_target(const char *host, unsigned short port);
+int connect_to_target(const char *host, uint16_t port);
 int ipc_to_target(int sock, enum IPC_COMMAND cmd, ...);
 
 #endif

@@ -46,7 +46,7 @@ int change_sockopt(int fd, int level, int flag, int value)
 	return 0;
 }
 
-int connect_to_target(const char *host, unsigned short port)
+int connect_to_target(const char *host, uint16_t port)
 {
 	static struct sockaddr_in sock_adr;
 	struct hostent *entry;
@@ -59,7 +59,6 @@ int connect_to_target(const char *host, unsigned short port)
 
 	if (!host) {
 		entry = gethostbyname(host);
-		DSHOW(p, entry);
 
 		memset(&sock_adr, 0x00, sizeof(sock_adr));
 		if (entry) {
@@ -74,7 +73,7 @@ int connect_to_target(const char *host, unsigned short port)
 		}
 	} else entry = NULL;
 
-	if (connect(sock, (struct sockaddr *)&sock_adr, sizeof(sock_adr)) == -1)
+	if (connect(sock, (struct sockaddr *)&sock_adr, sizeof(sock_adr)) < 0)
 		return -2;
 
 	return sock;
