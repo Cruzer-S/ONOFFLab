@@ -11,7 +11,7 @@
 
 #include "wifi_manager.h"
 #include "debugger.h"
-#include "ipc_mananger.h"
+#include "ipc_manager.h"
 
 #define BOAD_RATE			9600
 #define SERIAL_DEVICE		"/dev/ttyS0"
