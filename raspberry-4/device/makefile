@@ -4,7 +4,7 @@ FLAGS = -lwiringPi -std=c11
 OUTPUT = output
 
 # ============================================================================= #
-${OUTPUT}: main.o debugger.o ipc_manager.o ipc_manager.o
+${OUTPUT}: main.o debugger.o ipc_manager.o wifi_manager.o
 	${CC} -o ${OUTPUT} $^ ${FLAGS}
 
 main.o: main.c wifi_manager.h debugger.h ipc_manager.h
