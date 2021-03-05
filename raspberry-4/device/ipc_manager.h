@@ -7,6 +7,7 @@
 #include <stdarg.h>
 #include <sys/socket.h>
 #include <sys/unistd.h>
+#include <sys/time.h>
 #include <arpa/inet.h>
 #include <netinet/in.h>
 #include <netdb.h>
