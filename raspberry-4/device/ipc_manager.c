@@ -2,6 +2,25 @@
 
 int ipc_to_target(int sock, enum IPC_COMMAND cmd, ...)
 {
+	uint32_t command = (uint32_t) cmd;
+	va_list args;
+
+	va_start(args, cmd);
+
+	if (send(sock, &command, sizeof(uint32_t), 0) != sizeof(uint32_t))
+		return -1;
+
+	switch (command) {
+	case IPC_REGISTER_DEVICE: {
+		uint32_t dev_id = va_arg(args, uint32_t);
+		if (send(sock, &dev_id, sizeof(uint32_t), 0) != sizeof(uint32_t))
+			return -2;
+	} break;
+
+	default: break;
+	}
+
+	va_end(args);
 	return 0;
 }
 
