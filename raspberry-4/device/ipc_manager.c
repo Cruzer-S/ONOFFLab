@@ -57,7 +57,7 @@ int connect_to_target(const char *host, uint16_t port)
 	if (sock == -1)
 		return -1;
 
-	if (!host) {
+	if (host) {
 		entry = gethostbyname(host);
 
 		memset(&sock_adr, 0x00, sizeof(sock_adr));
