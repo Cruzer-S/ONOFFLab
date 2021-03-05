@@ -92,7 +92,7 @@ int start_epoll_thread(int epfd, int serv_sock)
 
 					while (true) {
 						uint8_t header[HEADER_SIZE];
-						int ret = recv(sock, header, sizeof(header), 0);
+						int ret = recv(epev->data.fd, header, sizeof(header), 0);
 
 						header[1023] = '\0';
 						printf("%s", header);
