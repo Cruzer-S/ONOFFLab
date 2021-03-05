@@ -26,13 +26,10 @@ int change_sockopt(int fd, int level, int flag, int value)
 	int ret;
 
 	switch (flag) {
-	case SO_RCVTIMEO: ;
-		struct timeval tv = {
-			.tv_sec = value / 1000,
-			.tv_usec = value % 1000
-		};
+	case SO_RCVTIMEO: {
 
 		ret = setsockopt(fd, level, flag, &tv, sizeof(tv));
+		}
 		break;
 
 	default:
