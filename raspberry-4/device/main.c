@@ -29,10 +29,6 @@ int parse_data(int serial, char *ssid, char *psk);
 int main(int argc, char *argv[])
 {
 	int bluetooth_port, serv_sock;
-	unsigned short port_num;
-
-	if (argc != 2)
-		error_handling("usage: %s <port>", argv[0]);
 
 	if (wiringPiSetup() == -1)
 		error_handling("unable to start wiringPi: %s", strerror(errno));
@@ -45,17 +41,20 @@ int main(int argc, char *argv[])
 
 	printf("open bluetooth port \n");
 
-	do { // check port number range
-		long test;
+	do {
+		long check;
+		const char *host;
+		short port;
 
-		test = strtol(argv[1], NULL, 10);
-		if (test < 0 || test > USHRT_MAX)
-			error_handling("port number(%ld) out of range", test);
+		check = (argc == 3) ? strtol(argv[2], NULL, 10) : SERVER_PORT;
+		if (check < 0 || check > USHRT_MAX)
+			error_handling("port number out of range", check);
 
-		port_num = (unsigned short) test;
+		port = (unsigned short) check;
+		host = (argc == 3) ? argv[1] : SERVER_DOMAIN;
 
-		if ((serv_sock = connect_to_target(SERVER_DOMAIN, port_num)) < 0)
-			error_handling("connect_to_target() error: %d", serv_sock);
+		if (connect_to_target(host, port) < 0)
+			error_handling("connect_to_target(%s, %hd) error", host, port);
 
 		printf("connect to server: %d \n", serv_sock);
 	} while (false);
