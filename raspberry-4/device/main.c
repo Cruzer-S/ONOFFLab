@@ -53,10 +53,11 @@ int main(int argc, char *argv[])
 		port = (unsigned short) check;
 		host = (argc == 3) ? argv[1] : SERVER_DOMAIN;
 
-		if (connect_to_target(host, port) < 0)
+		if ((serv_sock = connect_to_target(host, port)) < 0)
 			error_handling("connect_to_target(%s, %hd) error", host, port);
 
-		printf("connect to server: %d \n", serv_sock);
+		printf("connect to server: %d \nhost: %s\tport: %hd\n",
+				serv_sock, host, port);
 	} while (false);
 
 	/*
