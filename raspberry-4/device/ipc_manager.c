@@ -61,6 +61,8 @@ int connect_to_target(const char *host, uint16_t port)
 		entry = gethostbyname(host);
 
 		memset(&sock_adr, 0x00, sizeof(sock_adr));
+
+		printf("entry: %p \n", entry);
 		if (entry) {
 			sock_adr.sin_family = AF_INET;
 			memcpy(&sock_adr.sin_addr, entry->h_addr_list[0], entry->h_length);
