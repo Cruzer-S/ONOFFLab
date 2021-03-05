@@ -87,7 +87,10 @@ int start_epoll_thread(int epfd, int serv_sock)
 						continue;
 					} else printf("receive from client: %d \n", epev->data.fd);
 
-					client_handling(epev->data.fd);
+					if (client_handling(epev->data.fd) == -1) {
+						printf("remaining data exists: %d \n", epev->data.fd);
+						continue;
+					}
  				} else if (epev->events & (EPOLLHUP | EPOLLRDHUP)) {
 					printf("shutdown client: %d \n", epev->data.fd);
 					delete_epoll_fd(epfd, epev->data.fd);
@@ -119,6 +122,18 @@ int client_handling(int sock)
 
 	default: break;
 	}
+	}
+
+	while (true) {
+		if (recv(sock, header, sizeof(header), 0) == -1) {
+			if (errno == EAGAIN)
+				return 0;
+
+			return -2;
+		}
+
+		header[1023] = '\0';
+		printf("%s", header);
 	}
 
 	return 0;
