@@ -1,4 +1,4 @@
-#include "ipc_mananger.h"
+#include "ipc_manager.h"
 #include "debugger.h"
 
 int ipc_to_target(int sock, enum IPC_COMMAND cmd, ...)
