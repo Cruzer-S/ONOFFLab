@@ -56,7 +56,8 @@ int main(int argc, char *argv[])
 		if ((serv_sock = connect_to_target(host, port)) < 0)
 			error_handling("connect_to_target(%s, %hd) error", host, port);
 
-		printf("connect to server: %d \nhost: %s\tport: %hd\n",
+		printf("connect to server: %d\n"
+			   "Address: %s:%hd\n",
 				serv_sock, host, port);
 	} while (false);
 

@@ -75,7 +75,7 @@ int connect_to_target(const char *host, unsigned short port)
 	} else entry = NULL;
 
 	if (connect(sock, (struct sockaddr *)&sock_adr, sizeof(sock_adr)) == -1)
-		return -3 + !!entry;
+		return -2;
 
 	return sock;
 }
