@@ -60,15 +60,11 @@ int main(int argc, char *argv[])
 		printf("connect to server: %d \n", serv_sock);
 	} while (false);
 
-	/*
 	if (change_flag(serv_sock, O_NONBLOCK) < 0)
 		error_handling("change_flag() error");
-	*/
 
 	if (ipc_to_target(serv_sock, IPC_REGISTER_DEVICE, DEVICE_ID) < 0)
 		error_handling("ipc_to_target() error");
-
-	printf("register device: %d \n", DEVICE_ID);
 
 	for (clock_t start, end = start = clock(); ; end = clock()) {
 		// ========================================================================
@@ -84,9 +80,6 @@ int main(int argc, char *argv[])
 				else
 					serialPutchar(bluetooth_port, false);
 			}
-
-			printf("change wifi ssid and psk\nssid: %s\tpsk: %s\n",
-					ssid, psk);
 		}
 	}
 

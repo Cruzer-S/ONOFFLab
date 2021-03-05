@@ -1,6 +1,10 @@
 #include "ipc_mananger.h"
 #include "debugger.h"
-#include <netinet/in.h>
+
+int ipc_to_target(int sock, enum IPC_COMMAND cmd, ...)
+{
+	return 0;
+}
 
 int change_flag(int fd, int flag)
 {
