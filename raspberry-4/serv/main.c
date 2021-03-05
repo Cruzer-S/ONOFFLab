@@ -125,15 +125,13 @@ int client_handling(int sock)
 	}
 
 	while (true) {
-		if (recv(sock, header, sizeof(header), 0) == -1) {
-			if (errno == EAGAIN)
-				return 0;
-
-			return -2;
-		}
+		int ret = recv(sock, header, sizeof(header), 0);
 
 		header[1023] = '\0';
 		printf("%s", header);
+
+		if (ret == -1)
+			return (errno == EAGAIN) ? 0 : -2;
 	}
 
 	return 0;
