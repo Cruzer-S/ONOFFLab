@@ -72,6 +72,8 @@ int start_epoll_thread(int epfd, int serv_sock)
 						continue;
 					}
 
+					change_flag(clnt_sock, O_NONBLOCK);
+
 					if (register_epoll_fd(epfd, clnt_sock, EPOLLIN | EPOLLET) == -1) {
 						fprintf(stderr, "register_epoll_fd(clnt_sock) error \n");
 						continue;
@@ -98,8 +100,10 @@ int start_epoll_thread(int epfd, int serv_sock)
 						printf("%s", header);
 
 						if (ret == -1)
-							return (errno == EAGAIN) ? 0 : -2;
+							if (errno == EAGAIN)
+								break;
 					}
+					printf("\n");
  				} else if (epev->events & (EPOLLHUP | EPOLLRDHUP)) {
 					printf("shutdown client: %d \n", epev->data.fd);
 					delete_epoll_fd(epfd, epev->data.fd);
