@@ -1,5 +1,4 @@
 #include "ipc_manager.h"
-#include "debugger.h"
 
 int ipc_to_target(int sock, enum IPC_COMMAND cmd, ...)
 {
@@ -62,7 +61,6 @@ int connect_to_target(const char *host, uint16_t port)
 
 		memset(&sock_adr, 0x00, sizeof(sock_adr));
 
-		printf("entry: %p \n", entry);
 		if (entry) {
 			sock_adr.sin_family = AF_INET;
 			memcpy(&sock_adr.sin_addr, entry->h_addr_list[0], entry->h_length);
