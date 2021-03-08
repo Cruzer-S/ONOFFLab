@@ -90,20 +90,8 @@ int start_epoll_thread(int epfd, int serv_sock)
 					} else printf("receive from client: %d \n", epev->data.fd);
 
 					if (client_handling(epev->data.fd) == -1)
-						printf("remaining data exists \n");
+						fprintf(stderr, "client_handling(epev->data.fd) error: ");
 
-					while (true) {
-						uint8_t header[HEADER_SIZE];
-						int ret = recv(epev->data.fd, header, sizeof(header), 0);
-
-						header[1023] = '\0';
-						printf("%s", header);
-
-						if (ret == -1)
-							if (errno == EAGAIN)
-								break;
-					}
-					printf("\n");
  				} else if (epev->events & (EPOLLHUP | EPOLLRDHUP)) {
 					printf("shutdown client: %d \n", epev->data.fd);
 					delete_epoll_fd(epfd, epev->data.fd);
@@ -117,24 +105,34 @@ int start_epoll_thread(int epfd, int serv_sock)
 
 int client_handling(int sock)
 {
+	struct http_header http;
 	uint32_t command;
-	uint8_t header[HEADER_SIZE], *hp = header;
+	size_t hsize;
+	uint8_t raw_data[HEADER_SIZE], *hp;
+	uint8_t *body;
 
-	if (recv(sock, header, sizeof(header), MSG_PEEK) != sizeof(header))
-		return -1;
+	hsize = 0;
+	for (int ret = 0;
+		 !((ret == -1) && (errno == EAGAIN));
+		 hsize += (ret = recv(sock, raw_data + hsize, HEADER_SIZE - hsize, 0)))
+		raw_data[hsize + ret] = '\0';
 
-	EXTRACT(hp, command);
+	if (parse_http_header((char *)raw_data, hsize, &http) < 0) {
+		switch (command) {
+		case IPC_REGISTER_DEVICE: {
+			uint32_t dev_id;
 
-	switch (command) {
-	case IPC_REGISTER_DEVICE: {
-		uint32_t dev_id;
+			EXTRACT(hp, dev_id);
+			printf("device registered: %d \n", dev_id);
+			break;
+		}
 
-		EXTRACT(hp, dev_id);
-		printf("device registered: %d \n", dev_id);
-		break;
+		default: break;
+		}
 
-	default: break;
-	}
+		EXTRACT(hp, command);
+	} else {
+		show_http_header(&http);
 	}
 
 	return 0;

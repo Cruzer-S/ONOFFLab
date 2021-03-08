@@ -15,6 +15,8 @@
 #include <unistd.h>
 #include <fcntl.h>
 
+#define HEADER_SIZE (1024 * 4)
+
 enum IPC_COMMAND {
 	IPC_REGISTER_DEVICE = 0x01,
 };

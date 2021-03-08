@@ -1,7 +1,5 @@
 #include "ipc_manager.h"
 
-#define HEADER_SIZE 1024
-
 #define ASSIGN(ptr, value) memcpy(ptr, &value, sizeof(value)), ptr += sizeof(value)
 
 int ipc_to_target(int sock, enum IPC_COMMAND cmd, ...)

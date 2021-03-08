@@ -16,6 +16,9 @@ clean:
 
 all: ${wildcard *.o} ${OUTPUT}
 
+debug: CFLAGS += -DDEBUG -g
+debug: all
+
 # placeholder
 # $@ = target
 # $^ = prerequisities
