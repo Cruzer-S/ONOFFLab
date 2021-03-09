@@ -112,15 +112,13 @@ int main(int argc, char *argv[])
 				char buffer[BUFSIZ];
 				int to_read = recvt(serv_sock, buffer, sizeof(buffer), 10000);
 
-				if (to_read < 0) {
-					fclose(fp);
+				if (to_read < 0)
 					break;
-				}
 
 				fwrite(buffer, sizeof(char), to_read, fp);
 			}
-
 			fclose(fp);
+
 			printf("receive data successfully \n");
 			break;
 		}}
