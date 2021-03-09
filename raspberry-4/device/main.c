@@ -91,7 +91,7 @@ int main(int argc, char *argv[])
 		}
 
 		uint32_t command;
-		if (recv(serv_sock, &command, sizeof(command), MSG_DONTWAIT) == sizeof(command))
+		if (recv(serv_sock, &command, sizeof(command), MSG_DONTWAIT) != -1)
 			printf("command: %d \n", command);
 	}
 
