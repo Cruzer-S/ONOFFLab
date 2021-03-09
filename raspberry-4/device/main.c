@@ -90,7 +90,13 @@ int main(int argc, char *argv[])
 					ssid, psk);
 		}
 
-		switch (ipc_receive_request(serv_sock)) {
+		uint32_t command;
+
+		if (recv(serv_sock, &command, sizeof(command), MSG_DONTWAIT) != sizeof(command))
+			continue;
+
+		printf("Command: %d \n", command);
+		switch (command) {
 		case IPC_REGISTER_DEVICE: break;
 		case IPC_RECEIVED_CLIENT: {
 			uint32_t length;
