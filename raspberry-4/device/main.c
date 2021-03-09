@@ -100,14 +100,11 @@ int main(int argc, char *argv[])
 		case IPC_RECEIVED_CLIENT: {
 			uint32_t length;
 
-			printf("Received length \n");
-
 			if (recvt(serv_sock, &length, sizeof(length), 10000) < 0)
 				break;
 
 			printf("Length: %u \n", length);
 
-			/*
 			FILE *fp = fopen("test.dat", "w");
 			if (fp == NULL) break;
 
@@ -125,7 +122,6 @@ int main(int argc, char *argv[])
 
 			fclose(fp);
 			printf("receive data successfully \n");
-			*/
 			break;
 		}}
 	}
