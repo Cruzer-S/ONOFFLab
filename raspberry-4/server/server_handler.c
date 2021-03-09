@@ -99,6 +99,35 @@ int parse_http_header(char *raw, size_t size, struct http_header *header)
 	return 0;
 }
 
+int register_epoll_client(int epfd, int serv_sock, int flags)
+{
+	int count = 0;
+	while (true) {
+		struct sockaddr_in clnt_adr;
+		int clnt_sock = accept(serv_sock, (struct sockaddr*)&clnt_adr, (socklen_t []) { sizeof clnt_adr });
+
+		if (clnt_sock == -1) {
+			if (errno == EAGAIN) break;
+
+			fprintf(stderr, "failed to accept client \n");
+			continue;
+		}
+
+		change_flag(clnt_sock, O_NONBLOCK);
+
+		if (register_epoll_fd(epfd, clnt_sock, EPOLLIN | EPOLLET) == -1) {
+			fprintf(stderr, "register_epoll_fd(clnt_sock) error \n");
+			continue;
+		}
+
+		printf("connect client: %d \n", clnt_sock);
+
+		count++;
+	}
+
+	return count;
+}
+
 int make_server(short port, int backlog)
 {
 	struct sockaddr_in sock_adr;

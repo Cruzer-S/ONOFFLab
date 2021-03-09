@@ -7,6 +7,7 @@
 #include <sys/epoll.h>
 
 #include "server_handler.h"
+#include "device_manager.h"
 
 _Noreturn void error_handling(const char *format, ...);
 int client_handling(int sock);
@@ -61,26 +62,13 @@ int start_epoll_thread(int epfd, int serv_sock)
 
 		do {
 			if (epev->data.fd == serv_sock) {
-				while (true) {
-					struct sockaddr_in clnt_adr;
-					int clnt_sock = accept(serv_sock, (struct sockaddr*)&clnt_adr, (socklen_t []) { sizeof clnt_adr });
-
-					if (clnt_sock == -1) {
-						if (errno == EAGAIN) break;
-
-						fprintf(stderr, "failed to accept client \n");
-						continue;
-					}
-
-					change_flag(clnt_sock, O_NONBLOCK);
-
-					if (register_epoll_fd(epfd, clnt_sock, EPOLLIN | EPOLLET) == -1) {
-						fprintf(stderr, "register_epoll_fd(clnt_sock) error \n");
-						continue;
-					}
-
-					printf("connect client: %d \n", clnt_sock);
+				int cnt = 0;
+				if ((cnt = register_epoll_client(epfd, serv_sock, EPOLLIN | EPOLLET)) < 0) {
+					fprintf(stderr, "register_epoll_client() error \n");
+					continue;
 				}
+
+				printf("accepting %d client(s) \n", cnt);
 			} else { // client
 				if (epev->events & EPOLLIN) {
 					if (recv(epev->data.fd, (char []) { 0x00 }, 1, MSG_PEEK) == 0) {
@@ -104,6 +92,11 @@ int start_epoll_thread(int epfd, int serv_sock)
 	return 0;
 }
 
+int parse_device_id(char *url)
+{
+	return 0;
+}
+
 int client_handling(int sock)
 {
 	struct http_header http;
@@ -121,22 +114,27 @@ int client_handling(int sock)
 	printf("Received header size: %zu \n", hsize);
 
 	if (parse_http_header((char *)raw_data, hsize, &http) < 0) {
+		EXTRACT(hp, command);
 		switch (command) {
 		case IPC_REGISTER_DEVICE: {
 			uint32_t dev_id;
 
 			EXTRACT(hp, dev_id);
-			printf("device registered: %d \n", dev_id);
+
+			if (register_device(sock, dev_id))
+				printf("device registered\n"
+					   "ID: %d" " | " "socket: %d\n", dev_id, sock);
+			else printf("Already registerd: %d \n", dev_id);
+
 			break;
 		}
 
 		default: break;
 		}
-
-		EXTRACT(hp, command);
 	} else {
 		show_http_header(&http);
 
+		int clnt_sock = find_device(strtol(strtok(http.url, "/"), NULL, 10));
 		int length = strtol(http.content.length, NULL, 10);
 		if (length > 0) {
 			int received = hsize - (http.EOH - raw_data);
