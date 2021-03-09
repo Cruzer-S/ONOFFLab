@@ -91,7 +91,7 @@ int main(int argc, char *argv[])
 		}
 
 		uint32_t command;
-		if (recvt(serv_sock, &command, sizeof(command), 1000) < 0)
+		if (recvt(serv_sock, &command, sizeof(command), 10000) < 0)
 			continue;
 
 		printf("Command: %d \n", command);
@@ -110,17 +110,24 @@ int main(int argc, char *argv[])
 			FILE *fp = fopen("test.dat", "w");
 			if (fp == NULL) break;
 
-			int ret;
-			if ((ret = receive_to_file(serv_sock, fp, length, 10000)) < 0) {
-				printf("Ret: %d \n", ret);
-				fclose(fp);
-				break;
+			for (int received = 0; received < length;) {
+				char buffer[BUFSIZ];
+				int to_read = recvt(serv_sock, buffer, sizeof(buffer), 10000);
+
+				if (to_read < 0) {
+					fclose(fp);
+					break;
+				}
+
+				fwrite(buffer, sizeof(char), to_read, fp);
 			}
 
 			fclose(fp);
-
-			printf("Received successfully \n");
+			printf("receive data successfully \n");
+			break;
 		}}
+
+		flush_socket(serv_sock);
 	}
 
 	close(serv_sock);

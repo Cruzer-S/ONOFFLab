@@ -154,20 +154,21 @@ int recv_until(int sock, char *buffer, int bsize, char *end)
 int recvt(int sock, void *buffer, int size, int timeout)
 {
 	int received = 0, ret;
-	clock_t start = clock();
+	clock_t start = clock(), end = start;
 
-	while (clock() - start < timeout && received < size) {
+	for (end = start; end - start < timeout && received < size; end = clock())
+	{
 		ret = recv(sock, buffer + received, size - received, MSG_DONTWAIT);
 		if (ret == -1) {
-			if (errno == EAGAIN) continue;
+			if (errno == EAGAIN || errno == EWOULDBLOCK) continue;
 			else return -1;
 		} else received += ret;
 	}
 
-	if (received == size)
-		return 0;
+	if (end - start < timeout)
+		return -1;
 
-	return -2;
+	return received;
 }
 
 int link_ptop(int origin, int dest, int length, int timeout)
