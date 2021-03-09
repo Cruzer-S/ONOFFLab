@@ -30,6 +30,8 @@ int change_flag(int fd, int flag);
 int connect_to_target(const char *host, uint16_t port);
 int ipc_to_target(int sock, enum IPC_COMMAND cmd, ...);
 
+int flush_socket(int sock);
+
 int readall(int sock, char *buffer, int length);
 
 int receive_to_file(int sock, FILE *fp, int size, int timeout);

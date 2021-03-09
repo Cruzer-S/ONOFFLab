@@ -72,6 +72,16 @@ int change_flag(int fd, int flag)
 	return 0;
 }
 
+int flush_socket(int sock)
+{
+	char buffer[BUFSIZ];
+
+	while (recv(sock, buffer, sizeof(buffer), MSG_DONTWAIT) != -1)
+		/* empty loop body */ ;
+
+	return -(errno == EAGAIN);
+}
+
 int recvt(int sock, void *buffer, int size, int timeout)
 {
 	int received = 0, ret;
