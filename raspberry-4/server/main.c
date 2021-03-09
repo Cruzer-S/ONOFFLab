@@ -64,8 +64,8 @@ int start_epoll_thread(int epfd, int serv_sock)
 		do {
 			if (epev->data.fd == serv_sock) {
 				int cnt = 0;
-				if ((cnt = register_epoll_client(epfd, serv_sock, EPOLLIN | EPOLLET)) < 0) {
-					fprintf(stderr, "register_epoll_client() error \n");
+				if ((cnt = accept_epoll_client(epfd, serv_sock, EPOLLIN | EPOLLET)) < 0) {
+					fprintf(stderr, "accept_epoll_client() error \n");
 					continue;
 				}
 
@@ -78,12 +78,11 @@ int start_epoll_thread(int epfd, int serv_sock)
 						continue;
 					}
 
-					printf("receive from client: %d \n", epev->data.fd);
-					if (client_handling(epev->data.fd) == -1)
-						fprintf(stderr, "client_handling(epev->data.fd) error: ");
-
-					flush_socket(epev->data.fd);
-
+					printf("receive data from client: %d \n", epev->data.fd);
+					if (client_handling(epev->data.fd) < 0) {
+						fprintf(stderr, "client_handling() error: %d \n", epev->data.fd);
+						delete_epoll_fd(epfd, epev->data.fd);
+					}
  				} else if (epev->events & (EPOLLHUP | EPOLLRDHUP)) {
 					printf("shutdown client: %d \n", epev->data.fd);
 					delete_epoll_fd(epfd, epev->data.fd);
@@ -101,71 +100,36 @@ int client_handling(int sock)
 {
 	struct http_header http;
 	uint32_t command;
+	char data[HEADER_SIZE];
 	size_t hsize;
-	uint8_t raw_data[HEADER_SIZE], *hp = raw_data;
-	uint8_t *body;
 
-	hsize = 0;
-	for (int ret = 0;
-		 !((ret == -1) && (errno == EAGAIN)) && hsize < HEADER_SIZE;
-		 hsize += (ret = recv(sock, raw_data + hsize, HEADER_SIZE - hsize, 0)))
-		raw_data[hsize + ret] = '\0';
+	if ((hsize = recv(sock, (char *)data, HEADER_SIZE, MSG_PEEK)) == -1)
+		return -1;
 
-	printf("Received header size: %zu \n", hsize);
+	printf("Received size: %zu \n", hsize);
 
-	if (parse_http_header((char *)raw_data, hsize, &http) < 0) {
-		EXTRACT(hp, command);
-		switch (command) {
-		case IPC_REGISTER_DEVICE: {
-			uint32_t dev_id;
+	if (is_http_header((const char *)data)) {
+		printf("HTTP data \n");
+		if ((hsize = recv_until(sock, data, HEADER_SIZE, "\r\n\r\n")) < 0)
+			return -2;
 
-			EXTRACT(hp, dev_id);
+		if (parse_http_header(data, hsize, &http) < 0)
+			return -3;
 
-			if (register_device(sock, dev_id))
-				printf("device registered\n"
-					   "ID: %d" " | " "socket: %d\n", dev_id, sock);
-			else printf("Already registerd: %d \n", dev_id);
-
-			break;
-		}
-
-		default: break;
-		}
-	} else {
 		show_http_header(&http);
 
-		int clnt_sock = find_device(strtol(strtok(http.url, "/"), NULL, 10));
+		/*
+		int device_sock = find_device(strtol(strtok(http.url, "/"), NULL, 10));
 		int length = strtol(http.content.length, NULL, 10);
-		if (length > 0) {
-			int received = hsize - (http.EOH - raw_data);
+		int clnt_sock = sock;
 
-			printf("After the header: %d \n", received);
-			FILE *fp = fopen("receive.dat", "w");
-			if (fp == NULL) return -1;
+		show_http_header(&http);
 
-			if (received > length)
-				received = length;
-
-			if (fwrite(http.EOH, sizeof(char), received, fp) != received)
-				return -2;
-
-			for (int remain = length - received, to_read;
-				 received < length;
-				 remain = length - received)
-			{
-				printf("Remaining Data: %d \n", length - received);
-
-				remain = (remain < HEADER_SIZE) ? remain : HEADER_SIZE;
-				while ((to_read = recv(sock, raw_data, remain, 0)) == -1) ;
-
-				if (fwrite(raw_data, sizeof(char), to_read, fp) != to_read)
-					return -4;
-
-				received += to_read;
-			}
-
-			fclose(fp);
-		}
+		if (link_ptop(clnt_sock, device_sock, length, 1000) < 0)
+			return -3;
+		*/
+	} else {
+		printf("binary data \n");
 	}
 
 	return 0;

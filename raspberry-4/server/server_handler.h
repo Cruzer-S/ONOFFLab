@@ -11,6 +11,7 @@
 #include <arpa/inet.h>		// htonl, htons
 #include <fcntl.h>			// fcntl
 #include <errno.h>			// errno
+#include <time.h>			// clock
 
 #define MAX_EVENT 1024
 
@@ -27,6 +28,10 @@ int flush_socket(int sock);
 int register_epoll_fd(int epfd, int tgfd, int flag);
 struct epoll_event *wait_epoll_event(int epfd, int maxevent, int timeout);
 int delete_epoll_fd(int epfd, int tgfd);
-int register_epoll_client(int epfd, int serv_sock, int flags);
+int accept_epoll_client(int epfd, int serv_sock, int flags);
+
+int link_ptop(int origin, int dest, int length, int timeout);
+int readall(int sock, char *buffer, int length);
+int recv_until(int sock, char *buffer, int bsize, char *end);
 
 #endif

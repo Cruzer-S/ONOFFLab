@@ -21,29 +21,12 @@ static const char *http_entity_name[] = {
 	[CONTENT_ENCODING] = "Content-Encoding"
 };
 
-static bool is_http(char *check, struct http_header *header)
+bool is_http_header(const char *header)
 {
-	char *method = strtok(check, " ");
-	char *url = strtok(NULL, " ");
-	char *version = strtok(NULL, " ");
+	if (strstr(header, "\r\n\r\n") && strstr(header, "HTTP"))
+		return true;
 
-	if (method == NULL || url == NULL || version == NULL)
-		return false;
-
-	for (int i = 0; i < SIZEOF(http_method_string); i++)
-		if (!strcmp(method, http_method_string[i]))
-			goto BREAK;
 	return false;
-
-BREAK:
-	if (!strstr(version, "HTTP"))
-		return false;
-
-	header->method = method;
-	header->url = url;
-	header->version = version;
-
-	return true;
 }
 
 void show_http_header(struct http_header *header)
@@ -66,34 +49,23 @@ int parse_http_header(char *raw, size_t size, struct http_header *header)
 {
 	init_http_header(header);
 
-	for (char *ptr = raw; (ptr - raw) < size; ptr++)
-		if (*ptr == '\r' && *(ptr + 1) == '\n')
-			*ptr = '\0', *(ptr + 1) = '\0';
+	header->method  = strtok(raw, " ");
+	header->url     = strtok(NULL, " ");
+	header->version = strtok(NULL, "\r");
 
-	if (!is_http(raw, header)) {
-		printf("binary data \n");
-		return -1;
-	}
-
-	printf("http data \n");
-
+	raw = header->version + 2;
 	while (true) {
-		while ( !(*raw == '\0' && *(raw + 1) == '\0') )
-			raw++;
-		raw += 2;
-
-		if (*raw == '\0' && *(raw + 1) == '\0') {
-			header->EOH = (uint8_t *)(raw + 2);
-			break;
-		}
-
 		for (int i = 0; i < SIZEOF(http_entity_name); i++)
 		{
-			if (!strstr(raw, http_entity_name[i])) continue;
-			raw += strlen(http_entity_name[i]) + 1;
+			if (strncmp(raw, http_entity_name[i], strlen(http_entity_name[i]))) continue;
+			raw += strlen(http_entity_name[i]) + 2;
 
 			*((char **)((void *)header + sizeof(char *) * (3 + i))) = raw;
 		}
+
+		while ( !(*raw == '\r' && *(raw + 1) == '\n') ) raw++;
+		*raw = '\0', raw += 2;
+		if (*raw == '\r' && *(raw + 1) == '\n') break;
 	}
 
 	return 0;

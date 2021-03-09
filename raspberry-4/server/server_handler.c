@@ -1,6 +1,7 @@
 #include "server_handler.h"
+#include <asm-generic/socket.h>
 
-int register_epoll_client(int epfd, int serv_sock, int flags)
+int accept_epoll_client(int epfd, int serv_sock, int flags)
 {
 	int count = 0;
 	while (true) {
@@ -125,8 +126,70 @@ int flush_socket(int sock)
 {
 	char buffer[BUFSIZ];
 
-	while (recv(sock, buffer, sizeof(buffer), 0) != -1)
+	while (recv(sock, buffer, sizeof(buffer), MSG_DONTWAIT) != -1)
 		/* empty loop body */ ;
 
 	return -(errno == EAGAIN);
+}
+
+int recv_until(int sock, char *buffer, int bsize, char *end)
+{
+	char *next = end;
+	int received;
+
+	for (received = 0;
+		 recv(sock, buffer + received, 1, MSG_DONTWAIT) == 1
+	  && received < bsize;
+	     received++)
+	{
+		if (*next == *buffer) next++;
+		else next = end;
+
+		if (*next == '\0') return received;
+	}
+
+	return -1;
+}
+
+int link_ptop(int origin, int dest, int length, int timeout)
+{
+	char buffer[BUFSIZ];
+	clock_t start;
+	int received, ret1, ret2, seq;
+
+	for (start = clock(), received = 0, seq = true;
+		 (clock() - start) < timeout &&  received < length; seq = !seq)
+	{
+		if (seq) {
+			if ((ret1 = recv(origin, buffer, sizeof(buffer), MSG_DONTWAIT)) == -1) {
+				if (errno == EAGAIN) seq = !seq;
+				else return -1;
+			}
+		} else {
+			if ((ret2 = send(dest, buffer, ret1, MSG_DONTWAIT)) == -1) {
+				if (errno == EAGAIN) seq = !seq;
+				else return -2;
+			}
+
+			if (ret2 != ret1)
+				return -3;
+		}
+	}
+
+	return 0;
+}
+
+int readall(int sock, char *buffer, int length)
+{
+	int ret;
+	int received;
+
+	for (received = ret = 0;
+		 ret != -1 && received < length;
+		 received += (ret = recv(sock, buffer + received, length - received, MSG_DONTWAIT)));
+
+	if (ret == -1 && errno != EAGAIN)
+		return -1;
+
+	return received;
 }
