@@ -137,10 +137,12 @@ int client_handling(int sock)
 			length = strtol(http.content.length, &temp, 10);
 			if (http.content.length == temp) return -6;
 
+			command = IPC_RECEIVED_CLIENT;
+
 			printf("command: %d \n", command);
 			printf("length: %d \n", length);
 
-			if (send(clnt_sock, (uint32_t []) { IPC_RECEIVED_CLIENT },
+			if (send(clnt_sock, &command,
 					 sizeof(uint32_t), MSG_DONTWAIT) != sizeof(length))
 				return -5;
 
@@ -150,10 +152,15 @@ int client_handling(int sock)
 
 			if (link_ptop(clnt_sock, device_sock, length, 1000) < 0)
 				return -3;
+
+			printf("send successfully \n");
 		} while (false);
 	} else {
 		uint32_t command;
 		char *dptr = data;
+
+		if ((hsize = recv(sock, (char *)data, HEADER_SIZE, MSG_DONTWAIT)) == -1)
+			return -1;
 
 		printf("binary data \n");
 		EXTRACT(dptr, command);
