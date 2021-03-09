@@ -110,7 +110,9 @@ int main(int argc, char *argv[])
 			FILE *fp = fopen("test.dat", "w");
 			if (fp == NULL) break;
 
-			if (receive_to_file(serv_sock, fp, length, 1000) < 0) {
+			int ret;
+			if ((ret = receive_to_file(serv_sock, fp, length, 10000)) < 0) {
+				printf("Ret: %d \n", ret);
 				fclose(fp);
 				break;
 			}

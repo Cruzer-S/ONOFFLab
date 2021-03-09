@@ -160,7 +160,7 @@ int receive_to_file(int sock, FILE *fp, int length, int timeout)
 	{
 		int remain = length - received < BUFSIZ ? length - received : BUFSIZ;
 
-		if (recvt(sock, buffer, remain, 1000) < 0)
+		if (recvt(sock, buffer, remain, timeout) < 0)
 			return -3;
 
 		if (fwrite(buffer, sizeof(char), ret, fp) == ret)
