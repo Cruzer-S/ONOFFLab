@@ -126,8 +126,6 @@ int main(int argc, char *argv[])
 			printf("receive data successfully \n");
 			break;
 		}}
-
-		flush_socket(serv_sock);
 	}
 
 	close(serv_sock);
