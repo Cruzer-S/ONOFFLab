@@ -35,7 +35,6 @@ int ipc_receive_request(int sock)
 {
 	uint32_t command;
 
-	printf("Waiting... ");
 	if (recv(sock, &command, sizeof(command), MSG_DONTWAIT) != sizeof(command))
 		return -1;
 
