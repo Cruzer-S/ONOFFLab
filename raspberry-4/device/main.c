@@ -90,6 +90,10 @@ int main(int argc, char *argv[])
 					ssid, psk);
 		}
 
+		for (char ch; recv(serv_sock, &ch, 1, MSG_DONTWAIT) == 1; putchar(ch))
+			putchar(' ');
+
+		/*
 		switch (ipc_receive_request(serv_sock)) {
 		case IPC_REGISTER_DEVICE: break;
 		case IPC_RECEIVED_CLIENT: {
@@ -98,7 +102,7 @@ int main(int argc, char *argv[])
 			if (recv(serv_sock, &length, sizeof(length), MSG_DONTWAIT) == sizeof(length))
 				break;
 
-			printf("Length: %d \n", length);
+			printf("Length: %u \n", length);
 
 			FILE *fp = fopen("test.dat", "w");
 			if (fp == NULL) break;
@@ -112,6 +116,7 @@ int main(int argc, char *argv[])
 
 			printf("Received successfully \n");
 		}}
+		*/
 	}
 
 	close(serv_sock);
