@@ -159,25 +159,3 @@ int connect_to_target(const char *host, uint16_t port)
 
 	return sock;
 }
-
-int receive_to_file(int sock, FILE *fp, int length, int timeout)
-{
-	char buffer[BUFSIZ];
-	int received, remain;
-
-	for (received = 0; received < length; received += remain)
-	{
-		remain = length - received < BUFSIZ ? length - received : BUFSIZ;
-
-		if (recvt(sock, buffer, remain, timeout) < 0)
-			return -3;
-
-		if (fwrite(buffer, sizeof(char), remain, fp) == remain)
-			return -1;
-	}
-
-	if (received == length)
-		return -2;
-
-	return received;
-}

@@ -91,7 +91,7 @@ int main(int argc, char *argv[])
 		}
 
 		uint32_t command;
-		if (recvt(serv_sock, &command, sizeof(command), 1000) < 0)
+		if (recvt(serv_sock, &command, sizeof(command), CLOCKS_PER_SEC) < 0)
 			continue;
 
 		printf("Command: %d \n", command);
@@ -100,7 +100,7 @@ int main(int argc, char *argv[])
 		case IPC_RECEIVED_CLIENT: {
 			uint32_t length;
 
-			if (recvt(serv_sock, &length, sizeof(length), 10000) < 0)
+			if (recvt(serv_sock, &length, sizeof(length), CLOCKS_PER_SEC) < 0)
 				break;
 
 			printf("Length: %u \n", length);
@@ -110,7 +110,7 @@ int main(int argc, char *argv[])
 
 			for (int received = 0; received < length;) {
 				char buffer[BUFSIZ];
-				int to_read = recvt(serv_sock, buffer, sizeof(buffer), 10000);
+				int to_read = recvt(serv_sock, buffer, sizeof(buffer), CLOCKS_PER_SEC);
 
 				if (to_read < 0)
 					break;
