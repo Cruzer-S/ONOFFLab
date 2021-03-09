@@ -1,4 +1,5 @@
 #include "ipc_manager.h"
+#include <asm-generic/errno.h>
 
 #define ASSIGN(ptr, value) memcpy(ptr, &value, sizeof(value)), ptr += sizeof(value)
 
@@ -78,11 +79,11 @@ int recvt(int sock, void *buffer, int size, int timeout)
 
 	while (clock() - start < timeout && received < size)
 	{
-		received += (ret = recv(sock, buffer + received, size - received, MSG_DONTWAIT));
+		ret = recv(sock, buffer + received, size - received, MSG_DONTWAIT);
 		if (ret == -1) {
-			if (errno == EAGAIN) continue;
+			if (errno == EAGAIN || errno == EWOULDBLOCK) continue;
 			else return -1;
-		}
+		} else received += ret;
 	}
 
 	if (received == size)

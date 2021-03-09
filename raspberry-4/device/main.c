@@ -91,7 +91,6 @@ int main(int argc, char *argv[])
 		}
 
 		uint32_t command;
-
 		if (recvt(serv_sock, &command, sizeof(command), 1000) < 0)
 			continue;
 

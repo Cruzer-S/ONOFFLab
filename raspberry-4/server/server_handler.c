@@ -151,6 +151,25 @@ int recv_until(int sock, char *buffer, int bsize, char *end)
 	return -1;
 }
 
+int recvt(int sock, void *buffer, int size, int timeout)
+{
+	int received = 0, ret;
+	clock_t start = clock();
+
+	while (clock() - start < timeout && received < size) {
+		ret = recv(sock, buffer + received, size - received, MSG_DONTWAIT);
+		if (ret == -1) {
+			if (errno == EAGAIN) continue;
+			else return -1;
+		} else received += ret;
+	}
+
+	if (received == size)
+		return 0;
+
+	return -2;
+}
+
 int link_ptop(int origin, int dest, int length, int timeout)
 {
 	char buffer[BUFSIZ];

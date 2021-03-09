@@ -150,8 +150,8 @@ int client_handling(int sock)
 			printf("command: %d \n", command);
 			printf("length: %d \n", length);
 
-			if (link_ptop(clnt_sock, device_sock, length, 1000) < 0)
-				return -3;
+			//if (link_ptop(clnt_sock, device_sock, length, 1000) < 0)
+			//	return -3;
 
 			printf("send successfully \n");
 		} while (false);
@@ -159,7 +159,7 @@ int client_handling(int sock)
 		uint32_t command;
 		char *dptr = data;
 
-		if ((hsize = recv(sock, (char *)data, HEADER_SIZE, MSG_DONTWAIT)) == -1)
+		if ((hsize = recvt(sock, (char *)data, HEADER_SIZE, MSG_DONTWAIT)) == -1)
 			return -1;
 
 		printf("binary data \n");
