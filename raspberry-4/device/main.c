@@ -103,7 +103,7 @@ int main(int argc, char *argv[])
 			FILE *fp = fopen("test.dat", "w");
 			if (fp == NULL) break;
 
-			if (receive_to_file(serv_sock, fp, length) < 0) {
+			if (receive_to_file(serv_sock, fp, length, 1000) < 0) {
 				fclose(fp);
 				break;
 			}
