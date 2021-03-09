@@ -100,7 +100,9 @@ int main(int argc, char *argv[])
 		case IPC_RECEIVED_CLIENT: {
 			uint32_t length;
 
-			if (recvt(serv_sock, &length, sizeof(length), 1000) < 0)
+			printf("Received length \n");
+
+			if (recvt(serv_sock, &length, sizeof(length), 10000) < 0)
 				break;
 
 			printf("Length: %u \n", length);
