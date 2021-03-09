@@ -137,7 +137,12 @@ int client_handling(int sock)
 			length = strtol(http.content.length, &temp, 10);
 			if (http.content.length == temp) return -6;
 
-			if (send(clnt_sock, &length, sizeof(length), MSG_DONTWAIT) != sizeof(length))
+			printf("length: %d", length);
+			if (send(clnt_sock, (uint32_t []) { IPC_RECEIVED_CLIENT },
+					 sizeof(uint32_t), MSG_DONTWAIT) != sizeof(length))
+				return -5;
+			if (send(clnt_sock, &length,
+					 sizeof(length), MSG_DONTWAIT) != sizeof(length))
 				return -4;
 
 			if (link_ptop(clnt_sock, device_sock, length, 1000) < 0)

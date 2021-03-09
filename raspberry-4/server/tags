@@ -12,13 +12,14 @@ CONTENT_TYPE	http_handler.c	/^	CONTENT_LENGTH, CONTENT_TYPE, CONTENT_ENCODING$/;
 DELETE	http_handler.c	/^	GET, POST, DELETE, PETCH$/;"	e	enum:HTTP_METHOD	file:
 DEVICE_MANAGER_H__	device_manager.h	2;"	d
 EOH	http_handler.h	/^	uint8_t *EOH; \/\/ End of header$/;"	m	struct:http_header
-EXTRACT	main.c	97;"	d	file:
+EXTRACT	main.c	99;"	d	file:
 GET	http_handler.c	/^	GET, POST, DELETE, PETCH$/;"	e	enum:HTTP_METHOD	file:
 HEADER_SIZE	http_handler.h	10;"	d
 HTTP_ENTITY	http_handler.c	/^enum HTTP_ENTITY {$/;"	g	file:
 HTTP_HANDLER__	http_handler.h	2;"	d
 HTTP_METHOD	http_handler.c	/^enum HTTP_METHOD {$/;"	g	file:
 IPC_COMMAND	server_handler.h	/^enum IPC_COMMAND {$/;"	g
+IPC_RECEIVED_CLIENT	server_handler.h	/^	IPC_RECEIVED_CLIENT = 0x02,$/;"	e	enum:IPC_COMMAND
 IPC_REGISTER_DEVICE	server_handler.h	/^	IPC_REGISTER_DEVICE = 0x01,$/;"	e	enum:IPC_COMMAND
 MAX_DEVICE	device_manager.h	4;"	d
 MAX_EVENT	server_handler.h	16;"	d
@@ -33,11 +34,10 @@ change_sockopt	server_handler.c	/^int change_sockopt(int fd, int level, int flag
 client_handling	main.c	/^int client_handling(int sock)$/;"	f
 content	http_handler.h	/^	} content;$/;"	m	struct:http_header	typeref:struct:http_header::__anon1
 count_device	device_manager.c	/^int count_device(void)$/;"	f
-cur	device_manager.c	/^					 *cur  = dlist;$/;"	v	typeref:struct:	file:
+cur	device_manager.c	/^static struct device *cur = dlist;$/;"	v	typeref:struct:device	file:
 delete_epoll_fd	server_handler.c	/^int delete_epoll_fd(int epfd, int tgfd)$/;"	f
 device	device_manager.c	/^struct device {$/;"	s	file:
 dlist	device_manager.c	/^} static dlist[MAX_DEVICE];$/;"	v	file:
-dptr	device_manager.c	/^static struct device *dptr = dlist,$/;"	v	typeref:struct:device	file:
 encoding	http_handler.h	/^		char *encoding;$/;"	m	struct:http_header::__anon1
 error_handling	main.c	/^_Noreturn void error_handling(const char *fmt, ...)$/;"	f
 find_device	device_manager.c	/^int find_device(int id)$/;"	f
