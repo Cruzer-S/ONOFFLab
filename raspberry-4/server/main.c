@@ -116,9 +116,6 @@ int client_handling(int sock)
 		if (parse_http_header(data, hsize, &http) < 0)
 			return -3;
 
-		show_http_header(&http);
-
-		/*
 		int device_sock = find_device(strtol(strtok(http.url, "/"), NULL, 10));
 		int length = strtol(http.content.length, NULL, 10);
 		int clnt_sock = sock;
@@ -127,7 +124,6 @@ int client_handling(int sock)
 
 		if (link_ptop(clnt_sock, device_sock, length, 1000) < 0)
 			return -3;
-		*/
 	} else {
 		printf("binary data \n");
 	}
