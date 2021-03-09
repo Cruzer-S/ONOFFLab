@@ -90,9 +90,28 @@ int main(int argc, char *argv[])
 					ssid, psk);
 		}
 
-		uint32_t command;
-		if (recv(serv_sock, &command, sizeof(command), MSG_DONTWAIT) != -1)
-			printf("command: %d \n", command);
+		switch (ipc_receive_request(serv_sock)) {
+		case IPC_REGISTER_DEVICE: break;
+		case IPC_RECEIVED_CLIENT: {
+			uint32_t length;
+
+			if (recv(serv_sock, &length, sizeof(length), MSG_DONTWAIT) == sizeof(length))
+				break;
+
+			printf("Length: %d \n", length);
+
+			FILE *fp = fopen("test.dat", "w");
+			if (fp == NULL) break;
+
+			if (receive_to_file(serv_sock, fp, length) < 0) {
+				fclose(fp);
+				break;
+			}
+
+			fclose(fp);
+
+			printf("Received successfully \n");
+		}}
 	}
 
 	close(serv_sock);

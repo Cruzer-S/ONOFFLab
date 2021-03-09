@@ -142,11 +142,11 @@ int client_handling(int sock)
 			printf("command: %d \n", command);
 			printf("length: %d \n", length);
 
-			if (send(clnt_sock, &command,
-					 sizeof(uint32_t), MSG_DONTWAIT) != sizeof(length))
+			if (send(device_sock, &command,
+					 sizeof(command), MSG_DONTWAIT) != sizeof(command))
 				return -5;
 
-			if (send(clnt_sock, &length,
+			if (send(device_sock, &length,
 					 sizeof(length), MSG_DONTWAIT) != sizeof(length))
 				return -4;
 
