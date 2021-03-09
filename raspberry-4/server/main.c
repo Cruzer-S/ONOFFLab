@@ -120,12 +120,15 @@ int client_handling(int sock)
 
 		do {
 			int device_id, device_sock;
-			int length;
+			uint32_t length;
 			int clnt_sock = sock;
 			char *temp;
 
 			if (sscanf(http.url, "/%d", &device_id) != 1)
 				return -4;
+
+			printf("Request: %s\n", http.method);
+			printf("Device ID: %d \n", device_id);
 
 			device_sock = find_device(device_id);
 			if (device_sock < 0)
@@ -134,7 +137,8 @@ int client_handling(int sock)
 			length = strtol(http.content.length, &temp, 10);
 			if (http.content.length == temp) return -6;
 
-			show_http_header(&http);
+			if (send(clnt_sock, &length, sizeof(length), MSG_DONTWAIT) != sizeof(length))
+				return -4;
 
 			if (link_ptop(clnt_sock, device_sock, length, 1000) < 0)
 				return -3;
@@ -144,14 +148,14 @@ int client_handling(int sock)
 		char *dptr = data;
 
 		printf("binary data \n");
-
-		dptr = EXTRACT(dptr, command);
+		EXTRACT(dptr, command);
 
 		switch (command) {
 		case IPC_REGISTER_DEVICE: {
 			uint32_t device_id;
 
-			dptr = EXTRACT(dptr, device_id);
+			EXTRACT(dptr, device_id);
+
 			printf("Register device: %u <=> %u \n", sock, device_id);
 
 			register_device(sock, device_id);

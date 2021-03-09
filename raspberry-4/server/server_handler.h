@@ -17,6 +17,7 @@
 
 enum IPC_COMMAND {
 	IPC_REGISTER_DEVICE = 0x01,
+	IPC_RECEIVED_CLIENT = 0x02,
 };
 
 int make_server(short port, int backlog);

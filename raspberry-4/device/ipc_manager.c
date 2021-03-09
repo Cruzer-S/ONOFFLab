@@ -31,6 +31,31 @@ int ipc_to_target(int sock, enum IPC_COMMAND cmd, ...)
 	return 0;
 }
 
+int ipc_receive_request(int sock)
+{
+	uint32_t command;
+
+	if (recv(sock, &command, sizeof(command), MSG_DONTWAIT) != sizeof(command))
+		return -1;
+
+	return command;
+}
+
+int readall(int sock, char *buffer, int length)
+{
+	int ret;
+	int received;
+
+	for (received = ret = 0;
+		 ret != -1 && received < length;
+		 received += (ret = recv(sock, buffer + received, length - received, MSG_DONTWAIT)));
+
+	if (ret == -1 && errno != EAGAIN)
+		return -1;
+
+	return received;
+}
+
 int change_flag(int fd, int flag)
 {
 	int flags = fcntl(fd, F_GETFL);
@@ -95,7 +120,6 @@ int connect_to_target(const char *host, uint16_t port)
 				 // it may means that host will be ip address
 			sock_adr.sin_family = AF_INET;
 			sock_adr.sin_addr.s_addr = inet_addr(host);
-			sock_adr.sin_port = htons(port);
 		}
 	} else entry = NULL;
 
@@ -103,4 +127,27 @@ int connect_to_target(const char *host, uint16_t port)
 		return -2;
 
 	return sock;
+}
+
+int receive_to_file(int sock, FILE *fp, int length, int timeout)
+{
+	char buffer[BUFSIZ];
+	int ret;
+	int received;
+
+	for (received = ret = 0;
+		 ret != -1 && received < length;)
+	{
+		received += (ret = recv(sock, buffer + received, length - received, MSG_DONTWAIT));
+		if (fwrite(buffer, sizeof(char), ret, fp) == ret)
+			return -1;
+	}
+
+	if (ret == -1 && errno != EAGAIN)
+		return -2;
+
+	if (received == length)
+		return -3;
+
+	return received;
 }

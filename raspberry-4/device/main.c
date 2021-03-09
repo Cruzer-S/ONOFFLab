@@ -89,6 +89,34 @@ int main(int argc, char *argv[])
 			printf("change wifi ssid and psk\nssid: %s\tpsk: %s\n",
 					ssid, psk);
 		}
+
+		switch (ipc_receive_request(serv_sock)) {
+		case IPC_REGISTER_DEVICE: break;
+		case IPC_RECEIVED_CLIENT: {
+			uint32_t length;
+
+			printf("IPC Register Client \n");
+
+			if (recv(serv_sock, &length,
+				sizeof(length), MSG_DONTWAIT) != sizeof(length))
+				break;
+
+			FILE *fp = fopen("file.dat", "w");
+			if (fp == NULL) break;
+
+			printf("Length: %d \n", length);
+
+			if (receive_to_file(serv_sock, fp, length, 1000) < 0) {
+				fclose (fp);
+				break;
+			}
+
+			fclose(fp);
+
+			break;
+		}
+		default: break;
+		}
 	}
 
 	close(serv_sock);
