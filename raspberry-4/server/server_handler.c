@@ -165,7 +165,7 @@ int recvt(int sock, void *buffer, int size, int timeout)
 		} else received += ret;
 	}
 
-	if (end - start < timeout)
+	if (end - start >= timeout)
 		return -1;
 
 	return received;
