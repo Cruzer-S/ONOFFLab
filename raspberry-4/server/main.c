@@ -139,9 +139,6 @@ int client_handling(int sock)
 
 			command = IPC_RECEIVED_CLIENT;
 
-			printf("command: %d \n", command);
-			printf("length: %d \n", length);
-
 			if (send(device_sock, &command,
 					 sizeof(command), MSG_DONTWAIT) != sizeof(command))
 				return -5;
@@ -149,6 +146,9 @@ int client_handling(int sock)
 			if (send(device_sock, &length,
 					 sizeof(length), MSG_DONTWAIT) != sizeof(length))
 				return -4;
+
+			printf("command: %d \n", command);
+			printf("length: %d \n", length);
 
 			if (link_ptop(clnt_sock, device_sock, length, 1000) < 0)
 				return -3;
