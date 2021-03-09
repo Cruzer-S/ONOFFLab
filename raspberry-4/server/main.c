@@ -71,6 +71,7 @@ int start_epoll_thread(int epfd, int serv_sock)
 
 				printf("accepting %d client(s) \n", cnt);
 			} else { // client
+				int ret;
 				if (epev->events & EPOLLIN) {
 					if (recv(epev->data.fd, (char []) { 0x00 }, 1, MSG_PEEK) == 0) {
 						printf("disconnect client: %d \n", epev->data.fd);
@@ -79,8 +80,9 @@ int start_epoll_thread(int epfd, int serv_sock)
 					}
 
 					printf("receive data from client: %d \n", epev->data.fd);
-					if (client_handling(epev->data.fd) < 0) {
-						fprintf(stderr, "client_handling() error: %d \n", epev->data.fd);
+					if ((ret = client_handling(epev->data.fd)) < 0) {
+						fprintf(stderr, "client_handling(%d) error: %d \n",
+								epev->data.fd, ret);
 						delete_epoll_fd(epfd, epev->data.fd);
 					}
  				} else if (epev->events & (EPOLLHUP | EPOLLRDHUP)) {
@@ -116,16 +118,47 @@ int client_handling(int sock)
 		if (parse_http_header(data, hsize, &http) < 0)
 			return -3;
 
-		int device_sock = find_device(strtol(strtok(http.url, "/"), NULL, 10));
-		int length = strtol(http.content.length, NULL, 10);
-		int clnt_sock = sock;
+		do {
+			int device_id, device_sock;
+			int length;
+			int clnt_sock = sock;
+			char *temp;
 
-		show_http_header(&http);
+			if (sscanf(http.url, "/%d", &device_id) != 1)
+				return -4;
 
-		if (link_ptop(clnt_sock, device_sock, length, 1000) < 0)
-			return -3;
+			device_sock = find_device(device_id);
+			if (device_sock < 0)
+				return -5;
+
+			length = strtol(http.content.length, &temp, 10);
+			if (http.content.length == temp) return -6;
+
+			show_http_header(&http);
+
+			if (link_ptop(clnt_sock, device_sock, length, 1000) < 0)
+				return -3;
+		} while (false);
 	} else {
+		uint32_t command;
+		char *dptr = data;
+
 		printf("binary data \n");
+
+		dptr = EXTRACT(dptr, command);
+
+		switch (command) {
+		case IPC_REGISTER_DEVICE: {
+			uint32_t device_id;
+
+			dptr = EXTRACT(dptr, device_id);
+			printf("Register device: %u <=> %u \n", sock, device_id);
+
+			register_device(sock, device_id);
+			break;
+		}
+		default: return -1;
+		}
 	}
 
 	return 0;
