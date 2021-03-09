@@ -8,6 +8,7 @@
 
 #include "server_handler.h"
 #include "device_manager.h"
+#include "http_handler.h"
 
 _Noreturn void error_handling(const char *format, ...);
 int client_handling(int sock);
