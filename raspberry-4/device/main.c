@@ -90,8 +90,7 @@ int main(int argc, char *argv[])
 					ssid, psk);
 		}
 
-		for (char ch; recv(serv_sock, &ch, 1, MSG_DONTWAIT) == 1; putchar(ch))
-			putchar(' ');
+		for (uint32_t ch; recv(serv_sock, &ch, sizeof(uint32_t), MSG_DONTWAIT) == 1; printf("%d", ch)) ;
 
 		/*
 		switch (ipc_receive_request(serv_sock)) {
