@@ -14,8 +14,6 @@
 
 #define MAX_EVENT 1024
 
-#define EXTRACT(ptr, value) memcpy(&value, ptr, sizeof(value)), ptr += sizeof(value);
-
 enum IPC_COMMAND {
 	IPC_REGISTER_DEVICE = 0x01,
 };
@@ -24,6 +22,7 @@ int make_server(short port, int backlog);
 
 int change_flag(int fd, int flag);
 int change_sockopt(int fd, int level, int flag, int value);
+int flush_socket(int sock);
 
 int register_epoll_fd(int epfd, int tgfd, int flag);
 struct epoll_event *wait_epoll_event(int epfd, int maxevent, int timeout);

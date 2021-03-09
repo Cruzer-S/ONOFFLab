@@ -82,6 +82,8 @@ int start_epoll_thread(int epfd, int serv_sock)
 					if (client_handling(epev->data.fd) == -1)
 						fprintf(stderr, "client_handling(epev->data.fd) error: ");
 
+					flush_socket(epev->data.fd);
+
  				} else if (epev->events & (EPOLLHUP | EPOLLRDHUP)) {
 					printf("shutdown client: %d \n", epev->data.fd);
 					delete_epoll_fd(epfd, epev->data.fd);
@@ -93,10 +95,7 @@ int start_epoll_thread(int epfd, int serv_sock)
 	return 0;
 }
 
-int parse_device_id(char *url)
-{
-	return 0;
-}
+#define EXTRACT(ptr, value) memcpy(&value, ptr, sizeof(value)), ptr += sizeof(value);
 
 int client_handling(int sock)
 {

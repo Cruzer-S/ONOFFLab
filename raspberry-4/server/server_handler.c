@@ -120,3 +120,13 @@ int delete_epoll_fd(int epfd, int tgfd)
 
 	return ret;
 }
+
+int flush_socket(int sock)
+{
+	char buffer[BUFSIZ];
+
+	while (recv(sock, buffer, sizeof(buffer), 0) != -1)
+		/* empty loop body */ ;
+
+	return -(errno == EAGAIN);
+}
