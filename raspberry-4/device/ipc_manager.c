@@ -135,19 +135,19 @@ int receive_to_file(int sock, FILE *fp, int length, int timeout)
 	int ret;
 	int received;
 
-	for (received = ret = 0;
-		 ret != -1 && received < length;)
+	for (received = ret = 0; received < length; received += ret)
 	{
-		received += (ret = recv(sock, buffer + received, length - received, MSG_DONTWAIT));
+		int remain = length - received < BUFSIZ ? length - received : BUFSIZ;
+
+		ret = recv(sock, buffer, remain, MSG_DONTWAIT);
+		if (ret == -1) break;
+
 		if (fwrite(buffer, sizeof(char), ret, fp) == ret)
 			return -1;
 	}
 
-	if (ret == -1 && errno != EAGAIN)
-		return -2;
-
 	if (received == length)
-		return -3;
+		return -2;
 
 	return received;
 }
