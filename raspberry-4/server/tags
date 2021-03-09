@@ -6,41 +6,59 @@
 !_TAG_PROGRAM_VERSION	5.9~svn20110310	//
 CC	makefile	/^CC = gcc$/;"	m
 CFLAGS	makefile	/^CFLAGS = -std=c11$/;"	m
-CONNECT	server_handler.c	/^	GET, POST, DELETE, PETCH, CONNECT$/;"	e	enum:HTTP_METHOD	file:
-DELETE	server_handler.c	/^	GET, POST, DELETE, PETCH, CONNECT$/;"	e	enum:HTTP_METHOD	file:
-EOH	server_handler.h	/^	uint8_t *EOH; \/\/ End of header$/;"	m	struct:http_header
-EXTRACT	server_handler.h	16;"	d
-GET	server_handler.c	/^	GET, POST, DELETE, PETCH, CONNECT$/;"	e	enum:HTTP_METHOD	file:
-HEADER_SIZE	server_handler.h	14;"	d
-HTTP_METHOD	server_handler.c	/^enum HTTP_METHOD {$/;"	g	file:
+CONTENT_ENCODING	http_handler.c	/^	CONTENT_LENGTH, CONTENT_TYPE, CONTENT_ENCODING$/;"	e	enum:HTTP_ENTITY	file:
+CONTENT_LENGTH	http_handler.c	/^	CONTENT_LENGTH, CONTENT_TYPE, CONTENT_ENCODING$/;"	e	enum:HTTP_ENTITY	file:
+CONTENT_TYPE	http_handler.c	/^	CONTENT_LENGTH, CONTENT_TYPE, CONTENT_ENCODING$/;"	e	enum:HTTP_ENTITY	file:
+DELETE	http_handler.c	/^	GET, POST, DELETE, PETCH$/;"	e	enum:HTTP_METHOD	file:
+DEVICE_MANAGER_H__	device_manager.h	2;"	d
+EOH	http_handler.h	/^	uint8_t *EOH; \/\/ End of header$/;"	m	struct:http_header
+EXTRACT	server_handler.h	17;"	d
+GET	http_handler.c	/^	GET, POST, DELETE, PETCH$/;"	e	enum:HTTP_METHOD	file:
+HEADER_SIZE	http_handler.h	9;"	d
+HTTP_ENTITY	http_handler.c	/^enum HTTP_ENTITY {$/;"	g	file:
+HTTP_HANDLER__	http_handler.h	2;"	d
+HTTP_METHOD	http_handler.c	/^enum HTTP_METHOD {$/;"	g	file:
 IPC_COMMAND	server_handler.h	/^enum IPC_COMMAND {$/;"	g
 IPC_REGISTER_DEVICE	server_handler.h	/^	IPC_REGISTER_DEVICE = 0x01,$/;"	e	enum:IPC_COMMAND
-MAX_EVENT	server_handler.h	13;"	d
+MAX_DEVICE	device_manager.h	4;"	d
+MAX_EVENT	server_handler.h	15;"	d
 OUTPUT	makefile	/^OUTPUT = output.out$/;"	m
-PETCH	server_handler.c	/^	GET, POST, DELETE, PETCH, CONNECT$/;"	e	enum:HTTP_METHOD	file:
-POST	server_handler.c	/^	GET, POST, DELETE, PETCH, CONNECT$/;"	e	enum:HTTP_METHOD	file:
+PETCH	http_handler.c	/^	GET, POST, DELETE, PETCH$/;"	e	enum:HTTP_METHOD	file:
+POST	http_handler.c	/^	GET, POST, DELETE, PETCH$/;"	e	enum:HTTP_METHOD	file:
 SERVER_HANDLER_H__	server_handler.h	2;"	d
-SIZEOF	server_handler.c	3;"	d	file:
+SIZEOF	http_handler.c	3;"	d	file:
 change_flag	server_handler.c	/^int change_flag(int fd, int flag)$/;"	f
 change_sockopt	server_handler.c	/^int change_sockopt(int fd, int level, int flag, int value)$/;"	f
 client_handling	main.c	/^int client_handling(int sock)$/;"	f
-content	server_handler.h	/^	struct content {$/;"	s	struct:http_header
-content	server_handler.h	/^	} content;$/;"	m	struct:http_header	typeref:struct:http_header::content
+content	http_handler.h	/^	} content;$/;"	m	struct:http_header	typeref:struct:http_header::__anon1
+count_device	device_manager.c	/^int count_device(void)$/;"	f
+cur	device_manager.c	/^					 *cur  = dlist;$/;"	v	typeref:struct:	file:
 delete_epoll_fd	server_handler.c	/^int delete_epoll_fd(int epfd, int tgfd)$/;"	f
-encoding	server_handler.h	/^		char *encoding;$/;"	m	struct:http_header::content
+device	device_manager.c	/^struct device {$/;"	s	file:
+dlist	device_manager.c	/^} static dlist[MAX_DEVICE];$/;"	v	file:
+dptr	device_manager.c	/^static struct device *dptr = dlist,$/;"	v	typeref:struct:device	file:
+encoding	http_handler.h	/^		char *encoding;$/;"	m	struct:http_header::__anon1
 error_handling	main.c	/^_Noreturn void error_handling(const char *fmt, ...)$/;"	f
-http_header	server_handler.h	/^struct http_header {$/;"	s
-http_method_string	server_handler.c	/^const char *http_method_string[] = {$/;"	v
-is_http	server_handler.c	/^static int is_http(char *check)$/;"	f	file:
-length	server_handler.h	/^		char *length;$/;"	m	struct:http_header::content
+find_device	device_manager.c	/^int find_device(int id)$/;"	f
+http_entity_name	http_handler.c	/^static const char *http_entity_name[] = {$/;"	v	file:
+http_header	http_handler.h	/^struct http_header {$/;"	s
+http_method_string	http_handler.c	/^static const char *http_method_string[] = {$/;"	v	file:
+id	device_manager.c	/^	int id;$/;"	m	struct:device	file:
+init_http_header	http_handler.c	/^void init_http_header(struct http_header *header)$/;"	f
+is_http	http_handler.c	/^static bool is_http(char *check, struct http_header *header)$/;"	f	file:
+length	http_handler.h	/^		char *length;$/;"	m	struct:http_header::__anon1
 main	main.c	/^int main(int argc, char *argv[])$/;"	f
 make_server	server_handler.c	/^int make_server(short port, int backlog)$/;"	f
-method	server_handler.h	/^	char *method;$/;"	m	struct:http_header
-parse_http_header	server_handler.c	/^int parse_http_header(char *raw, size_t size, struct http_header *header)$/;"	f
+method	http_handler.h	/^	char *method;$/;"	m	struct:http_header
+parse_device_id	main.c	/^int parse_device_id(char *url)$/;"	f
+parse_http_header	http_handler.c	/^int parse_http_header(char *raw, size_t size, struct http_header *header)$/;"	f
+register_device	device_manager.c	/^int register_device(int sock, int id)$/;"	f
+register_epoll_client	server_handler.c	/^int register_epoll_client(int epfd, int serv_sock, int flags)$/;"	f
 register_epoll_fd	server_handler.c	/^int register_epoll_fd(int epfd, int tgfd, int flag)$/;"	f
-show_http_header	server_handler.c	/^void show_http_header(struct http_header *header)$/;"	f
+show_http_header	http_handler.c	/^void show_http_header(struct http_header *header)$/;"	f
+sock	device_manager.c	/^	int sock;$/;"	m	struct:device	file:
 start_epoll_thread	main.c	/^int start_epoll_thread(int epfd, int serv_sock)$/;"	f
-type	server_handler.h	/^		char *type;$/;"	m	struct:http_header::content
-url	server_handler.h	/^	char *url;$/;"	m	struct:http_header
-version	server_handler.h	/^	char *version;$/;"	m	struct:http_header
+type	http_handler.h	/^		char *type;$/;"	m	struct:http_header::__anon1
+url	http_handler.h	/^	char *url;$/;"	m	struct:http_header
+version	http_handler.h	/^	char *version;$/;"	m	struct:http_header
 wait_epoll_event	server_handler.c	/^struct epoll_event *wait_epoll_event(int epfd, int maxevent, int timeout)$/;"	f

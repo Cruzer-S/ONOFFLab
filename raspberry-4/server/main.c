@@ -103,7 +103,7 @@ int client_handling(int sock)
 	struct http_header http;
 	uint32_t command;
 	size_t hsize;
-	uint8_t raw_data[HEADER_SIZE], *hp;
+	uint8_t raw_data[HEADER_SIZE], *hp = raw_data;
 	uint8_t *body;
 
 	hsize = 0;
