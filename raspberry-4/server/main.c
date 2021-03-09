@@ -137,10 +137,13 @@ int client_handling(int sock)
 			length = strtol(http.content.length, &temp, 10);
 			if (http.content.length == temp) return -6;
 
-			printf("length: %d", length);
+			printf("command: %d \n", command);
+			printf("length: %d \n", length);
+
 			if (send(clnt_sock, (uint32_t []) { IPC_RECEIVED_CLIENT },
 					 sizeof(uint32_t), MSG_DONTWAIT) != sizeof(length))
 				return -5;
+
 			if (send(clnt_sock, &length,
 					 sizeof(length), MSG_DONTWAIT) != sizeof(length))
 				return -4;

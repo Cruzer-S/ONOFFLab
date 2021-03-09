@@ -38,6 +38,8 @@ int ipc_receive_request(int sock)
 	if (recv(sock, &command, sizeof(command), MSG_DONTWAIT) != sizeof(command))
 		return -1;
 
+	printf("Received: %d", command);
+
 	return command;
 }
 
