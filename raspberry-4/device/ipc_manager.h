@@ -36,4 +36,6 @@ int receive_to_file(int sock, FILE *fp, int size, int timeout);
 
 int ipc_receive_request(int sock);
 
+int recvt(int sock, void *buffer, int size, int timeout);
+
 #endif

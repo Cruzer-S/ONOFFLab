@@ -71,6 +71,26 @@ int change_flag(int fd, int flag)
 	return 0;
 }
 
+int recvt(int sock, void *buffer, int size, int timeout)
+{
+	int received = 0, ret;
+	clock_t start = clock();
+
+	while (clock() - start < timeout && received < size)
+	{
+		received += (ret = recv(sock, buffer + received, size - received, MSG_DONTWAIT));
+		if (ret == -1) {
+			if (errno == EAGAIN) continue;
+			else return -1;
+		}
+	}
+
+	if (received == size)
+		return 0;
+
+	return -2;
+}
+
 int change_sockopt(int fd, int level, int flag, int value)
 {
 	int ret;
@@ -139,8 +159,8 @@ int receive_to_file(int sock, FILE *fp, int length, int timeout)
 	{
 		int remain = length - received < BUFSIZ ? length - received : BUFSIZ;
 
-		ret = recv(sock, buffer, remain, MSG_DONTWAIT);
-		if (ret == -1) break;
+		if (recvt(sock, buffer, remain, 1000) < 0)
+			return -3;
 
 		if (fwrite(buffer, sizeof(char), ret, fp) == ret)
 			return -1;

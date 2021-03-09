@@ -92,7 +92,7 @@ int main(int argc, char *argv[])
 
 		uint32_t command;
 
-		if (recv(serv_sock, &command, sizeof(command), MSG_DONTWAIT) != sizeof(command))
+		if (recvt(serv_sock, &command, sizeof(command), 1000) < 0)
 			continue;
 
 		printf("Command: %d \n", command);
@@ -101,7 +101,7 @@ int main(int argc, char *argv[])
 		case IPC_RECEIVED_CLIENT: {
 			uint32_t length;
 
-			if (recv(serv_sock, &length, sizeof(length), MSG_DONTWAIT) == sizeof(length))
+			if (recvt(serv_sock, &length, sizeof(length), 1000) < 0)
 				break;
 
 			printf("Length: %u \n", length);
