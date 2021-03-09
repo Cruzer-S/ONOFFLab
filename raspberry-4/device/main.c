@@ -107,6 +107,7 @@ int main(int argc, char *argv[])
 
 			printf("Length: %u \n", length);
 
+			/*
 			FILE *fp = fopen("test.dat", "w");
 			if (fp == NULL) break;
 
@@ -124,6 +125,7 @@ int main(int argc, char *argv[])
 
 			fclose(fp);
 			printf("receive data successfully \n");
+			*/
 			break;
 		}}
 	}
