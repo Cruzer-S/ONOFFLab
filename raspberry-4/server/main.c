@@ -87,8 +87,9 @@ int start_epoll_thread(int epfd, int serv_sock)
 						printf("disconnect client: %d \n", epev->data.fd);
 						delete_epoll_fd(epfd, epev->data.fd);
 						continue;
-					} else printf("receive from client: %d \n", epev->data.fd);
+					}
 
+					printf("receive from client: %d \n", epev->data.fd);
 					if (client_handling(epev->data.fd) == -1)
 						fprintf(stderr, "client_handling(epev->data.fd) error: ");
 
@@ -113,9 +114,11 @@ int client_handling(int sock)
 
 	hsize = 0;
 	for (int ret = 0;
-		 !((ret == -1) && (errno == EAGAIN));
+		 !((ret == -1) && (errno == EAGAIN)) && hsize < HEADER_SIZE;
 		 hsize += (ret = recv(sock, raw_data + hsize, HEADER_SIZE - hsize, 0)))
 		raw_data[hsize + ret] = '\0';
+
+	printf("Received header size: %zu \n", hsize);
 
 	if (parse_http_header((char *)raw_data, hsize, &http) < 0) {
 		switch (command) {
@@ -133,6 +136,38 @@ int client_handling(int sock)
 		EXTRACT(hp, command);
 	} else {
 		show_http_header(&http);
+
+		int length = strtol(http.content.length, NULL, 10);
+		if (length > 0) {
+			int received = hsize - (http.EOH - raw_data);
+
+			printf("After the header: %d \n", received);
+			FILE *fp = fopen("receive.dat", "w");
+			if (fp == NULL) return -1;
+
+			if (received > length)
+				received = length;
+
+			if (fwrite(http.EOH, sizeof(char), received, fp) != received)
+				return -2;
+
+			for (int remain = length - received, to_read;
+				 received < length;
+				 remain = length - received)
+			{
+				printf("Remaining Data: %d \n", length - received);
+
+				remain = (remain < HEADER_SIZE) ? remain : HEADER_SIZE;
+				while ((to_read = recv(sock, raw_data, remain, 0)) == -1) ;
+
+				if (fwrite(raw_data, sizeof(char), to_read, fp) != to_read)
+					return -4;
+
+				received += to_read;
+			}
+
+			fclose(fp);
+		}
 	}
 
 	return 0;

@@ -72,23 +72,27 @@ int parse_http_header(char *raw, size_t size, struct http_header *header)
 
 	if (!is_http(raw, header)) {
 		printf("binary data \n");
-	} else {
-		printf("http data \n");
+		return -1;
+	}
 
-		while (true) {
-			while ( !(*raw == '\0' && *(raw + 1) == '\0') )
-				raw++;
-			raw += 2;
+	printf("http data \n");
 
-			if (*raw == '\0' && *(raw + 1) == '\0') break;
+	while (true) {
+		while ( !(*raw == '\0' && *(raw + 1) == '\0') )
+			raw++;
+		raw += 2;
 
-			for (int i = 0; i < SIZEOF(http_entity_name); i++)
-			{
-				if (!strstr(raw, http_entity_name[i])) continue;
-				raw += strlen(http_entity_name[i]) + 1;
+		if (*raw == '\0' && *(raw + 1) == '\0') {
+			header->EOH = (uint8_t *)(raw + 2);
+			break;
+		}
 
-				*((char **)((void *)header + sizeof(char *) * (3 + i))) = raw;
-			}
+		for (int i = 0; i < SIZEOF(http_entity_name); i++)
+		{
+			if (!strstr(raw, http_entity_name[i])) continue;
+			raw += strlen(http_entity_name[i]) + 1;
+
+			*((char **)((void *)header + sizeof(char *) * (3 + i))) = raw;
 		}
 	}
 
