@@ -150,7 +150,7 @@ int client_handling(int sock)
 			printf("command: %d \n", command);
 			printf("length: %d \n", length);
 
-			if (link_ptop(clnt_sock, device_sock, length, 1000) < 0)
+			if (link_ptop(clnt_sock, device_sock, length, CLOCKS_PER_SEC * 2) < 0)
 				return -3;
 
 			printf("send successfully \n");
