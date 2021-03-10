@@ -127,6 +127,8 @@ int client_handling(int sock)
 		if (parse_http_header(data, dsize, &http) < 0)
 			return -3;
 
+		show_http_header(&http);
+
 		if (sscanf(http.url, "/%d", &device_id) != 1)
 			return -4;
 
