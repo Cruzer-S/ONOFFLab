@@ -111,7 +111,10 @@ int main(int argc, char *argv[])
 			FILE *fp = fopen("test.dat", "w");
 			if (fp == NULL) break;
 
-			for (int received = 0, to_read; received < length; received += to_read) {
+			for (int received = 0, to_read, ret;
+				 received < length;
+				 received += to_read)
+			{
 				if ((to_read = recvt(serv_sock, buffer,
 							   LIMITS(length - received, sizeof(buffer)), CLOCKS_PER_SEC)) < 0) {
 					fprintf(stderr, "recvt() error \n");
@@ -123,8 +126,8 @@ int main(int argc, char *argv[])
 					break;
 				}
 
-				if (fwrite(buffer, sizeof(char), to_read, fp) == to_read) {
-					fprintf(stderr, "failed to write file \n");
+				if ((ret = fwrite(buffer, sizeof(char), to_read, fp) == to_read)) {
+					fprintf(stderr, "failed to write file %d \n", ret);
 					break;
 				}
 			}
