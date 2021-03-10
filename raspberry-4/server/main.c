@@ -56,7 +56,7 @@ int start_epoll_thread(int epfd, int serv_sock)
 {
 	while (true)
 	{
-		struct epoll_event *epev = wait_epoll_event(epfd, MAX_EVENT, 1000 * 60);
+		struct epoll_event *epev = wait_epoll_event(epfd, MAX_EVENT, -1);
 		if (epev == NULL) return -1;
 
 		if (epev->data.ptr == NULL) break;
