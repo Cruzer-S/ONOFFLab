@@ -93,7 +93,7 @@ int main(int argc, char *argv[])
 		}
 
 		uint32_t command;
-		if (recvt(serv_sock, &command, sizeof(command), CLOCKS_PER_SEC) < 0)
+		if (recv(serv_sock, &command, sizeof(command), MSG_DONTWAIT) < 0)
 			continue;
 
 		printf("Command: %d \n", command);
