@@ -105,12 +105,15 @@ int main(int argc, char *argv[])
 
 			printf("Length: %u \n", length);
 
+
+			char buffer[BUFSIZ];
 			FILE *fp = fopen("test.dat", "w");
 			if (fp == NULL) break;
 
-			for (int received = 0; received < length;) {
-				char buffer[BUFSIZ];
-				int to_read = recvt(serv_sock, buffer, sizeof(buffer), CLOCKS_PER_SEC);
+			for (int received = 0, to_read; received < length; received += to_read) {
+				to_read = recvt(serv_sock, buffer,
+					length - received < BUFSIZ ? length - received : BUFSIZ,
+					CLOCKS_PER_SEC * 10);
 
 				if (to_read < 0)
 					break;

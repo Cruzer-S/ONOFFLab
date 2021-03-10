@@ -49,13 +49,13 @@ id	device_manager.c	/^	int id;$/;"	m	struct:device	file:
 init_http_header	http_handler.c	/^void init_http_header(struct http_header *header)$/;"	f
 is_http_header	http_handler.c	/^bool is_http_header(const char *header)$/;"	f
 length	http_handler.h	/^		char *length;$/;"	m	struct:http_header::__anon1
-link_ptop	server_handler.c	/^int link_ptop(int origin, int dest, int length, int timeout)$/;"	f
 main	main.c	/^int main(int argc, char *argv[])$/;"	f
 make_server	server_handler.c	/^int make_server(short port, int backlog)$/;"	f
 method	http_handler.h	/^	char *method;$/;"	m	struct:http_header
 parse_http_header	http_handler.c	/^int parse_http_header(char *raw, size_t size, struct http_header *header)$/;"	f
 readall	server_handler.c	/^int readall(int sock, char *buffer, int length)$/;"	f
 recv_until	server_handler.c	/^int recv_until(int sock, char *buffer, int bsize, char *end)$/;"	f
+recvt	server_handler.c	/^int recvt(int sock, void *buffer, int size, int timeout)$/;"	f
 register_device	device_manager.c	/^int register_device(int sock, int id)$/;"	f
 register_epoll_fd	server_handler.c	/^int register_epoll_fd(int epfd, int tgfd, int flag)$/;"	f
 show_http_header	http_handler.c	/^void show_http_header(struct http_header *header)$/;"	f

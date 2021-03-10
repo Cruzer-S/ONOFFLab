@@ -31,10 +31,11 @@ struct epoll_event *wait_epoll_event(int epfd, int maxevent, int timeout);
 int delete_epoll_fd(int epfd, int tgfd);
 int accept_epoll_client(int epfd, int serv_sock, int flags);
 
-int link_ptop(int origin, int dest, int length, int timeout);
 int readall(int sock, char *buffer, int length);
 int recv_until(int sock, char *buffer, int bsize, char *end);
 
 int recvt(int sock, void *buffer, int size, int timeout);
+
+int send_response(int sock, int rsp_code);
 
 #endif

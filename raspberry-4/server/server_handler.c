@@ -134,15 +134,16 @@ int flush_socket(int sock)
 
 int recv_until(int sock, char *buffer, int bsize, char *end)
 {
-	char *next = end;
+	char *next;
 	int received;
 
-	for (received = 0;
+	for (received = 0, next = end;
 		 recv(sock, buffer + received, 1, MSG_DONTWAIT) == 1
 	  && received < bsize;
 	     received++)
 	{
-		if (*next == *buffer) next++;
+		if (*next == *(buffer + received))
+			next++;
 		else next = end;
 
 		if (*next == '\0') return received;
@@ -156,47 +157,20 @@ int recvt(int sock, void *buffer, int size, int timeout)
 	int received = 0, ret;
 	clock_t start = clock(), end = start;
 
+	printf("Request Size: %d \n", size);
 	for (end = start; end - start < timeout && received < size; end = clock())
 	{
 		ret = recv(sock, buffer + received, size - received, MSG_DONTWAIT);
+		if (ret == 0) return -3;
+
 		if (ret == -1) {
 			if (errno == EAGAIN || errno == EWOULDBLOCK) continue;
 			else return -1;
 		} else received += ret;
+		printf("received: %d \n", ret);
 	}
-
-	if (end - start >= timeout)
-		return -1;
 
 	return received;
-}
-
-int link_ptop(int origin, int dest, int length, int timeout)
-{
-	char buffer[BUFSIZ];
-	clock_t start;
-	int received, ret1, ret2, seq;
-
-	for (start = clock(), received = 0, seq = true;
-		 (clock() - start) < timeout &&  received < length; seq = !seq)
-	{
-		if (seq) {
-			if ((ret1 = recv(origin, buffer, sizeof(buffer), MSG_DONTWAIT)) == -1) {
-				if (errno == EAGAIN) seq = !seq;
-				else return -1;
-			}
-		} else {
-			if ((ret2 = send(dest, buffer, ret1, MSG_DONTWAIT)) == -1) {
-				if (errno == EAGAIN) seq = !seq;
-				else return -2;
-			}
-
-			if (ret2 != ret1)
-				return -3;
-		}
-	}
-
-	return 0;
 }
 
 int readall(int sock, char *buffer, int length)
@@ -212,4 +186,17 @@ int readall(int sock, char *buffer, int length)
 		return -1;
 
 	return received;
+}
+
+int send_response(int sock, int rsp_code)
+{
+	char *rsp_header[] = {
+		"HTTP/1.1 200 OK\r\n\r\n"
+	};
+
+	switch (rsp_code) {
+		case 200: send(sock, rsp_header[0], strlen(rsp_header[0]) + 1, 0);
+	}
+
+	return 0;
 }

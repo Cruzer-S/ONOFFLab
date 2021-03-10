@@ -97,65 +97,95 @@ int start_epoll_thread(int epfd, int serv_sock)
 }
 
 #define EXTRACT(ptr, value) memcpy(&value, ptr, sizeof(value)), ptr += sizeof(value);
+#define LIMITS(value, max) ((value) < (max) ? (value) : (max))
 
 int client_handling(int sock)
 {
-	struct http_header http;
 	uint32_t command;
 	char data[HEADER_SIZE];
-	size_t hsize;
+	size_t dsize;
 
-	if ((hsize = recv(sock, (char *)data, HEADER_SIZE, MSG_PEEK)) == -1)
+	if ((dsize = recv(sock, (char *)data, HEADER_SIZE, MSG_PEEK)) == -1)
 		return -1;
 
-	printf("Received size: %zu \n", hsize);
+	printf("Received size: %zu \n", dsize);
 
 	if (is_http_header((const char *)data)) {
-		printf("HTTP data \n");
-		if ((hsize = recv_until(sock, data, HEADER_SIZE, "\r\n\r\n")) < 0)
-			return -2;
+		struct http_header http;
+		int device_id, device_sock;
+		uint32_t length;
+		int clnt_sock = sock;
+		char buffer[BUFSIZ];
+		FILE *fp;
 
-		if (parse_http_header(data, hsize, &http) < 0)
-			return -3;
+		printf("HTTP data \n");
 
 		do {
-			int device_id, device_sock;
-			uint32_t length;
-			int clnt_sock = sock;
-			char *temp;
-
-			if (sscanf(http.url, "/%d", &device_id) != 1)
-				return -4;
-
-			printf("Request: %s\n", http.method);
-			printf("Device ID: %d \n", device_id);
-
-			device_sock = find_device(device_id);
-			if (device_sock < 0)
-				return -5;
-
-			length = strtol(http.content.length, &temp, 10);
-			if (http.content.length == temp) return -6;
-
-			command = IPC_RECEIVED_CLIENT;
-
-			if (send(device_sock, &command,
-					 sizeof(command), MSG_DONTWAIT) != sizeof(command))
-				return -5;
-
-			if (send(device_sock, &length,
-					 sizeof(length), MSG_DONTWAIT) != sizeof(length))
-				return -4;
-
-			printf("command: %d \n", command);
-			printf("length: %d \n", length);
-
-			if (link_ptop(clnt_sock, device_sock, length, CLOCKS_PER_SEC * 2) < 0)
-				return -3;
-
-			printf("send successfully \n");
+			int ret;
+			if ((ret = recv_until(sock, data, HEADER_SIZE, "\r\n\r\n")) < 0)
+				return -2;
+			dsize = ret;
 		} while (false);
+
+		printf("dsize: %zu \n", dsize);
+
+		if (parse_http_header(data, dsize, &http) < 0)
+			return -3;
+
+		if (sscanf(http.url, "/%d", &device_id) != 1)
+			return -4;
+
+		printf("Request: %s\n", http.method);
+		printf("Device ID: %d \n", device_id);
+
+		device_sock = find_device(device_id);
+		if (device_sock < 0)
+			return -5;
+
+		if (sscanf(http.content.length, "%d", &length) != 1)
+			return -6;
+
+		command = IPC_RECEIVED_CLIENT;
+
+		if (send(device_sock, &command,
+				 sizeof(command), MSG_DONTWAIT) != sizeof(command))
+			return -5;
+
+		if (send(device_sock, &length,
+				 sizeof(length), MSG_DONTWAIT) != sizeof(length))
+			return -4;
+
+		printf("command: %d \n", command);
+		printf("length: %d \n", length);
+
+		fp = fopen("receive.dat", "w");
+		if (fp == NULL) return -7;
+
+		send_response(clnt_sock, 200);
+		for (int received = 0, to_read; received < length; received += to_read)
+		{
+			if ((to_read = recvt(clnt_sock, buffer, LIMITS(length - received, sizeof(buffer)), CLOCKS_PER_SEC)) < 0) {
+				printf("to_read: %d \n", to_read);
+				return -6;
+			}
+
+			if (to_read == 0) break;
+
+			if (fwrite(buffer, sizeof(char), to_read, fp) != to_read) {
+				fclose(fp);
+				return -7;
+			}
+
+			printf("Remain: %d \n", length - (received + to_read));
+		}
+
+		fclose(fp);
+
+		close(clnt_sock);
+
+		printf("send successfully \n");
 	} else {
+		size_t hsize;
 		uint32_t command;
 		char *dptr = data;
 
