@@ -23,6 +23,8 @@
 
 #define DEVICE_ID			0x00000001
 
+#define LIMITS(value, max) ((value) < (max) ? (value) : (max))
+
 bool is_initiate(int serial);
 int parse_data(int serial, char *ssid, char *psk);
 
@@ -105,20 +107,26 @@ int main(int argc, char *argv[])
 
 			printf("Length: %u \n", length);
 
-
 			char buffer[BUFSIZ];
 			FILE *fp = fopen("test.dat", "w");
 			if (fp == NULL) break;
 
 			for (int received = 0, to_read; received < length; received += to_read) {
-				to_read = recvt(serv_sock, buffer,
-					length - received < BUFSIZ ? length - received : BUFSIZ,
-					CLOCKS_PER_SEC * 10);
-
-				if (to_read < 0)
+				if ((to_read = recvt(serv_sock, buffer,
+							   LIMITS(length - received, sizeof(buffer)), CLOCKS_PER_SEC)) < 0) {
+					fprintf(stderr, "recvt() error \n");
 					break;
+				}
 
-				fwrite(buffer, sizeof(char), to_read, fp);
+				if (to_read < 0) {
+					fprintf(stderr, "to_read is lower than 0 \n");
+					break;
+				}
+
+				if (fwrite(buffer, sizeof(char), to_read, fp) == to_read) {
+					fprintf(stderr, "failed to write file \n");
+					break;
+				}
 			}
 			fclose(fp);
 

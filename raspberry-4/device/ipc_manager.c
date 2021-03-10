@@ -90,16 +90,34 @@ int recvt(int sock, void *buffer, int size, int timeout)
 	for (end = start; end - start < timeout && received < size; end = clock())
 	{
 		ret = recv(sock, buffer + received, size - received, MSG_DONTWAIT);
+		if (ret == 0) return -3;
+
 		if (ret == -1) {
 			if (errno == EAGAIN || errno == EWOULDBLOCK) continue;
 			else return -1;
 		} else received += ret;
 	}
 
-	if (end - start >= timeout)
-		return -2;
-
 	return received;
+}
+
+int sendt(int sock, void *buffer, int size, int timeout)
+{
+	int to_send = 0, ret;
+	clock_t start = clock(), end = start;
+
+	for (end = start; end - start < timeout && to_send < size; end = clock())
+	{
+		ret = send(sock, buffer + to_send, size - to_send, MSG_DONTWAIT);
+		if (ret == 0) return -3;
+
+		if (ret == -1) {
+			if (errno == EAGAIN || errno == EWOULDBLOCK) continue;
+			else return -1;
+		} else to_send += ret;
+	}
+
+	return to_send;
 }
 
 int change_sockopt(int fd, int level, int flag, int value)

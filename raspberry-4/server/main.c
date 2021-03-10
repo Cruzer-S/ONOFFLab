@@ -108,15 +108,12 @@ int client_handling(int sock)
 	if ((dsize = recv(sock, (char *)data, HEADER_SIZE, MSG_PEEK)) == -1)
 		return -1;
 
-	printf("Received size: %zu \n", dsize);
-
 	if (is_http_header((const char *)data)) {
 		struct http_header http;
 		int device_id, device_sock;
 		uint32_t length;
 		int clnt_sock = sock;
 		char buffer[BUFSIZ];
-		FILE *fp;
 
 		printf("HTTP data \n");
 
@@ -127,16 +124,11 @@ int client_handling(int sock)
 			dsize = ret;
 		} while (false);
 
-		printf("dsize: %zu \n", dsize);
-
 		if (parse_http_header(data, dsize, &http) < 0)
 			return -3;
 
 		if (sscanf(http.url, "/%d", &device_id) != 1)
 			return -4;
-
-		printf("Request: %s\n", http.method);
-		printf("Device ID: %d \n", device_id);
 
 		device_sock = find_device(device_id);
 		if (device_sock < 0)
@@ -149,38 +141,25 @@ int client_handling(int sock)
 
 		if (send(device_sock, &command,
 				 sizeof(command), MSG_DONTWAIT) != sizeof(command))
-			return -5;
+			return -7;
 
 		if (send(device_sock, &length,
 				 sizeof(length), MSG_DONTWAIT) != sizeof(length))
-			return -4;
+			return -8;
 
-		printf("command: %d \n", command);
-		printf("length: %d \n", length);
-
-		fp = fopen("receive.dat", "w");
-		if (fp == NULL) return -7;
-
-		send_response(clnt_sock, 200);
 		for (int received = 0, to_read; received < length; received += to_read)
 		{
-			if ((to_read = recvt(clnt_sock, buffer, LIMITS(length - received, sizeof(buffer)), CLOCKS_PER_SEC)) < 0) {
-				printf("to_read: %d \n", to_read);
-				return -6;
-			}
+			if ((to_read = recvt(clnt_sock, buffer,
+						   LIMITS(length - received, sizeof(buffer)), CLOCKS_PER_SEC)) < 0)
+				return -9;
 
 			if (to_read == 0) break;
 
-			if (fwrite(buffer, sizeof(char), to_read, fp) != to_read) {
-				fclose(fp);
-				return -7;
-			}
-
-			printf("Remain: %d \n", length - (received + to_read));
+			if (sendt(device_sock, buffer, to_read, CLOCKS_PER_SEC) < 0)
+				return -10;
 		}
 
-		fclose(fp);
-
+		send_response(clnt_sock, 200);
 		close(clnt_sock);
 
 		printf("send successfully \n");
