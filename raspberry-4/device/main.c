@@ -126,7 +126,7 @@ int main(int argc, char *argv[])
 					break;
 				} else printf("to_read: %d \n", to_read);
 
-				if ((ret = fwrite(buffer, sizeof(char), to_read, fp) == to_read)) {
+				if ((ret = fwrite(buffer, to_read, sizeof(char), fp) == to_read)) {
 					fprintf(stderr, "failed to write file %d \n", ret);
 					break;
 				}
