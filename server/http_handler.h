@@ -19,8 +19,6 @@ struct http_header {
 		char *type;
 		char *encoding;
 	} content;
-
-	uint8_t *EOH; // End of header
 };
 
 void show_http_header(struct http_header *header);

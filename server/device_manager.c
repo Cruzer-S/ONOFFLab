@@ -1,39 +1,119 @@
 #include "device_manager.h"
 
 struct device {
-	int sock;
+	struct node *head;
+	int count;
+};
+
+struct node {
 	int id;
-} static dlist[MAX_DEVICE];
+	int sock;
 
-static struct device *cur = dlist;
+	struct node *next;
+};
 
-int register_device(int sock, int id)
+struct device *init_device(void)
 {
-	if (!find_device(id))
-		return -1;
+	struct device *dev = malloc(sizeof(struct device));
 
-	if (cur - dlist >= MAX_DEVICE)
-		return -2;
+	if (dev == NULL) return NULL;
 
-	cur->sock = sock;
-	cur->id = id;
+	dev->count = 0;
+	dev->head = NULL;
 
-	cur++;
-
-	return 0;
+	return dev;
 }
 
-int find_device(int id)
+bool insert_device(struct device *dev, int id, int sock)
 {
-	for (struct device *dp = dlist;
-		 dp < cur; dp++)
-		if (dp->id == id)
-			return dp->sock;
+	struct node *new_node = malloc(sizeof(struct node));
+	if (new_node == NULL) return false;
+
+	new_node->id = id;
+	new_node->sock = sock;
+	new_node->next = dev->head;
+
+	dev->count++;
+	dev->head = new_node;
+
+	return true;
+}
+
+bool delete_device_id(struct device *dev, int id)
+{
+	for (struct node *dp = dev->head, *prev = NULL;
+		 dp != NULL;
+		 prev = dp, dp = dp->next)
+	{
+		if (dp->id == id) {
+			if (prev == NULL) {
+				prev = dp->next;
+				free(dp);
+				dev->head = prev;
+			} else {
+				prev->next = dp->next;
+				free(dp);
+			}
+		}
+
+		return dev;
+	}
+
+	return NULL;
+}
+
+bool delete_device_sock(struct device *dev, int sock)
+{
+	for (struct node *dp = dev->head, *prev = NULL;
+		 dp != NULL;
+		 prev = dp, dp = dp->next)
+	{
+		if (dp->sock == sock) {
+			if (prev == NULL) {
+				prev = dp->next;
+				free(dp);
+				dev->head = prev;
+			} else {
+				prev->next = dp->next;
+				free(dp);
+			}
+		}
+
+		return dev;
+	}
+
+	return NULL;
+}
+
+int find_device_id(struct device *dev, int sock)
+{
+	for (struct node *dp = dev->head;
+		 dp != NULL;
+		 dp = dp->next)
+	{
+		if (dp->sock == sock)
+			return dp->id;
+	}
 
 	return -1;
 }
 
-int count_device(void)
+int find_device_sock(struct device *dev, int id)
 {
-	return cur - dlist;
+	for (struct node *dp = dev->head;
+		 dp != NULL;
+		 dp = dp->next)
+	{
+		if (dp->id == id)
+			return dp->id;
+	}
+
+	return -1;
+}
+
+void release_device(struct device *dev)
+{
+	for (struct node *head = dev->head, *next;
+		 head != NULL;
+		 next = head->next, free(head), head = next) ;
 }
