@@ -27,10 +27,14 @@
 
 bool is_initiate(int serial);
 int parse_data(int serial, char *ssid, char *psk);
+int wait_command(int sock);
+int handling_command(int sock, int commnad);
 
 int main(int argc, char *argv[])
 {
 	int bluetooth_port, serv_sock;
+	const char *host;
+	uint16_t port;
 
 	if (wiringPiSetup() == -1)
 		error_handling("unable to start wiringPi: %s", strerror(errno));
@@ -45,8 +49,6 @@ int main(int argc, char *argv[])
 
 	do {
 		long check;
-		const char *host;
-		uint16_t port;
 
 		check = (argc == 3) ? strtol(argv[2], NULL, 10) : SERVER_PORT;
 		if (check < 0 || check > USHRT_MAX)
@@ -55,25 +57,20 @@ int main(int argc, char *argv[])
 		port = (uint16_t) check;
 		host = (argc == 3) ? argv[1] : SERVER_DOMAIN;
 
-		if ((serv_sock = connect_to_target(host, port)) < 0)
-			error_handling("connect_to_target(%s, %hd) error", host, port);
+		printf("convert address: %s:%hu\n", host, port);
 
-		printf("connect to server: %d\n"
-			   "Address: %s:%hd\n",
-				serv_sock, host, port);
+		if ((serv_sock = connect_to_target(host, port)) < 0)
+			error_handling("connect_to_target() error", host, port);
 	} while (false);
 
-	/*
-	if (change_flag(serv_sock, O_NONBLOCK) < 0)
-		error_handling("change_flag() error");
-	*/
+	printf("connect to target server: %s:%hu \n", host, port);
 
 	if (ipc_to_target(serv_sock, IPC_REGISTER_DEVICE, DEVICE_ID) < 0)
-		error_handling("ipc_to_target() error");
+		error_handling("ipc_to_target(IPC_REGISTER_DEVICE) error");
 
 	printf("register device: %d \n", DEVICE_ID);
 
-	for (clock_t start, end = start = clock(); ; end = clock()) {
+	while (true) {
 		// ========================================================================
 		// checking whether the bluetooth data is available.
 		// ========================================================================
@@ -92,53 +89,27 @@ int main(int argc, char *argv[])
 					ssid, psk);
 		}
 
-		uint32_t command;
-		if (recv(serv_sock, &command, sizeof(command), MSG_DONTWAIT) < 0)
-			continue;
+		// ========================================================================
+		// checking whether the server sends command
+		// ========================================================================
+		int command;
+		if ((command = wait_command(serv_sock)) < 0) {
+			if (command == 0) continue;
 
-		printf("Command: %d \n", command);
-		switch (command) {
-		case IPC_REGISTER_DEVICE: break;
-		case IPC_RECEIVED_CLIENT: {
-			uint32_t length;
+			if (handling_command(serv_sock, command) < 0) {
+				fprintf(stderr, "handling_command() error \n");
+			} else flush_socket(serv_sock);
+		} else {
+			if (serv_sock > 0)
+				close(serv_sock);
 
-			if (recvt(serv_sock, &length, sizeof(length), CLOCKS_PER_SEC) < 0)
-				break;
+			serv_sock = connect_to_target(host, port);
+		}
 
-			printf("Length: %u \n", length);
+		// ========================================================================
+		// Whatever you wants
+		// ========================================================================
 
-			char buffer[BUFSIZ];
-			FILE *fp = fopen("test.dat", "w");
-			if (fp == NULL) break;
-
-			for (int received = 0, to_read, ret;
-				 received < length;
-				 received += to_read)
-			{
-				if ((to_read = recvt(serv_sock, buffer,
-							   LIMITS(length - received, sizeof(buffer)), CLOCKS_PER_SEC)) < 0) {
-					fprintf(stderr, "recvt() error \n");
-					break;
-				}
-
-				if (to_read < 0) {
-					fprintf(stderr, "to_read is lower than 0 \n");
-					break;
-				} else printf("to_read: %d \n", to_read);
-
-				if ((ret = fwrite(buffer, to_read, sizeof(char), fp) == to_read)) {
-					fprintf(stderr, "failed to write file %d \n", ret);
-					break;
-				}
-			}
-			fclose(fp);
-
-			if (sendt(serv_sock, (uint32_t []) { 1 }, sizeof(uint32_t), CLOCKS_PER_SEC) < 0)
-				break;
-
-			printf("receive data successfully \n");
-			break;
-		}}
 	}
 
 	close(serv_sock);
@@ -213,4 +184,51 @@ bool is_initiate(int serial)
 	}
 
 	return false;
+}
+
+int wait_command(int sock)
+{
+
+	return 0;
+}
+
+int handling_command(int sock, int command)
+{
+	switch (command) {
+	case IPC_REGISTER_DEVICE: break;
+	case IPC_RECEIVED_CLIENT: {
+		uint32_t length;
+
+		if (recvt(serv_sock, &length, sizeof(length), CLOCKS_PER_SEC) < 0)
+			goto FAILED;
+
+		printf("Length: %u \n", length);
+
+		char buffer[BUFSIZ];
+		FILE *fp = fopen("test.dat", "w");
+		if (fp == NULL)
+			goto FAILED;
+
+		for (int received = 0, to_read, ret;
+			 received < length;
+			 received += to_read)
+		{
+			if ((to_read = recvt(serv_sock, buffer,
+						   LIMITS(length - received, sizeof(buffer)), CLOCKS_PER_SEC)) < 0)
+				goto FAILED;
+
+			if (to_read < 0)
+				goto FAILED;
+
+			if ((ret = fwrite(buffer, to_read, sizeof(char), fp) == to_read))
+				goto FAILED;
+		}
+		fclose(fp);
+
+		if (sendt(serv_sock, (uint32_t []) { 1 }, sizeof(uint32_t), CLOCKS_PER_SEC) < 0)
+			goto FAILED;
+
+		printf("receive data successfully \n");
+		break;
+	}}
 }
