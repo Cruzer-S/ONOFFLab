@@ -33,8 +33,9 @@ bool insert_device(struct device *dev, int id, int sock)
 	new_node->sock = sock;
 	new_node->next = dev->head;
 
-	dev->count++;
 	dev->head = new_node;
+
+	dev->count++;
 
 	return true;
 }
@@ -105,7 +106,7 @@ int find_device_sock(struct device *dev, int id)
 		 dp = dp->next)
 	{
 		if (dp->id == id)
-			return dp->id;
+			return dp->sock;
 	}
 
 	return -1;

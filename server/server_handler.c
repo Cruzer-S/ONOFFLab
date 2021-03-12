@@ -152,7 +152,7 @@ int recv_until(int sock, char *buffer, int bsize, char *end)
 	return -1;
 }
 
-int recvt(int sock, void *buffer, int size, int timeout)
+int recvt(int sock, void *buffer, int size, clock_t timeout)
 {
 	int received = 0, ret;
 	clock_t start = clock(), end = start;
@@ -171,7 +171,7 @@ int recvt(int sock, void *buffer, int size, int timeout)
 	return received;
 }
 
-int sendt(int sock, void *buffer, int size, int timeout)
+int sendt(int sock, void *buffer, int size, clock_t timeout)
 {
 	int to_send = 0, ret;
 	clock_t start = clock(), end = start;
@@ -212,7 +212,7 @@ int send_response(int sock, int rsp_code)
 	};
 
 	switch (rsp_code) {
-		case 200: send(sock, rsp_header[0], strlen(rsp_header[0]) + 1, 0);
+		case 200: send(sock, rsp_header[0], strlen(rsp_header[0]), 0);
 	}
 
 	return 0;

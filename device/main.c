@@ -133,6 +133,9 @@ int main(int argc, char *argv[])
 			}
 			fclose(fp);
 
+			if (sendt(serv_sock, (uint32_t []) { 1 }, sizeof(uint32_t), CLOCKS_PER_SEC) < 0)
+				break;
+
 			printf("receive data successfully \n");
 			break;
 		}}

@@ -2,17 +2,13 @@
 
 #define SIZEOF(X) (sizeof(X) / sizeof(X[0]))
 
-enum HTTP_METHOD {
-	GET, POST, DELETE, PETCH
-};
-
 enum HTTP_ENTITY {
 	CONTENT_LENGTH, CONTENT_TYPE, CONTENT_ENCODING
 };
 
 static const char *http_method_string[] = {
 	[GET]    = "GET",    [POST]  = "POST",
-	[DELETE] = "DELETE", [PETCH] = "PETCH"
+	[PATCH]  = "PATCH", [DELETE] = "DELTE"
 };
 
 static const char *http_entity_name[] = {
@@ -20,6 +16,15 @@ static const char *http_entity_name[] = {
 	[CONTENT_TYPE]     = "Content-Type",
 	[CONTENT_ENCODING] = "Content-Encoding"
 };
+
+int parse_string_method(const char *str_method)
+{
+	for (int i = 0; i < SIZEOF(http_method_string); i++)
+		if (!strcmp(str_method, http_method_string[i]))
+			return i;
+
+	return -1;
+}
 
 bool is_http_header(const char *header)
 {
@@ -69,4 +74,26 @@ int parse_http_header(char *raw, size_t size, struct http_header *header)
 	}
 
 	return 0;
+}
+
+static char *ctos(int code)
+{
+	switch (code) {
+	case 200: return "OK";
+	}
+
+	return NULL;
+}
+
+int make_http_header_s(char *receive, int recv_size, int response,
+		               char *type, int length)
+{
+	return snprintf(receive, recv_size,
+		    "HTTP/1.1 %d %s\r\n"
+			"Content-type: %s\r\n"
+			"Content-length: %d\r\n"
+			"\r\n",
+			response, ctos(response),
+			type, length
+	);
 }

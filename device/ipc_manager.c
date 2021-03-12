@@ -82,7 +82,7 @@ int flush_socket(int sock)
 	return -(errno == EAGAIN);
 }
 
-int recvt(int sock, void *buffer, int size, int timeout)
+int recvt(int sock, void *buffer, int size, clock_t timeout)
 {
 	int received = 0, ret;
 	clock_t start = clock(), end = start;
@@ -101,7 +101,7 @@ int recvt(int sock, void *buffer, int size, int timeout)
 	return received;
 }
 
-int sendt(int sock, void *buffer, int size, int timeout)
+int sendt(int sock, void *buffer, int size, clock_t timeout)
 {
 	int to_send = 0, ret;
 	clock_t start = clock(), end = start;

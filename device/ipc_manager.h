@@ -36,6 +36,7 @@ int readall(int sock, char *buffer, int length);
 
 int ipc_receive_request(int sock);
 
-int recvt(int sock, void *buffer, int size, int timeout);
+int recvt(int sock, void *buffer, int size, clock_t timeout);
+int sendt(int sock, void *buffer, int size, clock_t timeout);
 
 #endif
