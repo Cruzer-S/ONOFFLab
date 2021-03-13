@@ -18,6 +18,7 @@
 #include <time.h>
 
 #define HEADER_SIZE (1024)
+#define CPS			CLOCKS_PER_SEC
 
 enum IPC_COMMAND {
 	IPC_REGISTER_DEVICE = 0x01,

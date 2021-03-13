@@ -24,13 +24,13 @@ int ipc_to_target(int sock, enum IPC_COMMAND cmd, ...)
 	default: break;
 	}
 
-	if (sendt(sock, header, sizeof(header), CLOCKS_PER_SEC) < 0)
+	if (sendt(sock, header, sizeof(header), CPS) < 0)
 		return -1;
 
 	do {
 		uint32_t result;
 
-		if (recvt(sock, &result, sizeof(result), CLOCKS_PER_SEC) < 0)
+		if (recvt(sock, &result, sizeof(result), CPS) < 0)
 			return -2;
 
 		if (result < 0)

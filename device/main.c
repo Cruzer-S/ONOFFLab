@@ -22,7 +22,6 @@
 #define SERVER_SYNC_TIME	(CPS * 10)
 
 #define DEVICE_ID			0x00000001
-#define CPS					CLOCKS_PER_SEC
 
 #define LIMITS(value, max) ((value) < (max) ? (value) : (max))
 
