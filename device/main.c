@@ -19,9 +19,10 @@
 #define SERVER_DOMAIN		"www.mythos.ml"
 #define SERVER_PORT			1584
 
-#define SERVER_SYNC_TIME	(CLOCKS_PER_SEC * 10)
+#define SERVER_SYNC_TIME	(CPS * 10)
 
 #define DEVICE_ID			0x00000001
+#define CPS					CLOCKS_PER_SEC
 
 #define LIMITS(value, max) ((value) < (max) ? (value) : (max))
 
@@ -94,16 +95,16 @@ int main(int argc, char *argv[])
 		// ========================================================================
 		int command;
 		if ((command = wait_command(serv_sock)) < 0) {
+			if (serv_sock > 0)
+				close(serv_sock);
+
+			serv_sock = connect_to_target(host, port);
+		} else {
 			if (command == 0) continue;
 
 			if (handling_command(serv_sock, command) < 0) {
 				fprintf(stderr, "handling_command() error \n");
 			} else flush_socket(serv_sock);
-		} else {
-			if (serv_sock > 0)
-				close(serv_sock);
-
-			serv_sock = connect_to_target(host, port);
 		}
 
 		// ========================================================================
@@ -117,7 +118,7 @@ int main(int argc, char *argv[])
 	return 0;
 }
 
-#define INITIATE_TIMEOUT		((clock_t) CLOCKS_PER_SEC)
+#define INITIATE_TIMEOUT		((clock_t) CPS)
 
 int parse_data(int serial, char *ssid, char *psk)
 {
@@ -198,38 +199,40 @@ int handling_command(int sock, int command)
 	case IPC_RECEIVED_CLIENT: {
 		uint32_t length;
 
-		if (recvt(sock, &length, sizeof(length), CLOCKS_PER_SEC) < 0)
-			goto FAILED;
+		if (recvt(sock, &length, sizeof(length), CPS) < 0)
+			return -1;
 
 		printf("Length: %u \n", length);
 
 		char buffer[BUFSIZ];
 		FILE *fp = fopen("test.dat", "w");
 		if (fp == NULL)
-			goto FAILED;
+			return -2;
 
-		for (int received = 0, to_read, ret;
+		int ret = 0;
+		for (int received = 0, to_read;
 			 received < length;
 			 received += to_read)
 		{
 			if ((to_read = recvt(sock, buffer,
-						   LIMITS(length - received, sizeof(buffer)), CLOCKS_PER_SEC)) < 0)
-				goto FAILED;
+						   LIMITS(length - received, sizeof(buffer)), CPS)) < 0)
+			{ ret = -3; break; }
 
-			if (to_read < 0)
-				goto FAILED;
+			if (to_read < 0) { ret = -4; break; }
 
 			if ((ret = fwrite(buffer, to_read, sizeof(char), fp) == to_read))
-				goto FAILED;
+			{ ret = -5; break; }
 		}
 		fclose(fp);
 
-		if (sendt(sock, (uint32_t []) { 1 }, sizeof(uint32_t), CLOCKS_PER_SEC) < 0)
-			goto FAILED;
+		if (ret < 0) return ret;
+
+		if (sendt(sock, (uint32_t []) { 1 }, sizeof(uint32_t), CPS) < 0)
+			return -6;
 
 		printf("receive data successfully \n");
 		break;
 	}}
 
-FAILED: return 0;
+	return 0;
 }
