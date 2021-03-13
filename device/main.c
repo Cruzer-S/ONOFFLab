@@ -198,7 +198,7 @@ int handling_command(int sock, int command)
 	case IPC_RECEIVED_CLIENT: {
 		uint32_t length;
 
-		if (recvt(serv_sock, &length, sizeof(length), CLOCKS_PER_SEC) < 0)
+		if (recvt(sock, &length, sizeof(length), CLOCKS_PER_SEC) < 0)
 			goto FAILED;
 
 		printf("Length: %u \n", length);
@@ -212,7 +212,7 @@ int handling_command(int sock, int command)
 			 received < length;
 			 received += to_read)
 		{
-			if ((to_read = recvt(serv_sock, buffer,
+			if ((to_read = recvt(sock, buffer,
 						   LIMITS(length - received, sizeof(buffer)), CLOCKS_PER_SEC)) < 0)
 				goto FAILED;
 
@@ -224,10 +224,12 @@ int handling_command(int sock, int command)
 		}
 		fclose(fp);
 
-		if (sendt(serv_sock, (uint32_t []) { 1 }, sizeof(uint32_t), CLOCKS_PER_SEC) < 0)
+		if (sendt(sock, (uint32_t []) { 1 }, sizeof(uint32_t), CLOCKS_PER_SEC) < 0)
 			goto FAILED;
 
 		printf("receive data successfully \n");
 		break;
 	}}
+
+FAILED: return 0;
 }
