@@ -101,8 +101,10 @@ int main(int argc, char *argv[])
 			printf("reconnect to target: ");
 			serv_sock = connect_to_target(NULL, 0);
 
-			if (serv_sock < 0)	printf("fail    \n");
-			else				printf("success \n");
+			if (serv_sock < 0) {
+				printf("fail    \n");
+				continue;
+			} printf("success \n");
 
 			if (ipc_to_target(serv_sock, IPC_REGISTER_DEVICE, DEVICE_ID) < 0)
 				error_handling("ipc_to_target(IPC_REGISTER_DEVICE) error");
