@@ -2,19 +2,22 @@
 #define TASK_MANAGER_H__
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <stdbool.h>
 #include <stdint.h>
+#include <string.h>
+#include <fcntl.h>
 
 #define MAX_TASK	1024
 
-struct task;
+struct task_manager;
 
-struct task *make_task(size_t size);
-bool is_task_full(struct task *task);
+struct task_manager *create_task_manager(size_t size);
+void delete_task_manager(struct task_manager *tm);
 
-int register_task(struct task *task, int id);
-int delete_task(struct task *task, int id);
-int draw_task(void);
+int make_task(struct task_manager *tm);
+int remove_task(struct task_manager *tm, int id);
+
 char *task_name(int id);
 
 #endif

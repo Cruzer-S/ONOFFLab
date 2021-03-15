@@ -26,12 +26,12 @@
 bool is_initiate(int serial);
 int parse_data(int serial, char *ssid, char *psk);
 int wait_command(int sock);
-int handling_command(int sock, int commnad, struct task *task);
+int32_t handling_command(int sock, int commnad, struct task_manager *task);
 
 int main(int argc, char *argv[])
 {
 	int bluetooth_port, serv_sock;
-	struct task *task;
+	struct task_manager *task_manager;
 
 	if (wiringPiSetup() == -1)
 		error_handling("unable to start wiringPi: %s", strerror(errno));
@@ -44,9 +44,9 @@ int main(int argc, char *argv[])
 
 	printf("open bluetooth port \n");
 
-	task = make_task(MAX_TASK);
-	if (task == NULL)
-		error_handling("make_task(MAX_TASK) error");
+	task_manager = create_task_manager(MAX_TASK);
+	if (task_manager == NULL)
+		error_handling("create_task_manager() error");
 
 	do {
 		const char *host;
@@ -113,12 +113,16 @@ int main(int argc, char *argv[])
 		} else {
 			if (command == 0) continue;
 
-			int32_t result = handling_command(serv_sock, command, task);
-			if (sendt(serv_sock, &result, sizeof(result), CPS))
+			int32_t result = handling_command(serv_sock, command, task_manager);
+			if (sendt(serv_sock, &result, sizeof(result), CPS) < 0) {
+				close(serv_sock);
+				serv_sock = -1;
 
-			if (handling_command(serv_sock, command, task) < 0) {
-				fprintf(stderr, "handling_command() error \n");
-			} else flush_socket(serv_sock);
+				continue;
+			}
+
+			printf("handling_command(): %d \n", result);
+			printf("flush_socket(): %d \n", flush_socket(serv_sock));
 		}
 
 		// ========================================================================
@@ -211,33 +215,29 @@ int32_t wait_command(int sock)
 	return command;
 }
 
-int handling_command(int sock, int command, struct task *task)
+int32_t handling_command(int sock, int command, struct task_manager *tm)
 {
 	switch (command) {
 	case IPC_REGISTER_DEVICE: break;
-	case IPC_RECEIVED_CLIENT: {
-		int32_t length, available;
+	case IPC_REGISTER_GCODE: {
+		int32_t length, id;
 
-		available = is_task_full(task);
-		if (sendt(sock, &available, sizeof(available), CPS) < 0)
+		if ((id = make_task(tm)) < 0)
 			return -1;
 
-		if (!available) return 0;
+		FILE *fp = fopen(task_name(id), "wb");
+		if (fp == NULL)
+			return -2;
 
 		if (recvt(sock, &length, sizeof(length), CPS) < 0)
 			return -2;
 
-		printf("Length: %u \n", length);
-
-		char buffer[BUFSIZ];
-		FILE *fp = fopen("test.dat", "w");
-		if (fp == NULL)
-			return -3;
+		printf("length: %u \n", length);
 
 		int ret = 0;
+		char buffer[BUFSIZ];
 		for (int received = 0, to_read;
-			 received < length;
-			 received += to_read)
+			 received < length; received += to_read)
 		{
 			if ((to_read = recvt(sock, buffer,
 						   LIMITS(length - received, sizeof(buffer)), CPS)) < 0)
@@ -248,6 +248,7 @@ int handling_command(int sock, int command, struct task *task)
 			if ((ret = fwrite(buffer, to_read, sizeof(char), fp) == to_read))
 			{ ret = -5; break; }
 		}
+
 		fclose(fp);
 
 		if (ret < 0) return ret;

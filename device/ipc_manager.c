@@ -84,12 +84,14 @@ int change_flag(int fd, int flag)
 
 int flush_socket(int sock)
 {
+	int result, ret;
 	char buffer[BUFSIZ];
 
-	while (recv(sock, buffer, sizeof(buffer), MSG_DONTWAIT) != -1)
-		/* empty loop body */ ;
+	result = 0;
+	while ((ret = recv(sock, buffer, sizeof(buffer), MSG_DONTWAIT)) != -1)
+		result += ret;
 
-	return -(errno == EAGAIN);
+	return result;
 }
 
 int recvt(int sock, void *buffer, int size, clock_t timeout)

@@ -139,8 +139,8 @@ int http_client(int clnt_sock, char *header, struct device *device)
 			return -6;
 
 	switch (parse_string_method(http.method)) {
-	case POST: // IPC_RECEIVED_CLIENT
-		if (sendt(device_sock, (int32_t []) { IPC_RECEIVED_CLIENT },
+	case POST: // IPC_REGISTER_GCODE
+		if (sendt(device_sock, (int32_t []) { IPC_REGISTER_GCODE },
 				  sizeof(int32_t), CLOCKS_PER_SEC) < 0)
 			return -7;
 

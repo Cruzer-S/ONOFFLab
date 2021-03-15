@@ -22,7 +22,7 @@
 
 enum IPC_COMMAND {
 	IPC_REGISTER_DEVICE = 0x01,
-	IPC_RECEIVED_CLIENT = 0x02,
+	IPC_REGISTER_GCODE = 0x02,
 };
 
 int change_sockopt(int fd, int level, int flag, int value);

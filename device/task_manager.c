@@ -1,23 +1,67 @@
 #include "task_manager.h"
 
-struct node {
-	char *name;
-	int id;
+#define BASE_TASK_NAME "task_"
+
+struct task_manager {
+	bool *task;
+	size_t max;
+	size_t cur;
 };
 
-struct task {
-	struct node *tnode;
-	struct node *first;
-	struct node *last;
+struct task_manager *create_task_manager(size_t size)
+{
+	struct task_manager *tm = malloc(sizeof(struct task_manager));
+	if (tm == NULL)
+		return NULL;
 
-	size_t max_size;
-	size_t current;
-};
+	tm->task = malloc(sizeof(bool) * size);
+	if (tm->task == NULL)
+		return NULL;
 
-struct task *make_task(size_t size);
-bool is_task_full(struct task *task);
+	memset(tm->task, 0x00, sizeof(bool) * size);
 
-int register_task(struct task *task, int id);
-int delete_task(struct task *task, int id);
-int draw_task(void);
-char *task_name(int id);
+	tm->max = size;
+	tm->cur = 0;
+
+	return tm;
+}
+
+void delete_task_manager(struct task_manager *tm)
+{
+	free(tm->task);
+	free(tm);
+}
+
+int make_task(struct task_manager *tm)
+{
+	for (int i = 0; i < tm->cur; i++) {
+		if (!tm->task[i]) {
+			creat(task_name(i), 0x777);
+			return i;
+		}
+	}
+
+	return -1;
+}
+
+int remove_task(struct task_manager *tm, int id)
+{
+	char name[100];
+
+	if (!tm->task[id])
+		return -1;
+
+	if (remove(task_name(id)) == -1)
+		return -2;
+
+	return 0;
+}
+
+char *task_name(int id)
+{
+	static char name[100];
+
+	sprintf(name, "%s%3d", BASE_TASK_NAME, id);
+
+	return name;
+}
