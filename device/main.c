@@ -98,16 +98,16 @@ int main(int argc, char *argv[])
 			if (serv_sock > 0)
 				close(serv_sock);
 
-			printf("reconnect to target: ");
 			serv_sock = connect_to_target(NULL, 0);
-
-			if (serv_sock < 0) {
-				printf("fail    \n");
+			if (serv_sock < 0)
 				continue;
-			} printf("success \n");
+
+			printf("reconnect to target \n");
 
 			if (ipc_to_target(serv_sock, IPC_REGISTER_DEVICE, DEVICE_ID) < 0)
 				error_handling("ipc_to_target(IPC_REGISTER_DEVICE) error");
+
+			printf("register device: %d \n", DEVICE_ID);
 		} else {
 			if (command == 0) continue;
 
