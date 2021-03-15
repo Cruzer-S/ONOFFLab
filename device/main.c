@@ -66,7 +66,7 @@ int main(int argc, char *argv[])
 			error_handling("connect_to_target() error", host, port);
 	} while (false);
 
-	printf("connect to target server \n");
+	printf("connect to target server: %d \n", serv_sock);
 
 	if (ipc_to_target(serv_sock, IPC_REGISTER_DEVICE, DEVICE_ID) < 0)
 		error_handling("ipc_to_target(IPC_REGISTER_DEVICE) error");
