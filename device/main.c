@@ -123,7 +123,7 @@ int main(int argc, char *argv[])
 			}
 
 			printf("handling_command(): %d \n", result);
-			printf("flush_socket(): %d \n", flush_socket(serv_sock));
+			// printf("flush_socket(): %d \n", flush_socket(serv_sock));
 		}
 
 		// ========================================================================
