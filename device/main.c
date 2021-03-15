@@ -208,7 +208,7 @@ bool is_initiate(int serial)
 
 int32_t wait_command(int sock)
 {
-	int32_t command;
+	int32_t command = 0;
 	int ret;
 
 	if (sock < 0) return -2;
