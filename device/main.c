@@ -186,10 +186,14 @@ bool is_initiate(int serial)
 	return false;
 }
 
-int wait_command(int sock)
+int32_t wait_command(int sock)
 {
+	uint32_t command;
 
-	return 0;
+	if (recvt(sock, &command, sizeof(command), CPS) < 0)
+		return -1;
+
+	return command;
 }
 
 int handling_command(int sock, int command)
