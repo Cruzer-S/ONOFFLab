@@ -201,7 +201,6 @@ int device_client(int device_sock, char *data, struct device *device)
 			return -4;
 
 		printf("Register device: %u <=> %u \n", device_sock, device_id);
-
 		break;
 
 	default: return -2;

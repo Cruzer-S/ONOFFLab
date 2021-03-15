@@ -221,12 +221,14 @@ int32_t handling_command(int sock, int command, struct task_manager *tm)
 	switch (command) {
 	case IPC_REGISTER_DEVICE: break;
 	case IPC_REGISTER_GCODE: {
-		int32_t length, id;
+		int32_t length, id, ret;
+		char buffer[BUFSIZ];
+		FILE *fp;
 
 		if ((id = make_task(tm)) < 0)
 			return -1;
 
-		FILE *fp = fopen(task_name(id), "wb");
+		fp = fopen(task_name(id), "wb");
 		if (fp == NULL)
 			return -2;
 
@@ -235,8 +237,6 @@ int32_t handling_command(int sock, int command, struct task_manager *tm)
 
 		printf("length: %u \n", length);
 
-		int ret = 0;
-		char buffer[BUFSIZ];
 		for (int received = 0, to_read;
 			 received < length; received += to_read)
 		{
