@@ -16,24 +16,22 @@
 
 #define BOAD_RATE			9600
 #define SERIAL_DEVICE		"/dev/ttyS0"
+#define DEVICE_ID			0x00000001
 
 #define SERVER_DOMAIN		"www.mythos.ml"
 #define SERVER_PORT			1584
-
-#define SERVER_SYNC_TIME	(CPS * 10)
-
-#define DEVICE_ID			0x00000001
 
 #define LIMITS(value, max) ((value) < (max) ? (value) : (max))
 
 bool is_initiate(int serial);
 int parse_data(int serial, char *ssid, char *psk);
 int wait_command(int sock);
-int handling_command(int sock, int commnad);
+int handling_command(int sock, int commnad, struct task *task);
 
 int main(int argc, char *argv[])
 {
 	int bluetooth_port, serv_sock;
+	struct task *task;
 
 	if (wiringPiSetup() == -1)
 		error_handling("unable to start wiringPi: %s", strerror(errno));
@@ -45,6 +43,10 @@ int main(int argc, char *argv[])
 				       SERIAL_DEVICE, strerror(errno));
 
 	printf("open bluetooth port \n");
+
+	task = make_task(MAX_TASK);
+	if (task == NULL)
+		error_handling("make_task(MAX_TASK) error");
 
 	do {
 		const char *host;
@@ -96,15 +98,13 @@ int main(int argc, char *argv[])
 		int command;
 		if ((command = wait_command(serv_sock)) < 0) {
 			if (serv_sock > 0) {
-				printf("disconnect to server \n");
+				printf("disconnect to target \n");
 				close(serv_sock);
 			}
 
 			serv_sock = connect_to_target(NULL, 0);
-			if (serv_sock < 0)
-				continue;
-
-			printf("reconnect to target \n");
+			if (serv_sock < 0) continue;
+			else printf("reconnect to target \n");
 
 			if (ipc_to_target(serv_sock, IPC_REGISTER_DEVICE, DEVICE_ID) < 0)
 				error_handling("ipc_to_target(IPC_REGISTER_DEVICE) error");
@@ -113,7 +113,10 @@ int main(int argc, char *argv[])
 		} else {
 			if (command == 0) continue;
 
-			if (handling_command(serv_sock, command) < 0) {
+			int32_t result = handling_command(serv_sock, command, task);
+			if (sendt(serv_sock, &result, sizeof(result), CPS))
+
+			if (handling_command(serv_sock, command, task) < 0) {
 				fprintf(stderr, "handling_command() error \n");
 			} else flush_socket(serv_sock);
 		}
@@ -129,15 +132,13 @@ int main(int argc, char *argv[])
 	return 0;
 }
 
-#define INITIATE_TIMEOUT		((clock_t) CPS)
-
 int parse_data(int serial, char *ssid, char *psk)
 {
 	int step = 0, ch;
 	uint8_t ssid_size, psk_size;
 
 	for (clock_t end, start = end = clock();
-		 (end - start) < INITIATE_TIMEOUT;
+		 (end - start) < CPS;
 		 end = clock())
 	{
 		if (serialDataAvail(serial) == -1)
@@ -182,7 +183,7 @@ bool is_initiate(int serial)
 		return false;
 
 	for (clock_t end, start = end = clock();
-		 (end - start) < INITIATE_TIMEOUT;
+		 (end - start) < CPS;
 		 end = clock())
 	{
 		if (serialDataAvail(serial) == -1)
@@ -199,7 +200,7 @@ bool is_initiate(int serial)
 
 int32_t wait_command(int sock)
 {
-	uint32_t command;
+	int32_t command;
 	int ret;
 
 	if (sock < 0) return -1;
@@ -210,22 +211,28 @@ int32_t wait_command(int sock)
 	return command;
 }
 
-int handling_command(int sock, int command)
+int handling_command(int sock, int command, struct task *task)
 {
 	switch (command) {
 	case IPC_REGISTER_DEVICE: break;
 	case IPC_RECEIVED_CLIENT: {
-		uint32_t length;
+		int32_t length, available;
+
+		available = is_task_full(task);
+		if (sendt(sock, &available, sizeof(available), CPS) < 0)
+			return -1;
+
+		if (!available) return 0;
 
 		if (recvt(sock, &length, sizeof(length), CPS) < 0)
-			return -1;
+			return -2;
 
 		printf("Length: %u \n", length);
 
 		char buffer[BUFSIZ];
 		FILE *fp = fopen("test.dat", "w");
 		if (fp == NULL)
-			return -2;
+			return -3;
 
 		int ret = 0;
 		for (int received = 0, to_read;
@@ -234,9 +241,9 @@ int handling_command(int sock, int command)
 		{
 			if ((to_read = recvt(sock, buffer,
 						   LIMITS(length - received, sizeof(buffer)), CPS)) < 0)
-			{ ret = -3; break; }
+			{ ret = -4; break; }
 
-			if (to_read < 0) { ret = -4; break; }
+			if (to_read < 0) { ret = -5; break; }
 
 			if ((ret = fwrite(buffer, to_read, sizeof(char), fp) == to_read))
 			{ ret = -5; break; }
@@ -245,7 +252,7 @@ int handling_command(int sock, int command)
 
 		if (ret < 0) return ret;
 
-		if (sendt(sock, (uint32_t []) { 1 }, sizeof(uint32_t), CPS) < 0)
+		if (sendt(sock, (int32_t []) { 1 }, sizeof(int32_t), CPS) < 0)
 			return -6;
 
 		printf("receive data successfully \n");

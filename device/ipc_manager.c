@@ -11,13 +11,13 @@ int ipc_to_target(int sock, enum IPC_COMMAND cmd, ...)
 	va_start(args, cmd);
 
 	do { // Extract command and assign to header
-		uint32_t command = (uint32_t) cmd;
+		int32_t command = (int32_t) cmd;
 		hp = ASSIGN(hp, command);
 	} while (false);
 
 	switch (cmd) {
 	case IPC_REGISTER_DEVICE: ;
-		uint32_t dev_id = va_arg(args, uint32_t);
+		int32_t dev_id = va_arg(args, int32_t);
 		hp = ASSIGN(hp, dev_id);
 		break;
 
@@ -28,7 +28,7 @@ int ipc_to_target(int sock, enum IPC_COMMAND cmd, ...)
 		return -1;
 
 	do {
-		uint32_t result;
+		int32_t result;
 
 		if (recvt(sock, &result, sizeof(result), CPS) < 0)
 			return -2;
@@ -44,7 +44,7 @@ int ipc_to_target(int sock, enum IPC_COMMAND cmd, ...)
 
 int ipc_receive_request(int sock)
 {
-	uint32_t command;
+	int32_t command;
 
 	if (recv(sock, &command, sizeof(command), MSG_DONTWAIT) != sizeof(command))
 		return -1;

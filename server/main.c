@@ -140,8 +140,8 @@ int http_client(int clnt_sock, char *header, struct device *device)
 
 	switch (parse_string_method(http.method)) {
 	case POST: // IPC_RECEIVED_CLIENT
-		if (sendt(device_sock, (uint32_t []) { IPC_RECEIVED_CLIENT },
-				  sizeof(uint32_t), CLOCKS_PER_SEC) < 0)
+		if (sendt(device_sock, (int32_t []) { IPC_RECEIVED_CLIENT },
+				  sizeof(int32_t), CLOCKS_PER_SEC) < 0)
 			return -7;
 
 		if (sendt(device_sock, &bsize, sizeof(bsize), CLOCKS_PER_SEC) < 0)
@@ -163,8 +163,8 @@ int http_client(int clnt_sock, char *header, struct device *device)
 	default: return -11;
 	}
 
-	uint32_t ret;
-	if (recvt(device_sock, &ret, sizeof(uint32_t), CLOCKS_PER_SEC) < 0)
+	int32_t ret;
+	if (recvt(device_sock, &ret, sizeof(int32_t), CLOCKS_PER_SEC) < 0)
 		return -12;
 
 	return ret;
@@ -173,8 +173,8 @@ int http_client(int clnt_sock, char *header, struct device *device)
 int device_client(int device_sock, char *data, struct device *device)
 {
 	int hsize;
-	uint32_t command;
-	uint32_t device_id;
+	int32_t command;
+	int32_t device_id;
 
 	if ((hsize = recvt(device_sock, (char *)data, HEADER_SIZE, MSG_DONTWAIT)) < 0)
 		return -1;
@@ -212,7 +212,7 @@ int device_client(int device_sock, char *data, struct device *device)
 
 int client_handling(int sock, struct device *device)
 {
-	uint32_t command;
+	int32_t command;
 	char data[HEADER_SIZE];
 	size_t dsize;
 	int ret;
