@@ -171,19 +171,21 @@ int connect_to_target(const char *host, uint16_t port)
 
 		memset(&sock_adr, 0x00, sizeof(sock_adr));
 
+		sock_adr.sin_family = AF_INET;
+		sock_adr.sin_port = htons(port);
+
 		if (entry) {
-			sock_adr.sin_family = AF_INET;
 			memcpy(&sock_adr.sin_addr, entry->h_addr_list[0], entry->h_length);
-			sock_adr.sin_port = htons(port);
 		} else { // Failed to convert hostname,
 				 // it may means that host will be ip address
-			sock_adr.sin_family = AF_INET;
 			sock_adr.sin_addr.s_addr = inet_addr(host);
 		}
-	} else entry = NULL;
+	}
 
-	if (connect(sock, (struct sockaddr *)&sock_adr, sizeof(sock_adr)) < 0)
+	if (connect(sock, (struct sockaddr *)&sock_adr, sizeof(sock_adr)) < 0) {
+		close(sock);
 		return -2;
+	}
 
 	return sock;
 }
