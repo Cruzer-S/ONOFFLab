@@ -98,6 +98,8 @@ int main(int argc, char *argv[])
 		int command;
 		if ((command = wait_command(serv_sock)) < 0) {
 			printf("command: %d \n", command);
+			printf("serv_sock: %d \n", serv_sock);
+
 			if (serv_sock > 0) {
 				printf("disconnect to target \n");
 				close(serv_sock);
