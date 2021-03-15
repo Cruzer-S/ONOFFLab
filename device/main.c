@@ -193,6 +193,9 @@ int32_t wait_command(int sock)
 {
 	uint32_t command;
 	int ret;
+
+	if (sock < 0) return -1;
+
 	if ((ret = recvt(sock, &command, sizeof(command), CPS)) < 0)
 		return (ret == -3) ? -1 : 0;
 
