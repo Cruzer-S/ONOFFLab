@@ -34,8 +34,6 @@ int handling_command(int sock, int commnad);
 int main(int argc, char *argv[])
 {
 	int bluetooth_port, serv_sock;
-	const char *host;
-	uint16_t port;
 
 	if (wiringPiSetup() == -1)
 		error_handling("unable to start wiringPi: %s", strerror(errno));
@@ -49,6 +47,8 @@ int main(int argc, char *argv[])
 	printf("open bluetooth port \n");
 
 	do {
+		const char *host;
+		uint16_t port;
 		long check;
 
 		check = (argc == 3) ? strtol(argv[2], NULL, 10) : SERVER_PORT;
@@ -64,7 +64,7 @@ int main(int argc, char *argv[])
 			error_handling("connect_to_target() error", host, port);
 	} while (false);
 
-	printf("connect to target server: %s:%hu \n", host, port);
+	printf("connect to target server \n");
 
 	if (ipc_to_target(serv_sock, IPC_REGISTER_DEVICE, DEVICE_ID) < 0)
 		error_handling("ipc_to_target(IPC_REGISTER_DEVICE) error");
@@ -99,7 +99,9 @@ int main(int argc, char *argv[])
 				close(serv_sock);
 
 			printf("reconnect to target \n");
-			serv_sock = connect_to_target(host, port);
+			serv_sock = connect_to_target(NULL, 0);
+			if (serv_sock < 0)
+				printf("failed to connect to target \n");
 		} else {
 			if (command == 0) continue;
 
