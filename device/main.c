@@ -98,6 +98,7 @@ int main(int argc, char *argv[])
 			if (serv_sock > 0)
 				close(serv_sock);
 
+			printf("reconnect to target \n");
 			serv_sock = connect_to_target(host, port);
 		} else {
 			if (command == 0) continue;
@@ -189,9 +190,9 @@ bool is_initiate(int serial)
 int32_t wait_command(int sock)
 {
 	uint32_t command;
-
-	if (recvt(sock, &command, sizeof(command), CPS) < 0)
-		return -1;
+	int ret;
+	if ((ret = recvt(sock, &command, sizeof(command), CPS)) < 0)
+		return (ret == -3) ? -1 : 0;
 
 	return command;
 }
