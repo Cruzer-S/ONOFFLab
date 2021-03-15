@@ -100,7 +100,7 @@ int recvt(int sock, void *buffer, int size, clock_t timeout)
 	for (end = start; end - start < timeout && received < size; end = clock())
 	{
 		ret = recv(sock, buffer + received, size - received, MSG_DONTWAIT);
-		if (ret == 0) return -3;
+		if (ret == 0) return -2;
 
 		if (ret == -1) {
 			if (errno == EAGAIN || errno == EWOULDBLOCK) continue;
