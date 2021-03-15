@@ -95,8 +95,10 @@ int main(int argc, char *argv[])
 		// ========================================================================
 		int command;
 		if ((command = wait_command(serv_sock)) < 0) {
-			if (serv_sock > 0)
+			if (serv_sock > 0) {
+				printf("disconnect to server \n");
 				close(serv_sock);
+			}
 
 			serv_sock = connect_to_target(NULL, 0);
 			if (serv_sock < 0)
