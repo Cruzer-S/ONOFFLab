@@ -37,12 +37,9 @@ int make_task(struct task_manager *tm)
 	if (tm->cur + 1 >= tm->max)
 		return -1;
 
-	for (int i = 0; i < tm->cur + 1; i++) {
-		if (!tm->task[i]) {
-			creat(task_name(i), 0x777);
+	for (int i = 0; i < tm->cur + 1; i++)
+		if (!tm->task[i])
 			return i;
-		}
-	}
 
 	return -1;
 }
