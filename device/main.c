@@ -255,12 +255,9 @@ int32_t handling_command(int sock, int command, struct task_manager *tm)
 
 		if (ret < 0) return ret;
 
-		if (sendt(sock, (int32_t []) { 1 }, sizeof(int32_t), CPS) < 0)
-			return -6;
-
 		printf("receive data successfully \n");
 		break;
 	}}
 
-	return 0;
+	return 1;
 }

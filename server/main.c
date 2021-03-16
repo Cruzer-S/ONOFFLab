@@ -193,21 +193,21 @@ int device_client(int device_sock, char *data, struct device *device)
 		insert_device(device, device_id, device_sock);
 
 		if (change_sockopt(device_sock, SOL_SOCKET, SO_KEEPALIVE, 1) < 0)
-			return -1;
-
-		if (change_sockopt(device_sock, IPPROTO_TCP, TCP_KEEPIDLE, 10) < 0)
 			return -2;
 
-		if (change_sockopt(device_sock, IPPROTO_TCP, TCP_KEEPCNT, 1) < 0)
+		if (change_sockopt(device_sock, IPPROTO_TCP, TCP_KEEPIDLE, 10) < 0)
 			return -3;
 
-		if (change_sockopt(device_sock, IPPROTO_TCP, TCP_KEEPINTVL, 10) < 0)
+		if (change_sockopt(device_sock, IPPROTO_TCP, TCP_KEEPCNT, 1) < 0)
 			return -4;
+
+		if (change_sockopt(device_sock, IPPROTO_TCP, TCP_KEEPINTVL, 10) < 0)
+			return -5;
 
 		printf("Register device: %u <=> %u \n", device_sock, device_id);
 		break;
 
-	default: return -2;
+	default: return -6;
 	}
 
 	return 0;
