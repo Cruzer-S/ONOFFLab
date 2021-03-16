@@ -238,5 +238,3 @@ int32_t handling_command(int sock, int command, struct task_manager *tm)
 		break;
 	}}
 
-	return 1;
-}

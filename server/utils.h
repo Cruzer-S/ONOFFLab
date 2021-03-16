@@ -8,7 +8,7 @@
 
 char *itos(int number)
 {
-	static char str[1024];
+	static char str[100];
 
 	sprintf(str, "%d", number);
 

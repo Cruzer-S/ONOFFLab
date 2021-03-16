@@ -80,6 +80,7 @@ static char *ctos(int code)
 {
 	switch (code) {
 	case 200: return "OK";
+	case 404: return "Not Found";
 	}
 
 	return NULL;

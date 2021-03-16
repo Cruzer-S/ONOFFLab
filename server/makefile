@@ -2,10 +2,10 @@ CC = gcc
 CFLAGS = -std=c11
 OUTPUT = output.out
 
-${OUTPUT}: main.o server_handler.o device_manager.o http_handler.o json_parser.o
+${OUTPUT}: main.o server_handler.o device_manager.o http_handler.o json_parser.o logger.o
 	${CC} -o ${OUTPUT} $^ ${CFLAGS}
 
-main.o: main.c server_handler.h device_manager.h http_handler.h json_parser.h
+main.o: main.c server_handler.h device_manager.h http_handler.h json_parser.h logger.h
 	${CC} -c main.c -o main.o ${CFLAGS}
 
 server_handler.o: server_handler.c server_handler.h
@@ -19,6 +19,9 @@ http_handler.o: http_handler.c http_handler.h
 
 json_parser.o: json_parser.c json_parser.h
 	${CC} -c json_parser.c -o json_parser.o ${CFLAGS}
+
+logger.o: logger.c logger.h
+	${CC} -c logger.c -o logger.o ${CFLAGS}
 
 clean:
 	rm ${wildcard *.o} ${OUTPUT}

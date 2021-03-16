@@ -12,10 +12,13 @@
 #include "http_handler.h"
 #include "json_parser.h"
 #include "utils.h"
+#include "logger.h"
 
-_Noreturn void error_handling(const char *format, ...);
 int client_handling(int sock, struct device *device);
-int start_worker_thread(int epfd, int serv_sock, struct device *device);
+int worker_thread(int epfd, int serv_sock, struct device *device);
+
+int http_client(int clnt_sock, char *header, struct device *device);
+int device_client(int device_sock, char *data, struct device *device);
 
 int main(int argc, char *argv[])
 {
@@ -24,30 +27,37 @@ int main(int argc, char *argv[])
 	struct device *device;
 
 	if (argc != 3)
-		error_handling("usage: <%s> <port> <backlog> \n", argv[0]);
+		logg(LOG_CRI, "usage: <%s> <port> <backlog>", argv[0]);
 
-	if ((serv_sock = make_server(strtol(argv[1], NULL, 10),
+	if ((serv_sock = make_listener(strtol(argv[1], NULL, 10),
 								 strtol(argv[2], NULL, 10))) < 0)
-		error_handling("failed to create server: %d \n", serv_sock);
+		logg(LOG_CRI, "failed to create server %d", serv_sock);
+
+	logg(LOG_INF, "create server %d", serv_sock);
 
 	if ((ret = change_flag(serv_sock, O_NONBLOCK)) < 0)
-		error_handling("change_flag(): %d \n", ret);
+		logg(LOG_CRI, "chage_flag() %d", ret);
 
 	if (change_sockopt(serv_sock, SOL_SOCKET, SO_REUSEADDR, true) == -1)
-		error_handling("change_sockopt() error \n");
+		logg(LOG_CRI, "change_sockopt() error");
 
-	epfd = epoll_create1(0);
-	if (epfd == -1)
-		error_handling("epoll_create() error \n");
+	logg(LOG_INF, "change server socket option");
+
+	if ((epfd = epoll_create1(0)) == -1)
+		logg(LOG_CRI, "epoll_create() error");
 
 	if (register_epoll_fd(epfd, serv_sock, EPOLLIN | EPOLLET) == -1)
-		error_handling("register_epoll_fd() error \n");
+		logg(LOG_CRI, "register_epoll_fd() error");
+
+	logg(LOG_INF, "create epoll");
 
 	if ((device = init_device()) == NULL)
-		error_handling("init_device() error \n");
+		logg(LOG_CRI, "init_device() error");
 
-	while ((ret = start_worker_thread(epfd, serv_sock, device)) < 0)
-		fprintf(stderr , "start_epoll_thread() error: %d", ret);
+	logg(LOG_INF, "initialize device data structure");
+
+	while ((ret = worker_thread(epfd, serv_sock, device)) < 0)
+		logg(LOG_ERR, "worker_thread() error %d", ret);
 
 	close(epfd);
 	close(serv_sock);
@@ -55,7 +65,7 @@ int main(int argc, char *argv[])
 	return 0;
 }
 
-int start_worker_thread(int epfd, int serv_sock, struct device *device)
+int worker_thread(int epfd, int serv_sock, struct device *device)
 {
 	while (true)
 	{
@@ -68,9 +78,11 @@ int start_worker_thread(int epfd, int serv_sock, struct device *device)
 			if (epev->data.fd == serv_sock) {
 				int cnt = 0;
 				if ((cnt = accept_epoll_client(epfd, serv_sock, EPOLLIN | EPOLLET)) < 1) {
-					fprintf(stderr, "accept_epoll_client() error \n");
+					logg(LOG_ERR, "accept_epoll_client() error");
 					continue;
 				}
+
+				logg(LOG_INF, "accept %d client(s) ", cnt);
 			} else { // client
 				if (epev->events & EPOLLIN) {
 					int ret;
@@ -85,6 +97,8 @@ int start_worker_thread(int epfd, int serv_sock, struct device *device)
 				}
 
 				continue; DELETE:
+				logg(LOG_INF, "disconnect client %d", epev->data.fd);
+
 				delete_epoll_fd(epfd, epev->data.fd);
 				delete_device_sock(device, epev->data.fd);
 			}
@@ -94,10 +108,51 @@ int start_worker_thread(int epfd, int serv_sock, struct device *device)
 	return 0;
 }
 
+int client_handling(int sock, struct device *device)
+{
+	int32_t command;
+	char data[HEADER_SIZE];
+	size_t dsize;
+	int ret;
+
+	if ((dsize = recv(sock, (char *)data, HEADER_SIZE, MSG_PEEK)) <= 0)
+		return -1;
+
+	if (is_http_header((const char *)data)) {
+		logg(LOG_INF, "HTTP request from %d", sock);
+		if ((ret = http_client(sock, data, device)) < 0)
+			return -2;
+
+		char *json = make_json(1, "result", itos(ret));
+		if (json == NULL)
+			return -3;
+
+		int len = make_http_header_s(data, HEADER_SIZE, 200, "application/json", strlen(json));
+
+		if (sendt(sock, data, len, CLOCKS_PER_SEC) < 0)
+			return -4;
+
+		if (sendt(sock, json, strlen(json), CLOCKS_PER_SEC) < 0)
+			return -5;
+
+		free(json);
+
+		shutdown(sock, SHUT_RD);
+	} else {
+		logg(LOG_INF, "Binary request from %d", sock);
+		if ((ret = device_client(sock, data, device)) < 0) {
+			fprintf(stderr, "failed to device_client(): %d \n", ret);
+			return -6;
+		}
+	}
+
+	return 0;
+}
+
 int http_client(int clnt_sock, char *header, struct device *device)
 {
 	struct http_header http;
-	char buffer[BUFSIZ];
+	char buffer[BUFFER_SIZE];
 	int hsize, bsize;
 	int32_t device_id, device_sock;
 
@@ -127,6 +182,8 @@ int http_client(int clnt_sock, char *header, struct device *device)
 
 	switch (parse_string_method(http.method)) {
 	case POST: // IPC_REGISTER_GCODE
+		logg(LOG_INF, "receive gcode from client %d", clnt_sock);
+		logg(LOG_INF, "send gcode to device %d (%d)", device_id, device_sock);
 		if (sendt(device_sock, (int32_t []) { IPC_REGISTER_GCODE },
 				  sizeof(int32_t), CLOCKS_PER_SEC) < 0)
 			return -7;
@@ -169,9 +226,8 @@ int device_client(int device_sock, char *data, struct device *device)
 	EXTRACT(data, command);
 
 	switch (command) {
-	case IPC_REGISTER_DEVICE:
-
-		EXTRACT(data, device_id);
+	case IPC_REGISTER_DEVICE: EXTRACT(data, device_id);
+		logg(LOG_INF, "bind socket to device (%d to %d)", device_sock, device_id);
 
 		if (!insert_device(device, device_id, device_sock))
 			return -2;
@@ -193,59 +249,4 @@ int device_client(int device_sock, char *data, struct device *device)
 	}
 
 	return 0;
-}
-
-int client_handling(int sock, struct device *device)
-{
-	int32_t command;
-	char data[HEADER_SIZE];
-	size_t dsize;
-	int ret;
-
-	if ((dsize = recv(sock, (char *)data, HEADER_SIZE, MSG_PEEK)) <= 0)
-		return -1;
-
-	if (is_http_header((const char *)data)) {
-		if ((ret = http_client(sock, data, device)) < 0) {
-			fprintf(stderr, "failed to http_client(): %d \n", ret);
-			send_response(sock, 404);
-			return -2;
-		}
-
-		char *json = make_json(1, "result", itos(ret));
-		if (json == NULL)
-			return -3;
-
-		int len = make_http_header_s(data, HEADER_SIZE, 200, "application/json", strlen(json));
-
-		if (sendt(sock, data, len, CLOCKS_PER_SEC) < 0)
-			return -4;
-
-		if (sendt(sock, json, strlen(json), CLOCKS_PER_SEC) < 0)
-			return -5;
-
-		free(json);
-
-		shutdown(sock, SHUT_RD);
-	} else {
-		if ((ret = device_client(sock, data, device)) < 0) {
-			fprintf(stderr, "failed to device_client(): %d \n", ret);
-			return -2;
-		}
-	}
-
-	return 0;
-}
-
-_Noreturn void error_handling(const char *fmt, ...)
-{
-	va_list ap;
-
-	va_start(ap, fmt);
-
-	vfprintf(stderr, fmt, ap);
-
-	va_end(ap);
-
-	exit(EXIT_FAILURE);
 }

@@ -13,14 +13,16 @@
 #include <errno.h>			// errno
 #include <time.h>			// clock
 
-#define MAX_EVENT 1024
+#define MAX_EVENT	1024
+#define CPS			CLOCKS_PER_SEC
+#define BUFFER_SIZE BUFSIZ
 
 enum IPC_COMMAND {
 	IPC_REGISTER_DEVICE = 0x01,
 	IPC_REGISTER_GCODE = 0x02,
 };
 
-int make_server(short port, int backlog);
+int make_listener(short port, int backlog);
 
 int change_flag(int fd, int flag);
 int change_sockopt(int fd, int level, int flag, int value);
@@ -36,7 +38,5 @@ int recv_until(int sock, char *buffer, int bsize, char *end);
 
 int sendt(int sock, void *buffer, int size, clock_t timeout);
 int recvt(int sock, void *buffer, int size, clock_t timeout);
-
-int send_response(int sock, int rsp_code);
 
 #endif

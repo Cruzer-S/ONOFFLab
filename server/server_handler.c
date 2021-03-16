@@ -28,7 +28,7 @@ int accept_epoll_client(int epfd, int serv_sock, int flags)
 	return count;
 }
 
-int make_server(short port, int backlog)
+int make_listener(short port, int backlog)
 {
 	struct sockaddr_in sock_adr;
 	int sock;
@@ -122,7 +122,7 @@ int delete_epoll_fd(int epfd, int tgfd)
 
 int flush_socket(int sock)
 {
-	char buffer[BUFSIZ];
+	char buffer[BUFFER_SIZE];
 
 	while (recv(sock, buffer, sizeof(buffer), MSG_DONTWAIT) != -1)
 		/* empty loop body */ ;
@@ -201,17 +201,4 @@ int readall(int sock, char *buffer, int length)
 		return -1;
 
 	return received;
-}
-
-int send_response(int sock, int rsp_code)
-{
-	char *rsp_header[] = {
-		"HTTP/1.1 200 OK\r\n\r\n"
-	};
-
-	switch (rsp_code) {
-		case 200: send(sock, rsp_header[0], strlen(rsp_header[0]), 0);
-	}
-
-	return 0;
 }
