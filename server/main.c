@@ -154,8 +154,6 @@ int http_client(int clnt_sock, char *header, struct device *device)
 	if (recvt(device_sock, &ret, sizeof(int32_t), CLOCKS_PER_SEC) < 0)
 		return -12;
 
-	printf("ret: %d \n", ret);
-
 	return ret;
 }
 

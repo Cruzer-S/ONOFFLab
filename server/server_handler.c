@@ -22,8 +22,6 @@ int accept_epoll_client(int epfd, int serv_sock, int flags)
 			continue;
 		}
 
-		printf("connect client: %d \n", clnt_sock);
-
 		count++;
 	}
 
