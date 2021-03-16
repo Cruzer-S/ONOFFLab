@@ -57,6 +57,11 @@ int remove_task(struct task_manager *tm, int id)
 	return 0;
 }
 
+int check_task(struct task_manager *tm, int id)
+{
+	return tm->task[id];
+}
+
 char *task_name(int id)
 {
 	static char name[100];

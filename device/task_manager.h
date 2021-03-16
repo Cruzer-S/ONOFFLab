@@ -17,6 +17,7 @@ void delete_task_manager(struct task_manager *tm);
 
 int make_task(struct task_manager *tm);
 int remove_task(struct task_manager *tm, int id);
+int check_task(struct task_manager *tm, int id);
 
 char *task_name(int id);
 

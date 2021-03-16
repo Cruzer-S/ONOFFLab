@@ -29,6 +29,11 @@ bool insert_device(struct device *dev, int id, int sock)
 	struct node *new_node = malloc(sizeof(struct node));
 	if (new_node == NULL) return false;
 
+	for (struct node *cur = dev->head;
+		 cur != NULL;
+		 cur = cur->next)
+	{ if (cur->id == id) return false; }
+
 	new_node->id = id;
 	new_node->sock = sock;
 	new_node->next = dev->head;
