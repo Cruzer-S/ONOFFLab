@@ -36,13 +36,9 @@ int main(int argc, char *argv[])
 	if (wiringPiSetup() == -1)
 		error_handling("unable to start wiringPi: %s", strerror(errno));
 
-	printf("setup wiring pi \n");
-
 	if ((bluetooth_port = serialOpen(SERIAL_DEVICE, BOAD_RATE)) < 0)
 		error_handling("failed to open %s serial: %s",
 				       SERIAL_DEVICE, strerror(errno));
-
-	printf("open bluetooth port \n");
 
 	task_manager = create_task_manager(MAX_TASK);
 	if (task_manager == NULL)
@@ -60,20 +56,14 @@ int main(int argc, char *argv[])
 		port = (uint16_t) check;
 		host = (argc > 2) ? argv[1] : SERVER_DOMAIN;
 
-		printf("convert address: %s:%hu\n", host, port);
-
 		if ((serv_sock = connect_to_target(host, port)) < 0)
 			error_handling("connect_to_target() error", host, port);
 	} while (false);
-
-	printf("connect to target server: %d \n", serv_sock);
 
 	do {
 		int dev_id = (argc == 4) ? strtol(argv[3], NULL, 10) : DEVICE_ID;
 		if (ipc_to_target(serv_sock, IPC_REGISTER_DEVICE, dev_id) < 0)
 			error_handling("ipc_to_target(IPC_REGISTER_DEVICE) error");
-
-		printf("register device: %d \n", dev_id);
 	} while (false);
 
 	while (true) {
@@ -90,9 +80,6 @@ int main(int argc, char *argv[])
 				else
 					serialPutchar(bluetooth_port, false);
 			}
-
-			printf("change wifi ssid and psk\nssid: %s\tpsk: %s\n",
-					ssid, psk);
 		}
 
 		// ========================================================================
@@ -100,24 +87,17 @@ int main(int argc, char *argv[])
 		// ========================================================================
 		int command;
 		if ((command = wait_command(serv_sock)) < 0) {
-			if (serv_sock > 0) {
-				printf("disconnect to target \n");
-				close(serv_sock);
-			}
+			if (serv_sock > 0) close(serv_sock);
 
 			serv_sock = connect_to_target(NULL, 0);
 			if (serv_sock < 0) continue;
-			else printf("reconnect to target \n");
 
 			if (ipc_to_target(serv_sock, IPC_REGISTER_DEVICE, DEVICE_ID) < 0)
 				error_handling("ipc_to_target(IPC_REGISTER_DEVICE) error");
-
-			printf("register device: %d \n", DEVICE_ID);
 		} else {
 			if (command == 0) continue;
 
 			int32_t result = handling_command(serv_sock, command, task_manager);
-			printf("result: %d \n", result);
 			if (sendt(serv_sock, &result, sizeof(result), CPS) < 0) {
 				fprintf(stderr, "failed to send result \n");
 				close(serv_sock);
@@ -125,9 +105,6 @@ int main(int argc, char *argv[])
 
 				continue;
 			}
-
-			printf("handling_command(): %d \n", result);
-			// printf("flush_socket(): %d \n", flush_socket(serv_sock));
 		}
 
 		// ========================================================================
@@ -239,8 +216,6 @@ int32_t handling_command(int sock, int command, struct task_manager *tm)
 		if (recvt(sock, &length, sizeof(length), CPS) < 0)
 			return -2;
 
-		printf("length: %u \n", length);
-
 		for (int received = 0, to_read;
 			 received < length; received += to_read)
 		{
@@ -258,7 +233,6 @@ int32_t handling_command(int sock, int command, struct task_manager *tm)
 
 		if (ret < 0) return ret;
 
-		printf("receive data successfully \n");
 		break;
 	}}
 

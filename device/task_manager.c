@@ -1,6 +1,8 @@
 #include "task_manager.h"
+#include <stdio.h>
 
 #define BASE_TASK_NAME "task_"
+#define TASK_EXTENSION "gcd"
 
 struct task_manager {
 	bool *task;
@@ -46,8 +48,6 @@ int make_task(struct task_manager *tm)
 
 int remove_task(struct task_manager *tm, int id)
 {
-	char name[100];
-
 	if (!tm->task[id])
 		return -1;
 
@@ -64,9 +64,9 @@ int check_task(struct task_manager *tm, int id)
 
 char *task_name(int id)
 {
-	static char name[100];
+	static char name[FILENAME_MAX];
 
-	sprintf(name, "%s%03d", BASE_TASK_NAME, id);
+	sprintf(name, "%s%03d.%s", BASE_TASK_NAME, id, TASK_EXTENSION);
 
 	return name;
 }

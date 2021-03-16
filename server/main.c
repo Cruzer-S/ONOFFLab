@@ -36,8 +36,6 @@ int main(int argc, char *argv[])
 	if (change_sockopt(serv_sock, SOL_SOCKET, SO_REUSEADDR, true) == -1)
 		error_handling("change_sockopt() error \n");
 
-	printf("create server \n");
-
 	epfd = epoll_create1(0);
 	if (epfd == -1)
 		error_handling("epoll_create() error \n");
@@ -47,8 +45,6 @@ int main(int argc, char *argv[])
 
 	if ((device = init_device()) == NULL)
 		error_handling("init_device() error \n");
-
-	printf("start server \n");
 
 	while ((ret = start_worker_thread(epfd, serv_sock, device)) < 0)
 		fprintf(stderr , "start_epoll_thread() error: %d", ret);
@@ -75,25 +71,16 @@ int start_worker_thread(int epfd, int serv_sock, struct device *device)
 					fprintf(stderr, "accept_epoll_client() error \n");
 					continue;
 				}
-
-				printf("accepting %d client(s) \n", cnt);
 			} else { // client
 				if (epev->events & EPOLLIN) {
 					int ret;
 
-					if (recv(epev->data.fd, (char []) { 0x00 }, 1, MSG_PEEK) <= 0) {
-						printf("disconnect client: %d \n", epev->data.fd);
+					if (recv(epev->data.fd, (char []) { 0x00 }, 1, MSG_PEEK) <= 0)
 						goto DELETE;
-					}
 
-					printf("receive data from client: %d \n", epev->data.fd);
-					if ((ret = client_handling(epev->data.fd, device)) < 0) {
-						fprintf(stderr, "client_handling(%d) error: %d \n",
-								epev->data.fd, ret);
+					if ((ret = client_handling(epev->data.fd, device)) < 0)
 						goto DELETE;
-					}
  				} else if (epev->events & (EPOLLHUP | EPOLLRDHUP)) {
-					printf("shutdown client: %d \n", epev->data.fd);
 					goto DELETE;
 				}
 
@@ -123,8 +110,6 @@ int http_client(int clnt_sock, char *header, struct device *device)
 
 	if (parse_http_header(header, hsize, &http) < 0)
 		return -2;
-
-	printf("http method: %s\n", http.method);
 
 	if (http.url == NULL)
 		return -3;
@@ -204,8 +189,6 @@ int device_client(int device_sock, char *data, struct device *device)
 
 		if (change_sockopt(device_sock, IPPROTO_TCP, TCP_KEEPINTVL, 60) < 0)
 			return -6;
-
-		printf("Register device: %u <=> %u \n", device_sock, device_id);
 		break;
 
 	default: return -6;
@@ -225,10 +208,8 @@ int client_handling(int sock, struct device *device)
 		return -1;
 
 	if (is_http_header((const char *)data)) {
-		printf("HTTP data \n");
-
 		if ((ret = http_client(sock, data, device)) < 0) {
-			printf("failed to http_client(): %d \n", ret);
+			fprintf(stderr, "failed to http_client(): %d \n", ret);
 			send_response(sock, 404);
 			return -2;
 		}
@@ -249,10 +230,8 @@ int client_handling(int sock, struct device *device)
 
 		shutdown(sock, SHUT_RD);
 	} else {
-		printf("binary data \n");
-
 		if ((ret = device_client(sock, data, device)) < 0) {
-			printf("failed to device_client(): %d \n", ret);
+			fprintf(stderr, "failed to device_client(): %d \n", ret);
 			return -2;
 		}
 	}
