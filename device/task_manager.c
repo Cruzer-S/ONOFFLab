@@ -64,7 +64,7 @@ char *task_name(int id)
 {
 	static char name[100];
 
-	sprintf(name, "%s%3d", BASE_TASK_NAME, id);
+	sprintf(name, "%s%03d", BASE_TASK_NAME, id);
 
 	return name;
 }
