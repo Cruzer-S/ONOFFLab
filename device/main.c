@@ -114,6 +114,7 @@ int main(int argc, char *argv[])
 			if (command == 0) continue;
 
 			int32_t result = handling_command(serv_sock, command, task_manager);
+			printf("result: %d \n", result);
 			if (sendt(serv_sock, &result, sizeof(result), CPS) < 0) {
 				fprintf(stderr, "failed to send result \n");
 				close(serv_sock);

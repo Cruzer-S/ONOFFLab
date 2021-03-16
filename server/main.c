@@ -126,9 +126,11 @@ int http_client(int clnt_sock, char *header, struct device *device)
 
 	printf("http method: %s\n", http.method);
 
-	if (http.url == NULL) return -3;
-		if (sscanf(http.url, "/%d", &device_id) != 1)
-			return -4;
+	if (http.url == NULL)
+		return -3;
+
+	if (sscanf(http.url, "/%d", &device_id) != 1)
+		return -4;
 
 	device_sock = find_device_sock(device, device_id);
 	if (device_sock < 0)
@@ -166,6 +168,8 @@ int http_client(int clnt_sock, char *header, struct device *device)
 	int32_t ret;
 	if (recvt(device_sock, &ret, sizeof(int32_t), CLOCKS_PER_SEC) < 0)
 		return -12;
+
+	printf("ret: %d \n", ret);
 
 	return ret;
 }
