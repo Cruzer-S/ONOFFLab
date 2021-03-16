@@ -30,7 +30,7 @@ int32_t handling_command(int sock, int commnad, struct task_manager *task);
 
 int main(int argc, char *argv[])
 {
-	int bluetooth_port, serv_sock;
+	int bluetooth_port, serv_sock, dev_id;
 	struct task_manager *task_manager;
 
 	if (wiringPiSetup() == -1)
@@ -53,18 +53,20 @@ int main(int argc, char *argv[])
 		uint16_t port;
 		long check;
 
-		check = (argc == 3) ? strtol(argv[2], NULL, 10) : SERVER_PORT;
+		check = (argc > 2) ? strtol(argv[2], NULL, 10) : SERVER_PORT;
 		if (check < 0 || check > USHRT_MAX)
 			error_handling("port number out of range", check);
 
 		port = (uint16_t) check;
-		host = (argc == 3) ? argv[1] : SERVER_DOMAIN;
+		host = (argc > 2) ? argv[1] : SERVER_DOMAIN;
 
 		printf("convert address: %s:%hu\n", host, port);
 
 		if ((serv_sock = connect_to_target(host, port)) < 0)
 			error_handling("connect_to_target() error", host, port);
 	} while (false);
+
+	dev_id = (argc == 4) ? strtol(argv[3], NULL, 10) : DEVICE_ID;
 
 	printf("connect to target server: %d \n", serv_sock);
 

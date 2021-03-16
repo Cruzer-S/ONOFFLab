@@ -190,19 +190,20 @@ int device_client(int device_sock, char *data, struct device *device)
 
 		EXTRACT(data, device_id);
 
-		insert_device(device, device_id, device_sock);
-
-		if (change_sockopt(device_sock, SOL_SOCKET, SO_KEEPALIVE, 1) < 0)
+		if (!insert_device(device, device_id, device_sock))
 			return -2;
 
-		if (change_sockopt(device_sock, IPPROTO_TCP, TCP_KEEPIDLE, 10) < 0)
+		if (change_sockopt(device_sock, SOL_SOCKET, SO_KEEPALIVE, 1) < 0)
 			return -3;
 
-		if (change_sockopt(device_sock, IPPROTO_TCP, TCP_KEEPCNT, 1) < 0)
+		if (change_sockopt(device_sock, IPPROTO_TCP, TCP_KEEPIDLE, 60) < 0)
 			return -4;
 
-		if (change_sockopt(device_sock, IPPROTO_TCP, TCP_KEEPINTVL, 10) < 0)
+		if (change_sockopt(device_sock, IPPROTO_TCP, TCP_KEEPCNT, 1) < 0)
 			return -5;
+
+		if (change_sockopt(device_sock, IPPROTO_TCP, TCP_KEEPINTVL, 60) < 0)
+			return -6;
 
 		printf("Register device: %u <=> %u \n", device_sock, device_id);
 		break;
