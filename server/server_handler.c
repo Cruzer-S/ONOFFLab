@@ -97,9 +97,8 @@ int register_epoll_fd(int epfd, int tgfd, int flag)
 	return 0;
 }
 
-struct epoll_event *wait_epoll_event(int epfd, int maxevent, int timeout)
+struct epoll_event *wait_epoll_event(int epfd, struct epoll_event *events, int maxevent, int timeout)
 {
-	static struct epoll_event events[MAX_EVENT];
 	int count;
 
 	count = epoll_wait(epfd, events, maxevent, timeout);

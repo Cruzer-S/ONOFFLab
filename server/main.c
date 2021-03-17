@@ -67,14 +67,12 @@ int main(int argc, char *argv[])
 
 int worker_thread(int epfd, int serv_sock, struct device *device)
 {
-	while (true)
+	for (struct epoll_event events[MAX_EVENT], *epev;
+		 (epev = wait_epoll_event(epfd, events, MAX_EVENT, -1)) != NULL;)
 	{
-		struct epoll_event *epev = wait_epoll_event(epfd, MAX_EVENT, -1);
-		if (epev == NULL) return -1;
-
-		if (epev->data.ptr == NULL) break;
-
 		do {
+			if (epev->data.ptr == NULL) break;
+
 			if (epev->data.fd == serv_sock) {
 				int cnt = 0;
 				if ((cnt = accept_epoll_client(epfd, serv_sock, EPOLLIN | EPOLLET)) < 1) {
@@ -123,9 +121,9 @@ int client_handling(int sock, struct device *device)
 		if ((ret = http_client(sock, data, device)) < 0)
 			return -2;
 
-		char *json = make_json(1, "result", itos(ret));
-		if (json == NULL)
-			return -3;
+		char json[BUFSIZ], number[10];
+		if (ITOS(ret, number) <= 0) return -3;
+		else make_json(1, json, "result", number);
 
 		int len = make_http_header_s(data, HEADER_SIZE, 200, "application/json", strlen(json));
 
@@ -134,8 +132,6 @@ int client_handling(int sock, struct device *device)
 
 		if (sendt(sock, json, strlen(json), CLOCKS_PER_SEC) < 0)
 			return -5;
-
-		free(json);
 
 		shutdown(sock, SHUT_RD);
 	} else {

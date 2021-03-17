@@ -3,16 +3,8 @@
 
 #include <stdio.h>
 
-#define EXTRACT(ptr, value) memcpy(&value, ptr, sizeof(value)), ptr += sizeof(value);
+#define EXTRACT(ptr, value) memcpy(&value, ptr, sizeof(value)), ptr += sizeof(value)
 #define LIMITS(value, max) ((value) < (max) ? (value) : (max))
-
-char *itos(int number)
-{
-	static char str[100];
-
-	sprintf(str, "%d", number);
-
-	return str;
-}
+#define ITOS(value, str) sprintf(str, "%d", value)
 
 #endif

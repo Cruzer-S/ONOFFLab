@@ -7,6 +7,6 @@
 
 #define JSON_SIZE 1024
 
-char *make_json(int size, ...);
+void make_json(int size, char *buffer, ...);
 
 #endif

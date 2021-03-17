@@ -29,7 +29,7 @@ int change_sockopt(int fd, int level, int flag, int value);
 int flush_socket(int sock);
 
 int register_epoll_fd(int epfd, int tgfd, int flag);
-struct epoll_event *wait_epoll_event(int epfd, int maxevent, int timeout);
+struct epoll_event *wait_epoll_event(int epfd, struct epoll_event *events, int maxevent, int timeout);
 int delete_epoll_fd(int epfd, int tgfd);
 int accept_epoll_client(int epfd, int serv_sock, int flags);
 
