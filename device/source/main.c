@@ -258,12 +258,14 @@ int ipc_to_target(int sock, enum IPC_COMMAND cmd, ...)
 	do { // Extract command and assign to header
 		int32_t command = cmd;
 		hp = ASSIGN(hp, command);
+		printf("%p: %d \n", hp, *(int32_t *)hp);
 	} while (false);
 
 	switch (cmd) {
 	case IPC_REGISTER_DEVICE: ;
 		int32_t dev_id = va_arg(args, int32_t);
 		hp = ASSIGN(hp, dev_id);
+		printf("%p: %d \n", hp, *(int32_t *)hp);
 		break;
 
 	default: break;

@@ -187,3 +187,5 @@ dist
 *.gcd
 tags
 output
+
+compile_commands.json
