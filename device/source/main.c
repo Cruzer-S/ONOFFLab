@@ -39,6 +39,7 @@ int ipc_receive_request(int sock);
 int main(int argc, char *argv[])
 {
 	int bluetooth_port, serv_sock;
+	int32_t dev_id;
 	struct task_manager *task_manager;
 
 	if (wiringPiSetup() == -1)
@@ -69,7 +70,7 @@ int main(int argc, char *argv[])
 	} while (false);
 
 	do {
-		int dev_id = (argc == 4) ? strtol(argv[3], NULL, 10) : DEVICE_ID;
+		dev_id = (argc == 4) ? strtol(argv[3], NULL, 10) : DEVICE_ID;
 		if (ipc_to_target(serv_sock, IPC_REGISTER_DEVICE, dev_id) < 0)
 			logg(LOG_CRI, "ipc_to_target(IPC_REGISTER_DEVICE) error");
 	} while (false);
@@ -100,7 +101,7 @@ int main(int argc, char *argv[])
 			serv_sock = connect_to_target(NULL, 0);
 			if (serv_sock < 0) continue;
 
-			if (ipc_to_target(serv_sock, IPC_REGISTER_DEVICE, DEVICE_ID) < 0)
+			if (ipc_to_target(serv_sock, IPC_REGISTER_DEVICE, dev_id) < 0)
 				logg(LOG_ERR, "ipc_to_target(IPC_REGISTER_DEVICE) error");
 		} else {
 			if (command == 0) continue;
@@ -255,8 +256,7 @@ int ipc_to_target(int sock, enum IPC_COMMAND cmd, ...)
 	va_start(args, cmd);
 
 	do { // Extract command and assign to header
-		int32_t command = (int32_t) cmd;
-		hp = ASSIGN(hp, command);
+		hp = ASSIGN(hp, (int32_t) cmd);
 	} while (false);
 
 	switch (cmd) {

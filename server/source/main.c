@@ -8,7 +8,7 @@
 #include <netinet/tcp.h>
 
 #define stringify(x) #x
-#define UNION_LIBRARY(NAME) stringify(../union/u_ ## NAME)
+#define UNION_LIBRARY(NAME) stringify(../../union/u_ ## NAME)
 
 #include UNION_LIBRARY(utils.h)
 #include UNION_LIBRARY(ipc_manager.h)
@@ -35,7 +35,7 @@ int main(int argc, char *argv[])
 
 	if ((serv_sock = make_listener(strtol(argv[1], NULL, 10),
 								 strtol(argv[2], NULL, 10))) < 0)
-		logg(LOG_CRI, "failed to create server %d", serv_sock);
+		logg(LOG_CRI, "failed to make listener %d", serv_sock);
 
 	logg(LOG_INF, "create server %d", serv_sock);
 
@@ -139,9 +139,9 @@ int client_handling(int sock, struct device *device)
 
 		shutdown(sock, SHUT_RD);
 	} else {
-		logg(LOG_INF, "Binary request from %d", sock);
+		logg(LOG_INF, "binary request from %d", sock);
 		if ((ret = device_client(sock, data, device)) < 0) {
-			fprintf(stderr, "failed to device_client(): %d \n", ret);
+			logg(LOG_INF, "failed to device_client(): %d \n", ret);
 			return -6;
 		}
 	}
@@ -223,10 +223,12 @@ int device_client(int device_sock, char *data, struct device *device)
 	if ((hsize = recvt(device_sock, (char *)data, HEADER_SIZE, MSG_DONTWAIT)) < 0)
 		return -1;
 
-	EXTRACT(data, command);
+	data = EXTRACT(data, command);
+	logg(LOG_INF, "request: %d", command);
 
 	switch (command) {
-	case IPC_REGISTER_DEVICE: EXTRACT(data, device_id);
+	case IPC_REGISTER_DEVICE:
+		data = EXTRACT(data, device_id);
 		logg(LOG_INF, "bind socket to device (%d to %d)", device_sock, device_id);
 
 		if (!insert_device(device, device_id, device_sock))
@@ -245,7 +247,7 @@ int device_client(int device_sock, char *data, struct device *device)
 			return -6;
 		break;
 
-	default: return -6;
+	default: return -7;
 	}
 
 	return 0;
