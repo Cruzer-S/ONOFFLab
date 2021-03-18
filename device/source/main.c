@@ -9,11 +9,11 @@
 #include <wiringPi.h>
 #include <wiringSerial.h>
 
-#define stringify(x) #x
-#define UNION_LIBRARY(NAME) stringify(../../union/u_ ## NAME)
-
 #include "wifi_manager.h"
 #include "task_manager.h"
+
+#define stringify(x) #x
+#define UNION_LIBRARY(NAME) stringify(../../union/u_ ## NAME)
 
 #include UNION_LIBRARY(utils.h)
 #include UNION_LIBRARY(ipc_manager.h)
@@ -42,15 +42,15 @@ int main(int argc, char *argv[])
 	struct task_manager *task_manager;
 
 	if (wiringPiSetup() == -1)
-		error_handling("unable to start wiringPi: %s", strerror(errno));
+		logg(LOG_CRI, "unable to start wiringPi: %s", strerror(errno));
 
 	if ((bluetooth_port = serialOpen(SERIAL_DEVICE, BOAD_RATE)) < 0)
-		error_handling("failed to open %s serial: %s",
+		logg(LOG_CRI, "failed to open %s serial: %s",
 				       SERIAL_DEVICE, strerror(errno));
 
 	task_manager = create_task_manager(MAX_TASK);
 	if (task_manager == NULL)
-		error_handling("create_task_manager() error");
+		logg(LOG_CRI, "create_task_manager() error");
 
 	do {
 		const char *host;
@@ -59,19 +59,19 @@ int main(int argc, char *argv[])
 
 		check = (argc > 2) ? strtol(argv[2], NULL, 10) : SERVER_PORT;
 		if (check < 0 || check > USHRT_MAX)
-			error_handling("port number out of range", check);
+			logg(LOG_CRI, "port number out of range", check);
 
 		port = (uint16_t) check;
 		host = (argc > 2) ? argv[1] : SERVER_DOMAIN;
 
 		if ((serv_sock = connect_to_target(host, port)) < 0)
-			error_handling("connect_to_target() error", host, port);
+			logg(LOG_CRI, "connect_to_target() error", host, port);
 	} while (false);
 
 	do {
 		int dev_id = (argc == 4) ? strtol(argv[3], NULL, 10) : DEVICE_ID;
 		if (ipc_to_target(serv_sock, IPC_REGISTER_DEVICE, dev_id) < 0)
-			error_handling("ipc_to_target(IPC_REGISTER_DEVICE) error");
+			logg(LOG_CRI, "ipc_to_target(IPC_REGISTER_DEVICE) error");
 	} while (false);
 
 	while (true) {
@@ -101,13 +101,13 @@ int main(int argc, char *argv[])
 			if (serv_sock < 0) continue;
 
 			if (ipc_to_target(serv_sock, IPC_REGISTER_DEVICE, DEVICE_ID) < 0)
-				error_handling("ipc_to_target(IPC_REGISTER_DEVICE) error");
+				logg(LOG_ERR, "ipc_to_target(IPC_REGISTER_DEVICE) error");
 		} else {
 			if (command == 0) continue;
 
 			int32_t result = handling_command(serv_sock, command, task_manager);
 			if (sendt(serv_sock, &result, sizeof(result), CPS) < 0) {
-				fprintf(stderr, "failed to send result \n");
+				logg(LOG_ERR, "failed to send result \n");
 				close(serv_sock);
 				serv_sock = -1;
 
