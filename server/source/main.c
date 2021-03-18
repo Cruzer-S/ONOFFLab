@@ -8,7 +8,7 @@
 #include <netinet/tcp.h>
 
 #define stringify(x) #x
-#define UNION_LIBRARY(NAME) stringify(../../union/u_ ## NAME)
+#define UNION_LIBRARY(NAME) stringify(u_ ## NAME)
 
 #include UNION_LIBRARY(utils.h)
 #include UNION_LIBRARY(ipc_manager.h)
