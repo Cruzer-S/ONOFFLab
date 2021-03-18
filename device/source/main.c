@@ -256,7 +256,8 @@ int ipc_to_target(int sock, enum IPC_COMMAND cmd, ...)
 	va_start(args, cmd);
 
 	do { // Extract command and assign to header
-		hp = ASSIGN(hp, (int32_t) cmd);
+		int32_t command = cmd;
+		hp = ASSIGN(hp, command);
 	} while (false);
 
 	switch (cmd) {
