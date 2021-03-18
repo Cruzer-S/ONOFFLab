@@ -1,15 +1,32 @@
 CC = gcc
-FLAGS = -std=c11
+CFLAGS = -std=c11
 
-OBJ_DIR = ./build/
-SRC_DIR = ./src/
+UNION_DIR = ../union
 
-OBJECT := $(patsubst $(SRC_DIR)%.c,$(OBJ_DIR)/%.o,$(target))
-TARGET := $(wildcard *.c)
-OUTPUT := output
+TARGET = output
 
-$(OUTPUT): $(objects)
-	$(CC) -o $(OUTPUT) $(objects $(FLAGS)
+SRC_DIR = ./source
+OBJ_DIR = ./build
+INC_DIR = ./include $(UNION_DIR)
+
+SRCS = $(wildcard $(SRC_DIR)/*.c)
+OBJS = $(patsubst %.c, $(OBJ_DIR)/%.o, $(notdir $(SRCS)))
+LIBS = $(shell find $(UNION_DIR)/*.o)
+
+all:
+	@make -C $(UNION_DIR) all
+	@make $(TARGET)
+
+$(TARGET): $(OBJS)
+	$(CC) -o $(TARGET) $(OBJS) $(LIBS)
+
+$(OBJ_DIR)/%.o: $(SRC_DIR)/%.c
+	$(CC) -o $@ -c $< $(addprefix -I ,$(INC_DIR)) $(CFLAGS)
 
 clean:
-	rm $(OBJECT_DIR)/%.o $(OUTPUT)
+	@rm -f $(wildcard $(OBJ_DIR)/*.o)
+	@make -C $(UNION_DIR) clean
+	@rm -f $(TARGET)
+
+union:
+	@make -C $(UNION_DIR) all

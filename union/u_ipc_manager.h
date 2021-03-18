@@ -24,6 +24,7 @@ enum IPC_COMMAND {
 };
 
 int make_listener(short port, int backlog);
+int connect_to_target(const char *host, uint16_t port);
 
 int change_flag(int fd, int flag);
 int change_sockopt(int fd, int level, int flag, int value);

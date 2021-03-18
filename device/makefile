@@ -1,40 +1,32 @@
-# ============================================================================= #
 CC = gcc
-FLAGS = -lwiringPi -std=c11
-OUTPUT = output
-LIBDIR = ../union/_
+CFLAGS = -std=c11
 
-# ============================================================================= #
-${OUTPUT}: main.o debugger.o ipc_manager.o wifi_manager.o task_manager.o
-	${CC} -o ${OUTPUT} $^ ${FLAGS}
+UNION_DIR = ../union
 
-main.o: main.c wifi_manager.h debugger.h $(LIBDIR)ipc_manager.h task_manager.h
-	${CC} -c main.c -o main.o ${FLAGS}
+TARGET = output
 
-# ============================================================================= #
-debugger.o: debugger.c debugger.h
-	${CC} -c debugger.c -o debugger.o ${FLAGS}
+SRC_DIR = ./source
+OBJ_DIR = ./build
+INC_DIR = ./include $(UNION_DIR)
 
-wifi_manager.o: wifi_manager.c wifi_manager.h debugger.h
-	${CC} -c wifi_manager.c -o wifi_manager.o ${CLFAGS}
+SRCS = $(wildcard $(SRC_DIR)/*.c)
+OBJS = $(patsubst %.c, $(OBJ_DIR)/%.o, $(notdir $(SRCS)))
+LIBS = $(shell find $(UNION_DIR)/*.o) -lwiringPi
 
-ipc_manager.o: $(LIBDIR)ipc_manager.c $(LIBDIR)ipc_manager.h
-	${CC} -c $(LIBDIR)ipc_manager.c -o ipc_manager.o ${CFLAGS}
+all:
+	@make -C $(UNION_DIR) all
+	@make $(TARGET)
 
-task_manager.o: task_manager.c task_manager.h
-	${CC} -c task_manager.c -o task_manager.o ${FLAGS}
+$(TARGET): $(OBJS)
+	$(CC) -o $(TARGET) $(OBJS) $(LIBS)
 
-# ============================================================================= #
+$(OBJ_DIR)/%.o: $(SRC_DIR)/%.c
+	$(CC) -o $@ -c $< $(addprefix -I ,$(INC_DIR)) $(CFLAGS)
+
 clean:
-	rm ${wildcard *.o} ${OUTPUT}
+	@rm -f $(wildcard $(OBJ_DIR)/*.o)
+	@make -C $(UNION_DIR) clean
+	@rm -f $(TARGET)
 
-all: ${wildcard *.o} ${OUTPUT}
-
-debug: FLAGS += -g -DDEBUG
-debug: ${OUTPUT}
-
-# ============================================================================= #
-
-# placeholder
-# $@ = target
-# $^ = prerequisities
+union:
+	@make -C $(UNION_DIR) all

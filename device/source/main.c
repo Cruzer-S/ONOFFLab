@@ -10,7 +10,7 @@
 #include <wiringSerial.h>
 
 #define stringify(x) #x
-#define UNION_LIBRARY(NAME) stringify(../union/_ ## NAME)
+#define UNION_LIBRARY(NAME) stringify(../../union/u_ ## NAME)
 
 #include "wifi_manager.h"
 #include "task_manager.h"
