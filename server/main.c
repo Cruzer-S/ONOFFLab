@@ -7,12 +7,16 @@
 #include <sys/epoll.h>
 #include <netinet/tcp.h>
 
-#include "server_handler.h"
+#define stringify(x) #x
+#define UNION_LIBRARY(NAME) stringify(../union/u_ ## NAME)
+
+#include UNION_LIBRARY(utils.h)
+#include UNION_LIBRARY(ipc_manager.h)
+#include UNION_LIBRARY(logger.h)
+
 #include "device_manager.h"
 #include "http_handler.h"
 #include "json_parser.h"
-#include "utils.h"
-#include "logger.h"
 
 int client_handling(int sock, struct device *device);
 int worker_thread(int epfd, int serv_sock, struct device *device);

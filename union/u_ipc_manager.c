@@ -1,4 +1,4 @@
-#include "server_handler.h"
+#include "u_ipc_manager.h"
 #include <asm-generic/socket.h>
 
 int accept_epoll_client(int epfd, int serv_sock, int flags)
@@ -26,6 +26,41 @@ int accept_epoll_client(int epfd, int serv_sock, int flags)
 	}
 
 	return count;
+}
+
+int connect_to_target(const char *host, uint16_t port)
+{
+	static struct sockaddr_in sock_adr;
+	struct hostent *entry;
+
+	int sock;
+
+	sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+	if (sock == -1)
+		return -1;
+
+	if (host) {
+		entry = gethostbyname(host);
+
+		memset(&sock_adr, 0x00, sizeof(sock_adr));
+
+		sock_adr.sin_family = AF_INET;
+		sock_adr.sin_port = htons(port);
+
+		if (entry) {
+			memcpy(&sock_adr.sin_addr, entry->h_addr_list[0], entry->h_length);
+		} else { // Failed to convert hostname,
+				 // it may means that host will be ip address
+			sock_adr.sin_addr.s_addr = inet_addr(host);
+		}
+	}
+
+	if (connect(sock, (struct sockaddr *)&sock_adr, sizeof(sock_adr)) < 0) {
+		close(sock);
+		return -2;
+	}
+
+	return sock;
 }
 
 int make_listener(short port, int backlog)

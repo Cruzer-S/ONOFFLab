@@ -9,24 +9,32 @@
 #include <wiringPi.h>
 #include <wiringSerial.h>
 
+#define stringify(x) #x
+#define UNION_LIBRARY(NAME) stringify(../union/_ ## NAME)
+
 #include "wifi_manager.h"
-#include "debugger.h"
-#include "ipc_manager.h"
 #include "task_manager.h"
+
+#include UNION_LIBRARY(utils.h)
+#include UNION_LIBRARY(ipc_manager.h)
+#include UNION_LIBRARY(logger.h)
 
 #define BOAD_RATE			9600
 #define SERIAL_DEVICE		"/dev/ttyS0"
 #define DEVICE_ID			0x00000001
 
+#define HEADER_SIZE			1024
+
 #define SERVER_DOMAIN		"www.mythos.ml"
 #define SERVER_PORT			1584
-
-#define LIMITS(value, max) ((value) < (max) ? (value) : (max))
 
 bool is_initiate(int serial);
 int parse_data(int serial, char *ssid, char *psk);
 int wait_command(int sock);
 int32_t handling_command(int sock, int commnad, struct task_manager *task);
+
+int ipc_to_target(int sock, enum IPC_COMMAND cmd, ...);
+int ipc_receive_request(int sock);
 
 int main(int argc, char *argv[])
 {
@@ -237,4 +245,54 @@ int32_t handling_command(int sock, int command, struct task_manager *tm)
 
 		break;
 	}}
+}
+
+int ipc_to_target(int sock, enum IPC_COMMAND cmd, ...)
+{
+	va_list args;
+	uint8_t header[HEADER_SIZE], *hp = header;
+
+	va_start(args, cmd);
+
+	do { // Extract command and assign to header
+		int32_t command = (int32_t) cmd;
+		hp = ASSIGN(hp, command);
+	} while (false);
+
+	switch (cmd) {
+	case IPC_REGISTER_DEVICE: ;
+		int32_t dev_id = va_arg(args, int32_t);
+		hp = ASSIGN(hp, dev_id);
+		break;
+
+	default: break;
+	}
+
+	if (sendt(sock, header, sizeof(header), CPS) < 0)
+		return -1;
+
+	do {
+		int32_t result;
+
+		if (recvt(sock, &result, sizeof(result), CPS) < 0)
+			return -2;
+
+		if (result < 0)
+			return -(3 + result);
+	} while (false);
+
+	va_end(args);
+
+	return 0;
+}
+
+int ipc_receive_request(int sock)
+{
+	int32_t command;
+
+	if (recv(sock, &command, sizeof(command), MSG_DONTWAIT) != sizeof(command))
+		return -1;
+
+	return command;
+}
 

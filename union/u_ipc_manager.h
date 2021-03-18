@@ -12,6 +12,7 @@
 #include <fcntl.h>			// fcntl
 #include <errno.h>			// errno
 #include <time.h>			// clock
+#include <netdb.h>			// gethostbyname
 
 #define MAX_EVENT	1024
 #define CPS			CLOCKS_PER_SEC

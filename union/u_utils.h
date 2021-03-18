@@ -6,5 +6,6 @@
 #define EXTRACT(ptr, value) memcpy(&value, ptr, sizeof(value)), ptr += sizeof(value)
 #define LIMITS(value, max) ((value) < (max) ? (value) : (max))
 #define ITOS(value, str) sprintf(str, "%d", value)
+#define ASSIGN(ptr, value) memcpy(ptr, &value, sizeof(value)), ptr + sizeof(value)
 
 #endif
