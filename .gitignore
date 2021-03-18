@@ -189,3 +189,4 @@ tags
 output
 
 compile_commands.json
+.clangd
