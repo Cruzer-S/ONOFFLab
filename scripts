@@ -1,8 +1,13 @@
 #bin/bash
 
 if [ $# -ne 1 ]; then
-	make -C ./device/
-	make -C ./server/
+	make -C ./device/ all
+	make -C ./server/ all
 else
-	make -C $1
+	if [ "$1" = "clean" ]; then
+		make -C ./device/ clean
+		make -C ./server/ clean
+	else
+		make -C $1 all
+	fi
 fi
