@@ -291,8 +291,10 @@ int ipc_to_target(int sock, enum IPC_COMMAND cmd, ...)
 	do {
 		int32_t result;
 
+		printf(".");
 		if (recvt(sock, &result, sizeof(result), CPS) < 0)
 			return -2;
+		printf(".");
 
 		if (result < 0)
 			return -(3 + result);

@@ -123,26 +123,27 @@ int client_handling(int sock, struct device *device)
 	if (is_http_header((const char *)data)) {
 		logg(LOG_INF, "HTTP request from %d", sock);
 		if ((ret = http_client(sock, data, device)) < 0)
-			return -2;
+			logg(LOG_ERR, "http_client() error %d", ret);
 
 		char json[BUFSIZ], number[10];
-		if (ITOS(ret, number) <= 0) return -3;
-		else make_json(1, json, "result", number);
+		ITOS(ret, number);
+		make_json(1, json, "result", number);
+
+		flush_socket(sock);
 
 		int len = make_http_header_s(data, HEADER_SIZE, 200, "application/json", strlen(json));
-
 		if (sendt(sock, data, len, CLOCKS_PER_SEC) < 0)
-			return -4;
+			return -2;
 
-		if (sendt(sock, json, strlen(json), CLOCKS_PER_SEC) < 0)
-			return -5;
+		if (sendt(sock, json, strlen(json), (CLOCKS_PER_SEC * 2)) < 0)
+			return -3;
 
-		shutdown(sock, SHUT_RD);
+		return ret;
 	} else {
 		logg(LOG_INF, "binary request from %d", sock);
 		if ((ret = device_client(sock, data, device)) < 0) {
-			logg(LOG_INF, "failed to device_client(): %d \n", ret);
-			return -6;
+			logg(LOG_INF, "failed to device_client(): %d", ret);
+			return -4;
 		}
 	}
 
@@ -183,7 +184,7 @@ int http_client(int clnt_sock, char *header, struct device *device)
 	switch (parse_string_method(http.method)) {
 	case POST: // IPC_REGISTER_GCODE
 		logg(LOG_INF, "receive gcode from client %d", clnt_sock);
-		logg(LOG_INF, "send gcode to device %d (%d)", device_id, device_sock);
+		logg(LOG_INF, "send gcode to device id %d (%d)", device_id, device_sock);
 		if (sendt(device_sock, (int32_t []) { IPC_REGISTER_GCODE },
 				  sizeof(int32_t), CLOCKS_PER_SEC) < 0)
 			return -7;
@@ -252,3 +253,4 @@ int device_client(int device_sock, char *data, struct device *device)
 
 	return 0;
 }
+
