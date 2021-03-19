@@ -122,7 +122,9 @@ int main(int argc, char *argv[])
 		} else {
 			if (command == 0) continue;
 
+			logg(LOG_INF, "request from server %d", command);
 			int32_t result = handling_command(serv_sock, command, task_manager);
+			logg(LOG_INF, "handling_command() %d", result);
 			if (sendt(serv_sock, &result, sizeof(result), CPS) < 0) {
 				logg(LOG_ERR, "failed to send result \n");
 				close(serv_sock);
@@ -230,19 +232,22 @@ int32_t handling_command(int sock, int command, struct task_manager *tm)
 	case IPC_REGISTER_DEVICE: break;
 	case IPC_REGISTER_GCODE: {
 		int32_t length, id, ret;
-		char buffer[BUFSIZ];
+		char buffer[BUFSIZ], fname[FILENAME_MAX];
 		FILE *fp;
 
 		if ((id = make_task(tm)) < 0)
 			return -1;
 
-		fp = fopen(task_name(id), "wb");
+		task_name(id, fname);
+		fp = fopen(fname, "wb");
 		if (fp == NULL)
 			return -2;
 
-		if (recvt(sock, &length, sizeof(length), CPS) < 0)
-			return -2;
 
+		if (recvt(sock, &length, sizeof(length), CPS) < 0)
+			return -3;
+
+		logg(LOG_INF, "name: %s\tlength: %d", fname, length);
 		for (int received = 0, to_read;
 			 received < length; received += to_read)
 		{
@@ -253,12 +258,13 @@ int32_t handling_command(int sock, int command, struct task_manager *tm)
 			if (to_read < 0) { ret = -5; break; }
 
 			if ((ret = fwrite(buffer, to_read, sizeof(char), fp) == to_read))
-			{ ret = -5; break; }
+			{ ret = -6; break; }
 		}
 
 		fclose(fp);
 
 		if (ret < 0) return ret;
+		else logg(LOG_INF, "receive successfully");
 
 		break;
 	}}

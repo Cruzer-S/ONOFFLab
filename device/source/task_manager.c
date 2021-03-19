@@ -62,11 +62,7 @@ int check_task(struct task_manager *tm, int id)
 	return tm->task[id];
 }
 
-char *task_name(int id)
+int task_name(int id, char *name)
 {
-	static char name[FILENAME_MAX];
-
-	sprintf(name, "%s%03d.%s", BASE_TASK_NAME, id, TASK_EXTENSION);
-
-	return name;
+	return sprintf(name, "%s%03d.%s", BASE_TASK_NAME, id, TASK_EXTENSION);
 }

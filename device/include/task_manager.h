@@ -19,6 +19,6 @@ int make_task(struct task_manager *tm);
 int remove_task(struct task_manager *tm, int id);
 int check_task(struct task_manager *tm, int id);
 
-char *task_name(int id);
+int task_name(int id, char *name);
 
 #endif
