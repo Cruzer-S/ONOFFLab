@@ -249,7 +249,7 @@ int32_t handling_command(int sock, int command, struct task_manager *tm)
 		if (recvt(sock, &length, sizeof(length), CPS) < 0)
 			return -3;
 
-		logg(LOG_INF, "length: %d", fname, length);
+		logg(LOG_INF, "length: %d", length);
 		for (int received = 0, to_read;
 			 received < length; received += to_read)
 		{
