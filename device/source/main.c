@@ -45,13 +45,19 @@ int main(int argc, char *argv[])
 	if (wiringPiSetup() == -1)
 		logg(LOG_CRI, "unable to start wiringPi: %s", strerror(errno));
 
+	logg(LOG_INF, "setup wiring pi");
+
 	if ((bluetooth_port = serialOpen(SERIAL_DEVICE, BOAD_RATE)) < 0)
 		logg(LOG_CRI, "failed to open %s serial: %s",
 				       SERIAL_DEVICE, strerror(errno));
 
+	logg(LOG_INF, "open bluetooth port");
+
 	task_manager = create_task_manager(MAX_TASK);
 	if (task_manager == NULL)
 		logg(LOG_CRI, "create_task_manager() error");
+
+	logg(LOG_INF, "craete task manager");
 
 	do {
 		const char *host;
@@ -65,14 +71,20 @@ int main(int argc, char *argv[])
 		port = (uint16_t) check;
 		host = (argc > 2) ? argv[1] : SERVER_DOMAIN;
 
+		logg(LOG_INF, "host: %s\tport: %hu", host, port);
+
 		if ((serv_sock = connect_to_target(host, port)) < 0)
 			logg(LOG_CRI, "connect_to_target() error", host, port);
+
+		logg(LOG_INF, "connect to target");
 	} while (false);
 
 	do {
 		dev_id = (argc == 4) ? strtol(argv[3], NULL, 10) : DEVICE_ID;
 		if (ipc_to_target(serv_sock, IPC_REGISTER_DEVICE, dev_id) < 0)
 			logg(LOG_CRI, "ipc_to_target(IPC_REGISTER_DEVICE) error");
+
+		logg(LOG_INF, "register device to server %d", dev_id);
 	} while (false);
 
 	while (true) {
@@ -101,8 +113,12 @@ int main(int argc, char *argv[])
 			serv_sock = connect_to_target(NULL, 0);
 			if (serv_sock < 0) continue;
 
+			logg(LOG_INF, "reconnect to target", dev_id);
+
 			if (ipc_to_target(serv_sock, IPC_REGISTER_DEVICE, dev_id) < 0)
 				logg(LOG_ERR, "ipc_to_target(IPC_REGISTER_DEVICE) error");
+
+			logg(LOG_INF, "re-register device to server %d", dev_id);
 		} else {
 			if (command == 0) continue;
 
