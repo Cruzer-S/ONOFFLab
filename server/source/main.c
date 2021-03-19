@@ -142,9 +142,16 @@ int client_handling(int sock, struct device *device)
 	} else {
 		logg(LOG_INF, "binary request from %d", sock);
 		if ((ret = device_client(sock, data, device)) < 0) {
-			logg(LOG_INF, "failed to device_client(): %d", ret);
+			logg(LOG_ERR, "failed to device_client() %d", ret);
 			return -4;
 		}
+
+		if (sendt(sock, &ret, sizeof(int32_t), CPS) < 0) {
+			logg(LOG_ERR, "failed to send response %d", sock);
+			return -5;
+		}
+
+		logg(LOG_INF, "handling device successfully %d", sock);
 	}
 
 	return 0;

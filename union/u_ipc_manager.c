@@ -200,6 +200,9 @@ int recvt(int sock, void *buffer, int size, clock_t timeout)
 		} else received += ret;
 	}
 
+	if (end - start >= timeout)
+		return -2;
+
 	return received;
 }
 
@@ -218,6 +221,9 @@ int sendt(int sock, void *buffer, int size, clock_t timeout)
 			else return -1;
 		} else to_send += ret;
 	}
+
+	if (end - start >= timeout)
+		return -2;
 
 	return to_send;
 }
