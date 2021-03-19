@@ -285,22 +285,20 @@ int ipc_to_target(int sock, enum IPC_COMMAND cmd, ...)
 	default: break;
 	}
 
+	va_end(args);
+
 	if (sendt(sock, header, sizeof(header), CPS) < 0)
 		return -1;
 
 	do {
 		int32_t result;
 
-		printf(".");
 		if (recvt(sock, &result, sizeof(result), CPS) < 0)
 			return -2;
-		printf(".");
 
 		if (result < 0)
-			return -(3 + result);
+			return -3 + result;
 	} while (false);
-
-	va_end(args);
 
 	return 0;
 }
