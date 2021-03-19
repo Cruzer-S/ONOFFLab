@@ -48,10 +48,13 @@ int make_task(struct task_manager *tm)
 
 int remove_task(struct task_manager *tm, int id)
 {
+	char fname[FILENAME_MAX];
+
 	if (!tm->task[id])
 		return -1;
 
-	if (remove(task_name(id)) == -1)
+	task_name(id, fname);
+	if (remove(fname) == -1)
 		return -2;
 
 	return 0;
