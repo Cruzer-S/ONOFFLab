@@ -274,6 +274,8 @@ int ipc_to_target(int sock, enum IPC_COMMAND cmd, ...)
 
 	hp = ASSIGN(hp, command);
 
+	printf("----------\n");
+
 	switch (cmd) {
 	case IPC_REGISTER_DEVICE: ;
 		int32_t dev_id = va_arg(args, int32_t);
@@ -297,6 +299,8 @@ int ipc_to_target(int sock, enum IPC_COMMAND cmd, ...)
 		if (result < 0)
 			return -3 + result;
 	} while (false);
+
+	printf("----------\n");
 
 	return 0;
 }
