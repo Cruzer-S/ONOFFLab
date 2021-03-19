@@ -268,13 +268,11 @@ int ipc_to_target(int sock, enum IPC_COMMAND cmd, ...)
 {
 	va_list args;
 	uint8_t header[HEADER_SIZE], *hp = header;
+	int32_t command = cmd;
 
 	va_start(args, cmd);
 
-	do { // Extract command and assign to header
-		int32_t command = cmd;
-		hp = ASSIGN(hp, command);
-	} while (false);
+	hp = ASSIGN(hp, command);
 
 	switch (cmd) {
 	case IPC_REGISTER_DEVICE: ;
