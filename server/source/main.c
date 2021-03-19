@@ -94,6 +94,8 @@ int worker_thread(int epfd, int serv_sock, struct device *device)
 
 					if ((ret = client_handling(epev->data.fd, device)) < 0)
 						goto DELETE;
+
+					logg(LOG_INF, "client_handling(%d): %d", epev->data.fd, ret);
  				} else if (epev->events & (EPOLLHUP | EPOLLRDHUP)) {
 					goto DELETE;
 				}
@@ -137,24 +139,16 @@ int client_handling(int sock, struct device *device)
 
 		if (sendt(sock, json, strlen(json), (CLOCKS_PER_SEC * 2)) < 0)
 			return -3;
-
-		return ret;
 	} else {
 		logg(LOG_INF, "binary request from %d", sock);
-		if ((ret = device_client(sock, data, device)) < 0) {
+		if ((ret = device_client(sock, data, device)) < 0)
 			logg(LOG_ERR, "failed to device_client() %d", ret);
+
+		if (sendt(sock, &ret, sizeof(int32_t), CPS) < 0)
 			return -4;
-		}
-
-		if (sendt(sock, &ret, sizeof(int32_t), CPS) < 0) {
-			logg(LOG_ERR, "failed to send response %d", sock);
-			return -5;
-		}
-
-		logg(LOG_INF, "handling device successfully %d", sock);
 	}
 
-	return 0;
+	return ret;
 }
 
 int http_client(int clnt_sock, char *header, struct device *device)

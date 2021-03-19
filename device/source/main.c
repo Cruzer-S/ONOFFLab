@@ -219,7 +219,7 @@ int32_t wait_command(int sock)
 	if (sock < 0) return -2;
 
 	if ((ret = recvt(sock, &command, sizeof(command), CPS)) < 0)
-		return (ret == -2) ? -1 : 0;
+		return (ret == -2) ? 0 : -1;
 
 	return command;
 }
