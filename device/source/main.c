@@ -265,7 +265,7 @@ int32_t handling_command(int sock, int command, struct task_manager *tm)
 
 		fclose(fp);
 
-		if (ret < 0) return ret;
+		if (ret < 0) return -10 + ret;
 		else logg(LOG_INF, "receive successfully");
 
 		break;
