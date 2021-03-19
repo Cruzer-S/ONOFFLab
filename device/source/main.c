@@ -120,15 +120,13 @@ int main(int argc, char *argv[])
 
 			logg(LOG_INF, "re-register device to server %d", dev_id);
 		} else {
-			if (command == 0) {
-				flush_socket(serv_sock);
-				continue;
-			}
+			if (command == 0) continue;
 
 			logg(LOG_INF, "request from server %d", command);
 			int32_t result = handling_command(serv_sock, command, task_manager);
-
 			logg(LOG_INF, "handling_command() %d", result);
+
+			flush_socket(serv_sock);
 			if (sendt(serv_sock, &result, sizeof(result), CPS) < 0) {
 				logg(LOG_ERR, "failed to send result \n");
 				close(serv_sock);
@@ -136,8 +134,6 @@ int main(int argc, char *argv[])
 
 				continue;
 			}
-
-			flush_socket(serv_sock);
 		}
 
 		// ========================================================================
