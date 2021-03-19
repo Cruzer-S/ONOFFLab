@@ -239,15 +239,17 @@ int32_t handling_command(int sock, int command, struct task_manager *tm)
 			return -1;
 
 		task_name(id, fname);
+
+		logg(LOG_INF, "name: %s", fname);
+
 		fp = fopen(fname, "wb");
 		if (fp == NULL)
 			return -2;
 
-
 		if (recvt(sock, &length, sizeof(length), CPS) < 0)
 			return -3;
 
-		logg(LOG_INF, "name: %s\tlength: %d", fname, length);
+		logg(LOG_INF, "length: %d", fname, length);
 		for (int received = 0, to_read;
 			 received < length; received += to_read)
 		{
