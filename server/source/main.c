@@ -186,9 +186,16 @@ int http_client(int clnt_sock, char *header, struct device *device)
 	case POST: // IPC_REGISTER_GCODE
 		logg(LOG_INF, "receive gcode from client %d", clnt_sock);
 		logg(LOG_INF, "send gcode to device id %d (%d)", device_id, device_sock);
+
 		if (sendt(device_sock, (int32_t []) { IPC_REGISTER_GCODE },
 				  sizeof(int32_t), CLOCKS_PER_SEC) < 0)
 			return -7;
+
+		int32_t sign;
+		if (recvt(device_sock, &sign, sizeof(sign), CPS) < 0)
+			return -14;
+
+		if (sign < 0) return -15;
 
 		if (sendt(device_sock, &bsize, sizeof(bsize), CLOCKS_PER_SEC) < 0)
 			return -8;

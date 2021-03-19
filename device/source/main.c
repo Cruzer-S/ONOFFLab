@@ -126,7 +126,6 @@ int main(int argc, char *argv[])
 			int32_t result = handling_command(serv_sock, command, task_manager);
 			logg(LOG_INF, "handling_command() %d", result);
 
-			flush_socket(serv_sock);
 			if (sendt(serv_sock, &result, sizeof(result), CPS) < 0) {
 				logg(LOG_ERR, "failed to send result \n");
 				close(serv_sock);
@@ -238,16 +237,18 @@ int32_t handling_command(int sock, int command, struct task_manager *tm)
 		if ((id = make_task(tm)) < 0)
 			return -1;
 
-		task_name(id, fname);
-
-		logg(LOG_INF, "name: %s", fname);
-
 		fp = fopen(fname, "wb");
 		if (fp == NULL)
 			return -2;
 
-		if (recvt(sock, &length, sizeof(length), CPS) < 0)
+		task_name(id, fname);
+		logg(LOG_INF, "name: %s", fname);
+
+		if (sendt(sock, (int32_t[]) { 1 }, sizeof(int32_t), CPS) < 0)
 			return -3;
+
+		if (recvt(sock, &length, sizeof(length), CPS) < 0)
+			return -4;
 
 		logg(LOG_INF, "length: %d", length);
 		for (int received = 0, to_read;
@@ -264,6 +265,8 @@ int32_t handling_command(int sock, int command, struct task_manager *tm)
 		}
 
 		fclose(fp);
+
+		flush_socket(sock);
 
 		if (ret < 0) return -10 + ret;
 		else logg(LOG_INF, "receive successfully");
