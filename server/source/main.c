@@ -195,7 +195,6 @@ int http_client(int clnt_sock, char *header, struct device *device)
 			return -9;
 		else logg(LOG_INF, "data size: %d", bsize);
 
-
 		if (ret < 0) return (ret * 100);
 
 		for (int received = 0, to_read; received < bsize; received += to_read)
@@ -215,7 +214,7 @@ int http_client(int clnt_sock, char *header, struct device *device)
 	}
 
 	if (recvt(device_sock, &ret, sizeof(int32_t), CLOCKS_PER_SEC) < 0)
-		return -12;
+		return -13;
 
 	return (ret * 100);
 }
