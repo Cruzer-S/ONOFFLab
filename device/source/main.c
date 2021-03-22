@@ -134,12 +134,16 @@ int main(int argc, char *argv[])
 				continue;
 			}
 
+			flush_socket(serv_sock);
+
+			/*
 			if (result < 0) {
 				for (clock_t end, start = end = clock();
 					 end - start < CPS / 2;
 					 end = clock())
 					flush_socket(serv_sock);
 			} else flush_socket(serv_sock);
+			*/
 		}
 
 		// ========================================================================

@@ -134,10 +134,10 @@ int client_handling(int sock, struct device *device)
 		flush_socket(sock);
 
 		int len = make_http_header_s(data, HEADER_SIZE, 200, "application/json", strlen(json));
-		if (sendt(sock, data, len, CLOCKS_PER_SEC) < 0)
+		if (sendt(sock, data, len, CPS) < 0)
 			return -2;
 
-		if (sendt(sock, json, strlen(json), (CLOCKS_PER_SEC * 2)) < 0)
+		if (sendt(sock, json, strlen(json), (CPS * 2)) < 0)
 			return -3;
 	} else {
 		logg(LOG_INF, "binary request from %d", sock);
@@ -154,7 +154,7 @@ int client_handling(int sock, struct device *device)
 int http_client(int clnt_sock, char *header, struct device *device)
 {
 	struct http_header http;
-	char buffer[BUFFER_SIZE];
+	char buffer[BUFFER_SIZE], *bp;
 	int hsize, bsize;
 	int32_t device_id, device_sock, ret;
 
@@ -184,14 +184,17 @@ int http_client(int clnt_sock, char *header, struct device *device)
 		logg(LOG_INF, "receive gcode from client %d", clnt_sock);
 		logg(LOG_INF, "send gcode to device id %d (%d)", device_id, device_sock);
 
-		if (sendt(device_sock, (int32_t []) { IPC_REGISTER_GCODE },
-				  sizeof(int32_t), CLOCKS_PER_SEC) < 0)
+		bp = buffer;
+		bp = ASSIGN(bp, *(int32_t[1]) { IPC_REGISTER_DEVICE });
+		bp = ASSIGN(bp, bsize);
+
+		if (sendt(device_sock, buffer, bp - buffer, CPS) < 0)
 			return -7;
 
 		if (recvt(device_sock, &ret, sizeof(ret), CPS) < 0)
 			return -8;
 
-		if (sendt(device_sock, &bsize, sizeof(bsize), CLOCKS_PER_SEC) < 0)
+		if (sendt(device_sock, &bsize, sizeof(bsize), CPS) < 0)
 			return -9;
 		else logg(LOG_INF, "data size: %d", bsize);
 
@@ -200,12 +203,12 @@ int http_client(int clnt_sock, char *header, struct device *device)
 		for (int received = 0, to_read; received < bsize; received += to_read)
 		{
 			if ((to_read = recvt(clnt_sock, buffer,
-						   LIMITS(bsize - received, sizeof(buffer)), CLOCKS_PER_SEC)) < 0)
+						   LIMITS(bsize - received, sizeof(buffer)), CPS)) < 0)
 				return -10;
 
 			if (to_read == 0) break;
 
-			if (sendt(device_sock, buffer, to_read, CLOCKS_PER_SEC) < 0)
+			if (sendt(device_sock, buffer, to_read, CPS) < 0)
 				return -11;
 		}
 
@@ -213,7 +216,7 @@ int http_client(int clnt_sock, char *header, struct device *device)
 	default: return -12;
 	}
 
-	if (recvt(device_sock, &ret, sizeof(int32_t), CLOCKS_PER_SEC) < 0)
+	if (recvt(device_sock, &ret, sizeof(int32_t), CPS) < 0)
 		return -13;
 
 	return (ret * 100);
