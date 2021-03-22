@@ -270,7 +270,7 @@ int32_t handling_command(int sock, struct task_manager *tm)
 
 		task_name(id, fname);
 
-		if (fwrite(body, bsize, sizeof(char), fp) != bsize) {
+		if (fwrite(body, sizeof(char), bsize, fp) != bsize) {
 			free(body);
 			fclose(fp);
 			return -6;
