@@ -42,8 +42,7 @@ int make_task(struct task_manager *tm)
 	for (int i = 0; i < tm->cur + 1; i++)
 		if (!tm->task[i]) {
 			tm->task[i] = true;
-			if (tm->cur + 1 == i)
-				tm->cur++;
+			tm->cur++;
 			return i;
 		}
 
