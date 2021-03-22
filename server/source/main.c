@@ -132,10 +132,10 @@ int client_handling(int sock, struct device *device)
 		ITOS(ret, number); make_json(1, json, "result", number);
 
 		len = make_http_header_s(header, HEADER_SIZE, 200, "application/json", strlen(json));
-		if (sendt(sock, header, len, CPS / 2) < 0)
+		if (sendt(sock, header, len, CPS / 2) <= 0)
 			return -2;
 
-		if (sendt(sock, json, strlen(json), CPS / 2) < 0)
+		if (sendt(sock, json, strlen(json), CPS / 2) <= 0)
 			return -3;
 	} else {
 		logg(LOG_INF, "binary request from %d", sock);
@@ -163,45 +163,49 @@ int http_client(int clnt_sock, struct device *device)
 	if (parse_http_header(header, hsize, &http) < 0)
 		return -2;
 
-	if (http.url == NULL) return -3;
-
 	if (http.content.length) {
 		if (sscanf(http.content.length, "%d", &bsize) != 1)
+			return -3;
+
+		if ((body = (char *)malloc(sizeof(char) * bsize)) == NULL)
 			return -4;
-	} else bsize = -1;
+
+		if (recvt(clnt_sock, body, bsize, CPS) < 0) {
+			free(body);
+			return -5;
+		}
+	} else bsize = -6;
+
+	if (http.url == NULL)
+		return -7;
 
 	if (sscanf(http.url, "/%d", &device_id) != 1)
-		return -4;
+		return -8;
 
 	device_sock = find_device_sock(device, device_id);
-	if (device_sock < 0) return -5;
-
-	if ((body = (char *)malloc(sizeof(char) * bsize)) == NULL)
-		return -5;
-
-	if (recvt(clnt_sock, body, bsize, CPS) < 0) {
-		free(body);
-		return -6;
-	}
+	if (device_sock < 0) return -9;
 
 	switch (parse_string_method(http.method)) {
 	case POST: method = IPC_REGISTER_GCODE; break;
-	default: free(body); return -7;
+	default: free(body); return -10;
 	}
 
 	hp = header;
 	hp = ASSIGN(hp, method);
 	hp = ASSIGN(hp, bsize);
 
-	if (sendt(device_sock, body, hp - header, CPS) < 0) {
-		free(body);
-		return -8;
+	if (sendt(device_sock, header, HEADER_SIZE, CPS) < 0) {
+		free(body); return -11;
+	}
+
+	if (sendt(device_sock, body, bsize, CPS) < 0) {
+		free(body); return -12;
 	}
 
 	free(body);
 
 	if (recvt(device_sock, &ret, sizeof(int32_t), CPS) < 0)
-		return -9;
+		return -13;
 
 	return ret;
 }

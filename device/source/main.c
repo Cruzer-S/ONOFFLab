@@ -31,7 +31,7 @@
 bool is_initiate(int serial);
 int parse_data(int serial, char *ssid, char *psk);
 int wait_command(int sock);
-int32_t handling_command(int sock, int commnad, struct task_manager *task);
+int32_t handling_command(int sock, struct task_manager *task);
 
 int ipc_to_target(int sock, enum IPC_COMMAND cmd, ...);
 int ipc_receive_request(int sock);
@@ -122,8 +122,7 @@ int main(int argc, char *argv[])
 		} else {
 			if (command == 0) continue;
 
-			logg(LOG_INF, "request from server %d", command);
-			int32_t result = handling_command(serv_sock, command, task_manager);
+			int32_t result = handling_command(serv_sock, task_manager);
 			logg(LOG_INF, "handling_command() %d", result);
 
 			if (sendt(serv_sock, &result, sizeof(result), CPS) < 0) {
@@ -222,57 +221,59 @@ int32_t wait_command(int sock)
 
 	if (sock < 0) return -2;
 
-	if ((ret = recvt(sock, &command, sizeof(command), CPS)) < 0)
-		return (ret == -2) ? 0 : -1;
+	if ((ret = recv(sock, &command, sizeof(command), MSG_PEEK | MSG_DONTWAIT)) < 0)
+		return -(errno != EAGAIN);
 
 	return command;
 }
 
-int32_t handling_command(int sock, int command, struct task_manager *tm)
+int32_t handling_command(int sock, struct task_manager *tm)
 {
+	char header[HEADER_SIZE], *body, *hp;
+	int32_t command, bsize;
+
+	if (recvt(sock, header, HEADER_SIZE, CPS) < 0)
+		return -1;
+
+	hp = EXTRACT(header, command);
+	hp = EXTRACT(hp, bsize);
+
+	if (bsize > 0) {
+		body = malloc(sizeof(char) * bsize);
+		if (body == NULL)
+			return -2;
+
+		if (recvt(sock, body, bsize, CPS) < 0) {
+			free(body); return -3;
+		}
+	}
+
 	switch (command) {
 	case IPC_REGISTER_DEVICE: break;
 	case IPC_REGISTER_GCODE: {
-		int32_t length, id, ret;
-		char *buffer, fname[FILENAME_MAX];
+		char fname[FILENAME_MAX];
+		int32_t id;
 		FILE *fp;
 
-		if (recvt(sock, &length, sizeof(length), CPS) < 0)
-			return -1;
-
-		buffer = (char *) malloc(sizeof(char) * length);
-		if (buffer == NULL)
-			return -2;
-
-		if (recvt(sock, buffer, sizeof(length), CPS) < 0) {
-			free(buffer);
-			return -3;
-		}
-
 		if ((id = make_task(tm)) < 0) {
-			free(buffer);
-			return -4;
+			free(body); return -4;
 		}
 
 		task_name(id, fname);
 		fp = fopen(fname, "wb");
 		if (fp == NULL) {
-			free(buffer);
-			return -5;
+			free(body); return -5;
 		}
 
 		task_name(id, fname);
 
-		logg(LOG_INF, "name: %s", fname);
-		logg(LOG_INF, "length: %d", length);
-
-		if (fwrite(buffer, length, sizeof(char), fp) != length) {
-			free(buffer);
+		if (fwrite(body, bsize, sizeof(char), fp) != bsize) {
+			free(body);
 			fclose(fp);
 			return -6;
 		}
 
-		free(buffer);
+		free(body);
 		fclose(fp);
 
 		break;
