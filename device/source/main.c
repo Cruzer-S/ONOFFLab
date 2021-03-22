@@ -237,6 +237,7 @@ int32_t handling_command(int sock, int command, struct task_manager *tm)
 		if ((id = make_task(tm)) < 0)
 			return -1;
 
+		task_name(id, fname);
 		fp = fopen(fname, "wb");
 		if (fp == NULL)
 			return -2;
