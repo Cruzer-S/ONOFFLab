@@ -165,7 +165,8 @@ int http_client(int clnt_sock, char *header, struct device *device)
 	if (parse_http_header(header, hsize, &http) < 0)
 		return -2;
 
-	if (http.url == NULL) return -3;
+	if (http.url == NULL)
+		return -3;
 
 	if (sscanf(http.url, "/%d", &device_id) != 1)
 		return -4;
@@ -173,9 +174,10 @@ int http_client(int clnt_sock, char *header, struct device *device)
 	device_sock = find_device_sock(device, device_id);
 	if (device_sock < 0) return -5;
 
-	if (http.content.length)
+	if (http.content.length) {
 		if (sscanf(http.content.length, "%d", &bsize) != 1)
 			return -6;
+	} else bsize = -1;
 
 	switch (parse_string_method(http.method)) {
 	case POST: // IPC_REGISTER_GCODE
@@ -189,10 +191,12 @@ int http_client(int clnt_sock, char *header, struct device *device)
 		if (recvt(device_sock, &ret, sizeof(ret), CPS) < 0)
 			return -8;
 
-		if (ret < 0) return (ret * 100);
-
 		if (sendt(device_sock, &bsize, sizeof(bsize), CLOCKS_PER_SEC) < 0)
 			return -9;
+		else logg(LOG_INF, "data size: %d", bsize);
+
+
+		if (ret < 0) return (ret * 100);
 
 		for (int received = 0, to_read; received < bsize; received += to_read)
 		{

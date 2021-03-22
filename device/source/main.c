@@ -133,6 +133,8 @@ int main(int argc, char *argv[])
 
 				continue;
 			}
+
+			flush_socket(serv_sock);
 		}
 
 		// ========================================================================
