@@ -220,7 +220,7 @@ int http_client(int clnt_sock, char *header, struct device *device)
 	if (recvt(device_sock, &ret, sizeof(int32_t), CLOCKS_PER_SEC) < 0)
 		return -12;
 
-	return ret;
+	return (ret * 100);
 }
 
 int device_client(int device_sock, char *data, struct device *device)
