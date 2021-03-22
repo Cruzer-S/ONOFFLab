@@ -207,7 +207,7 @@ int http_client(int clnt_sock, struct device *device)
 	if (recvt(device_sock, &ret, sizeof(int32_t), CPS) < 0)
 		return -13;
 
-	return ret;
+	return (ret * 100);
 }
 
 int device_client(int device_sock, char *data, struct device *device)
