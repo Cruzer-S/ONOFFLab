@@ -154,6 +154,16 @@ int delete_epoll_fd(int epfd, int tgfd)
 	return ret;
 }
 
+int flush_socket2(int sock, clock_t clk)
+{
+	char buffer[BUFFER_SIZE];
+
+	while (recvt(sock, buffer, sizeof(buffer), clk) >= 0)
+		/* empty loop body */ ;
+
+	return -(errno == EAGAIN);
+}
+
 int flush_socket(int sock)
 {
 	char buffer[BUFFER_SIZE];

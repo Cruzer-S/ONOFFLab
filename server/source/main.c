@@ -21,7 +21,7 @@
 int client_handling(int sock, struct device *device);
 int worker_thread(int epfd, int serv_sock, struct device *device);
 
-int http_client(int clnt_sock, char *header, struct device *device);
+int http_client(int clnt_sock, struct device *device);
 int device_client(int device_sock, char *data, struct device *device);
 
 int main(int argc, char *argv[])
@@ -114,34 +114,32 @@ int worker_thread(int epfd, int serv_sock, struct device *device)
 
 int client_handling(int sock, struct device *device)
 {
-	int32_t command;
-	char data[HEADER_SIZE];
-	size_t dsize;
-	int ret;
+	int32_t ret;
+	char header[HEADER_SIZE];
 
-	if ((dsize = recv(sock, (char *)data, HEADER_SIZE, MSG_PEEK)) <= 0)
+	if (recv(sock, (char *)header, HEADER_SIZE, MSG_PEEK) <= 0)
 		return -1;
 
-	if (is_http_header((const char *)data)) {
-		logg(LOG_INF, "HTTP request from %d", sock);
-		if ((ret = http_client(sock, data, device)) < 0)
-			logg(LOG_ERR, "http_client() error %d", ret);
-
+	if (is_http_header((const char *)header)) {
 		char json[BUFSIZ], number[10];
-		ITOS(ret, number);
-		make_json(1, json, "result", number);
+		int32_t len;
 
-		flush_socket(sock);
+		logg(LOG_INF, "HTTP request from %d", sock);
+		ret = http_client(sock, device);
 
-		int len = make_http_header_s(data, HEADER_SIZE, 200, "application/json", strlen(json));
-		if (sendt(sock, data, len, CPS) < 0)
+		logg(((ret < 0) ? LOG_ERR : LOG_INF), "http_client() error %d", ret);
+
+		ITOS(ret, number); make_json(1, json, "result", number);
+
+		len = make_http_header_s(header, HEADER_SIZE, 200, "application/json", strlen(json));
+		if (sendt(sock, header, len, CPS / 2) < 0)
 			return -2;
 
-		if (sendt(sock, json, strlen(json), (CPS * 2)) < 0)
+		if (sendt(sock, json, strlen(json), CPS / 2) < 0)
 			return -3;
 	} else {
 		logg(LOG_INF, "binary request from %d", sock);
-		if ((ret = device_client(sock, data, device)) < 0)
+		if ((ret = device_client(sock, header, device)) < 0)
 			logg(LOG_ERR, "failed to device_client() %d", ret);
 
 		if (sendt(sock, &ret, sizeof(int32_t), CPS) < 0)
@@ -151,22 +149,26 @@ int client_handling(int sock, struct device *device)
 	return ret;
 }
 
-int http_client(int clnt_sock, char *header, struct device *device)
+int http_client(int clnt_sock, struct device *device)
 {
 	struct http_header http;
-	char buffer[BUFFER_SIZE], *bp;
-	int hsize, bsize;
-	int32_t device_id, device_sock, ret;
+	char header[HEADER_SIZE], *body, *hp;
+	int32_t hsize, bsize;
+	int32_t device_id, device_sock;
+	int32_t method, ret;
 
-	if ((ret = recv_until(clnt_sock, header, HEADER_SIZE, "\r\n\r\n")) < 0)
+	if ((hsize = recv_until(clnt_sock, header, HEADER_SIZE, "\r\n\r\n")) < 0)
 		return -1;
-	else hsize = ret;
 
 	if (parse_http_header(header, hsize, &http) < 0)
 		return -2;
 
-	if (http.url == NULL)
-		return -3;
+	if (http.url == NULL) return -3;
+
+	if (http.content.length) {
+		if (sscanf(http.content.length, "%d", &bsize) != 1)
+			return -4;
+	} else bsize = -1;
 
 	if (sscanf(http.url, "/%d", &device_id) != 1)
 		return -4;
@@ -174,52 +176,34 @@ int http_client(int clnt_sock, char *header, struct device *device)
 	device_sock = find_device_sock(device, device_id);
 	if (device_sock < 0) return -5;
 
-	if (http.content.length) {
-		if (sscanf(http.content.length, "%d", &bsize) != 1)
-			return -6;
-	} else bsize = -1;
+	if ((body = (char *)malloc(sizeof(char) * bsize)) == NULL)
+		return -5;
 
-	switch (parse_string_method(http.method)) {
-	case POST: // IPC_REGISTER_GCODE
-		logg(LOG_INF, "receive gcode from client %d", clnt_sock);
-		logg(LOG_INF, "send gcode to device id %d (%d)", device_id, device_sock);
-
-		bp = buffer;
-		bp = ASSIGN(bp, *(int32_t[1]) { IPC_REGISTER_DEVICE });
-		bp = ASSIGN(bp, bsize);
-
-		if (sendt(device_sock, buffer, bp - buffer, CPS) < 0)
-			return -7;
-
-		if (recvt(device_sock, &ret, sizeof(ret), CPS) < 0)
-			return -8;
-
-		if (sendt(device_sock, &bsize, sizeof(bsize), CPS) < 0)
-			return -9;
-		else logg(LOG_INF, "data size: %d", bsize);
-
-		if (ret < 0) return (ret * 100);
-
-		for (int received = 0, to_read; received < bsize; received += to_read)
-		{
-			if ((to_read = recvt(clnt_sock, buffer,
-						   LIMITS(bsize - received, sizeof(buffer)), CPS)) < 0)
-				return -10;
-
-			if (to_read == 0) break;
-
-			if (sendt(device_sock, buffer, to_read, CPS) < 0)
-				return -11;
-		}
-
-		break;
-	default: return -12;
+	if (recvt(clnt_sock, body, bsize, CPS) < 0) {
+		free(body);
+		return -6;
 	}
 
-	if (recvt(device_sock, &ret, sizeof(int32_t), CPS) < 0)
-		return -13;
+	switch (parse_string_method(http.method)) {
+	case POST: method = IPC_REGISTER_GCODE; break;
+	default: free(body); return -7;
+	}
 
-	return (ret * 100);
+	hp = header;
+	hp = ASSIGN(hp, method);
+	hp = ASSIGN(hp, bsize);
+
+	if (sendt(device_sock, body, hp - header, CPS) < 0) {
+		free(body);
+		return -8;
+	}
+
+	free(body);
+
+	if (recvt(device_sock, &ret, sizeof(int32_t), CPS) < 0)
+		return -9;
+
+	return ret;
 }
 
 int device_client(int device_sock, char *data, struct device *device)

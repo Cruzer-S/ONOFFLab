@@ -136,14 +136,6 @@ int main(int argc, char *argv[])
 
 			flush_socket(serv_sock);
 
-			/*
-			if (result < 0) {
-				for (clock_t end, start = end = clock();
-					 end - start < CPS / 2;
-					 end = clock())
-					flush_socket(serv_sock);
-			} else flush_socket(serv_sock);
-			*/
 		}
 
 		// ========================================================================
@@ -242,45 +234,46 @@ int32_t handling_command(int sock, int command, struct task_manager *tm)
 	case IPC_REGISTER_DEVICE: break;
 	case IPC_REGISTER_GCODE: {
 		int32_t length, id, ret;
-		char buffer[BUFSIZ], fname[FILENAME_MAX];
+		char *buffer, fname[FILENAME_MAX];
 		FILE *fp;
 
-		if ((id = make_task(tm)) < 0)
+		if (recvt(sock, &length, sizeof(length), CPS) < 0)
 			return -1;
+
+		buffer = (char *) malloc(sizeof(char) * length);
+		if (buffer == NULL)
+			return -2;
+
+		if (recvt(sock, buffer, sizeof(length), CPS) < 0) {
+			free(buffer);
+			return -3;
+		}
+
+		if ((id = make_task(tm)) < 0) {
+			free(buffer);
+			return -4;
+		}
 
 		task_name(id, fname);
 		fp = fopen(fname, "wb");
-		if (fp == NULL) return -2;
-
-		task_name(id, fname);
-		logg(LOG_INF, "name: %s", fname);
-
-		if (sendt(sock, (int32_t[]) { 1 }, sizeof(int32_t), CPS) < 0)
-			return -3;
-
-		if (recvt(sock, &length, sizeof(length), CPS) < 0)
-			return -4;
-
-		logg(LOG_INF, "length: %d", length);
-		for (int received = 0, to_read;
-			 received < length; received += to_read)
-		{
-			if ((to_read = recvt(sock, buffer,
-						   LIMITS(length - received, sizeof(buffer)), CPS)) < 0)
-			{ ret = -5; break; }
-
-			if (to_read < 0) { ret = -6; break; }
-
-			if ((ret = fwrite(buffer, to_read, sizeof(char), fp) == to_read))
-			{ ret = -7; break; }
+		if (fp == NULL) {
+			free(buffer);
+			return -5;
 		}
 
+		task_name(id, fname);
+
+		logg(LOG_INF, "name: %s", fname);
+		logg(LOG_INF, "length: %d", length);
+
+		if (fwrite(buffer, length, sizeof(char), fp) != length) {
+			free(buffer);
+			fclose(fp);
+			return -6;
+		}
+
+		free(buffer);
 		fclose(fp);
-
-		flush_socket(sock);
-
-		if (ret < 0) return ret;
-		else logg(LOG_INF, "receive successfully");
 
 		break;
 	}}

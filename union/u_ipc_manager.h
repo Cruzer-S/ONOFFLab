@@ -29,6 +29,7 @@ int connect_to_target(const char *host, uint16_t port);
 int change_flag(int fd, int flag);
 int change_sockopt(int fd, int level, int flag, int value);
 int flush_socket(int sock);
+int flush_socket2(int sock, clock_t clk);
 
 int register_epoll_fd(int epfd, int tgfd, int flag);
 struct epoll_event *wait_epoll_event(int epfd, struct epoll_event *events, int maxevent, int timeout);
