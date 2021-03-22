@@ -238,6 +238,9 @@ int32_t handling_command(int sock, struct task_manager *tm)
 	hp = EXTRACT(header, command);
 	hp = EXTRACT(hp, bsize);
 
+	logg(LOG_INF, "command: %d", command);
+	logg(LOG_INF, "bsize: %d", bsize);
+
 	if (bsize > 0) {
 		body = malloc(sizeof(char) * bsize);
 		if (body == NULL)
