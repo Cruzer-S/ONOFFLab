@@ -30,3 +30,6 @@ clean:
 
 union:
 	@make -C $(UNION_DIR) all
+
+debug: CFLAGS += -g -DDEBUG
+debug: all

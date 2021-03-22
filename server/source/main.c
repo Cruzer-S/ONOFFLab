@@ -156,27 +156,22 @@ int http_client(int clnt_sock, char *header, struct device *device)
 	struct http_header http;
 	char buffer[BUFFER_SIZE];
 	int hsize, bsize;
-	int32_t device_id, device_sock;
+	int32_t device_id, device_sock, ret;
 
-	do {
-		int ret;
-		if ((ret = recv_until(clnt_sock, header, HEADER_SIZE, "\r\n\r\n")) < 0)
-			return -1;
-		hsize = ret;
-	} while (false);
+	if ((ret = recv_until(clnt_sock, header, HEADER_SIZE, "\r\n\r\n")) < 0)
+		return -1;
+	else hsize = ret;
 
 	if (parse_http_header(header, hsize, &http) < 0)
 		return -2;
 
-	if (http.url == NULL)
-		return -3;
+	if (http.url == NULL) return -3;
 
 	if (sscanf(http.url, "/%d", &device_id) != 1)
 		return -4;
 
 	device_sock = find_device_sock(device, device_id);
-	if (device_sock < 0)
-		return -5;
+	if (device_sock < 0) return -5;
 
 	if (http.content.length)
 		if (sscanf(http.content.length, "%d", &bsize) != 1)
@@ -193,30 +188,29 @@ int http_client(int clnt_sock, char *header, struct device *device)
 
 		int32_t sign;
 		if (recvt(device_sock, &sign, sizeof(sign), CPS) < 0)
-			return -14;
+			return -8;
 
-		if (sign < 0) return -15;
+		if (sign < 0) return (sign * 100);
 
 		if (sendt(device_sock, &bsize, sizeof(bsize), CLOCKS_PER_SEC) < 0)
-			return -8;
+			return -9;
 
 		for (int received = 0, to_read; received < bsize; received += to_read)
 		{
 			if ((to_read = recvt(clnt_sock, buffer,
 						   LIMITS(bsize - received, sizeof(buffer)), CLOCKS_PER_SEC)) < 0)
-				return -9;
+				return -10;
 
 			if (to_read == 0) break;
 
 			if (sendt(device_sock, buffer, to_read, CLOCKS_PER_SEC) < 0)
-				return -10;
+				return -11;
 		}
 
 		break;
-	default: return -11;
+	default: return -12;
 	}
 
-	int32_t ret;
 	if (recvt(device_sock, &ret, sizeof(int32_t), CLOCKS_PER_SEC) < 0)
 		return -12;
 
