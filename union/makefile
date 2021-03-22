@@ -11,3 +11,6 @@ all: $(OBJS)
 
 clean:
 	rm -f $(wildcard *.o)
+
+debug: CFLAGS += -g -DDEBUG
+debug: all

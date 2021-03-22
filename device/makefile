@@ -11,14 +11,14 @@ INC_DIR = ./include $(UNION_DIR)
 
 SRCS = $(wildcard $(SRC_DIR)/*.c)
 OBJS = $(patsubst %.c, $(OBJ_DIR)/%.o, $(notdir $(SRCS)))
-LIBS = $(shell find $(UNION_DIR)/*.o) -lwiringPi
+LIBS = $(shell find $(UNION_DIR)/*.o)
 
 all:
 	@make -C $(UNION_DIR) all
 	@make $(TARGET)
 
 $(TARGET): $(OBJS)
-	$(CC) -o $(TARGET) $(OBJS) $(LIBS)
+	$(CC) -o $(TARGET) $(OBJS) $(LIBS) $(CFLAGS)
 
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c
 	$(CC) -o $@ -c $< $(addprefix -I ,$(INC_DIR)) $(CFLAGS)
@@ -32,4 +32,5 @@ union:
 	@make -C $(UNION_DIR) all
 
 debug: CFLAGS += -g -DDEBUG
-debug: all
+	@make -C $(UNION_DIR) debug
+	@make $(TARGET)
