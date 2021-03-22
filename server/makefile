@@ -14,7 +14,11 @@ OBJS = $(patsubst %.c, $(OBJ_DIR)/%.o, $(notdir $(SRCS)))
 LIBS = $(shell find $(UNION_DIR)/*.o)
 
 all:
+ifeq ($(filter -g,$(CFLAGS)), -g)
+	@make -C $(UNION_DIR) debug
+else
 	@make -C $(UNION_DIR) all
+endif
 	@make $(TARGET)
 
 $(TARGET): $(OBJS)
@@ -32,5 +36,4 @@ union:
 	@make -C $(UNION_DIR) all
 
 debug: CFLAGS += -g -DDEBUG
-	@make -C $(UNION_DIR) debug
-	@make $(TARGET)
+debug: all
