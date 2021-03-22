@@ -158,7 +158,7 @@ int flush_socket(int sock)
 {
 	char buffer[BUFFER_SIZE];
 
-	while (recv(sock, buffer, sizeof(buffer), MSG_DONTWAIT) != -1)
+	while (recv(sock, buffer, sizeof(buffer), MSG_DONTWAIT) > 0)
 		/* empty loop body */ ;
 
 	return -(errno == EAGAIN);
