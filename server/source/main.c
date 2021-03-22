@@ -186,11 +186,10 @@ int http_client(int clnt_sock, char *header, struct device *device)
 				  sizeof(int32_t), CLOCKS_PER_SEC) < 0)
 			return -7;
 
-		int32_t sign;
-		if (recvt(device_sock, &sign, sizeof(sign), CPS) < 0)
+		if (recvt(device_sock, &ret, sizeof(ret), CPS) < 0)
 			return -8;
 
-		if (sign < 0) return (sign * 100);
+		if (ret < 0) return (ret * 100);
 
 		if (sendt(device_sock, &bsize, sizeof(bsize), CLOCKS_PER_SEC) < 0)
 			return -9;

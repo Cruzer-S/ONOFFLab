@@ -239,8 +239,7 @@ int32_t handling_command(int sock, int command, struct task_manager *tm)
 
 		task_name(id, fname);
 		fp = fopen(fname, "wb");
-		if (fp == NULL)
-			return -2;
+		if (fp == NULL) return -2;
 
 		task_name(id, fname);
 		logg(LOG_INF, "name: %s", fname);
@@ -257,19 +256,19 @@ int32_t handling_command(int sock, int command, struct task_manager *tm)
 		{
 			if ((to_read = recvt(sock, buffer,
 						   LIMITS(length - received, sizeof(buffer)), CPS)) < 0)
-			{ ret = -4; break; }
+			{ ret = -5; break; }
 
-			if (to_read < 0) { ret = -5; break; }
+			if (to_read < 0) { ret = -6; break; }
 
 			if ((ret = fwrite(buffer, to_read, sizeof(char), fp) == to_read))
-			{ ret = -6; break; }
+			{ ret = -7; break; }
 		}
 
 		fclose(fp);
 
 		flush_socket(sock);
 
-		if (ret < 0) return -10 + ret;
+		if (ret < 0) return ret;
 		else logg(LOG_INF, "receive successfully");
 
 		break;
