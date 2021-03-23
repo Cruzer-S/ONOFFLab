@@ -36,7 +36,7 @@ void delete_task_manager(struct task_manager *tm)
 
 int make_task(struct task_manager *tm)
 {
-	if (tm->cur + 1 >= tm->max)
+	if (tm->cur + 1 > tm->max)
 		return -2;
 
 	for (int i = 0; i < tm->cur + 1; i++)
