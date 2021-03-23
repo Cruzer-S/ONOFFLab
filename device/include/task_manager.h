@@ -7,18 +7,19 @@
 #include <stdint.h>
 #include <string.h>
 #include <fcntl.h>
+#include <sys/types.h>
+#include <dirent.h>
+#include <unistd.h>
+#include <string.h>
+#include <sys/stat.h>
 
 #define MAX_TASK	1024
 
 struct task_manager;
 
 struct task_manager *create_task_manager(size_t size);
-void delete_task_manager(struct task_manager *tm);
+int load_task_manager(struct task_manager *tm);
 
-int make_task(struct task_manager *tm);
-int remove_task(struct task_manager *tm, int id);
-int check_task(struct task_manager *tm, int id);
-
-int task_name(int id, char *name);
+int register_task(struct task_manager *tm, char *name, int size, char *buffer);
 
 #endif

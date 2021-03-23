@@ -14,6 +14,8 @@
 #include UNION_LIBRARY(ipc_manager.h)
 #include UNION_LIBRARY(logger.h)
 
+#define KEY_SIZE 30
+
 #include "device_manager.h"
 #include "http_handler.h"
 #include "json_parser.h"
@@ -152,7 +154,8 @@ int client_handling(int sock, struct device *device)
 int http_client(int clnt_sock, struct device *device)
 {
 	struct http_header http;
-	char header[HEADER_SIZE], *body, *hp;
+	char header[HEADER_SIZE], *body, *hp, fname[FILENAME_MAX];
+	char device_key[KEY_SIZE];
 	int32_t hsize, bsize;
 	int32_t device_id, device_sock;
 	int32_t method, ret;
@@ -179,8 +182,12 @@ int http_client(int clnt_sock, struct device *device)
 	if (http.url == NULL)
 		return -7;
 
-	if (sscanf(http.url, "/%d", &device_id) != 1)
+	if (sscanf(http.url, "/%d/%[^/]/%s", &device_id, device_key, fname) != 1)
 		return -8;
+
+	logg(LOG_INF, "device id: %d", device_id);
+	logg(LOG_INF, "device key: %s", device_key);
+	logg(LOG_INF, "device id: %s", fname);
 
 	device_sock = find_device_sock(device, device_id);
 	if (device_sock < 0) return -9;

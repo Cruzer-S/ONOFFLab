@@ -1,14 +1,30 @@
 #include "task_manager.h"
-#include <stdio.h>
 
-#define BASE_TASK_NAME "task_"
-#define TASK_EXTENSION "gcd"
+#define BASE_TASK_NAME "t_"
+#define TASK_EXTENSION "gcode"
+#define TASK_DIRECTORY "task/"
+
+struct task {
+	char *name;
+	int order;
+};
 
 struct task_manager {
-	bool *task;
-	size_t max;
+	struct task *task;
+
 	size_t cur;
+	size_t max;
 };
+
+static int get_fsize(struct dirent *ep)
+{
+	struct stat sb;
+
+	if (stat(ep->d_name, &sb) != 0)
+		return -1;
+
+	return sb.st_size;
+}
 
 struct task_manager *create_task_manager(size_t size)
 {
@@ -16,62 +32,20 @@ struct task_manager *create_task_manager(size_t size)
 	if (tm == NULL)
 		return NULL;
 
-	tm->task = malloc(sizeof(bool) * size);
+	tm->task = malloc(sizeof(struct task) * size);
 	if (tm->task == NULL)
 		return NULL;
 
-	memset(tm->task, 0x00, sizeof(bool) * size);
+	for (int i = 0; i < size; i++)
+		tm->task[i].order = -1;
 
-	tm->max = size;
 	tm->cur = 0;
+	tm->max = size;
 
 	return tm;
 }
 
-void delete_task_manager(struct task_manager *tm)
+int register_task(struct task_manager *tm, char *name, int size, char *buffer)
 {
-	free(tm->task);
-	free(tm);
-}
-
-int make_task(struct task_manager *tm)
-{
-	if (tm->cur + 1 > tm->max)
-		return -2;
-
-	for (int i = 0; i < tm->cur + 1; i++)
-		if (!tm->task[i]) {
-			tm->task[i] = true;
-			(tm->cur)++;
-			return i;
-		}
-
-	return -1;
-}
-
-int remove_task(struct task_manager *tm, int id)
-{
-	char fname[FILENAME_MAX];
-
-	if (!tm->task[id])
-		return -1;
-
-	tm->task[id] = false;
-	tm->cur--;
-
-	task_name(id, fname);
-	if (remove(fname) == -1)
-		return -2;
-
 	return 0;
-}
-
-int check_task(struct task_manager *tm, int id)
-{
-	return tm->task[id];
-}
-
-int task_name(int id, char *name)
-{
-	return sprintf(name, "%s%03d.%s", BASE_TASK_NAME, id, TASK_EXTENSION);
 }

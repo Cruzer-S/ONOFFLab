@@ -3,10 +3,12 @@
 if [ $# -ne 1 ]; then
 	make -C ./device/ all
 	make -C ./server/ all
+	make -C ./printer/ all
 else
 	if [ "$1" = "clean" ]; then
 		make -C ./device/ clean
 		make -C ./server/ clean
+		make -C ./printer/ clean
 	else
 		make -C $1 all
 	fi

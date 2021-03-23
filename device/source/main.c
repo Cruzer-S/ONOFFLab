@@ -57,6 +57,8 @@ int main(int argc, char *argv[])
 	if (task_manager == NULL)
 		logg(LOG_CRI, "create_task_manager() error");
 
+	load_task_manager(task_manager);
+
 	logg(LOG_INF, "craete task manager");
 
 	do {
@@ -229,16 +231,22 @@ int32_t wait_command(int sock)
 int32_t handling_command(int sock, struct task_manager *tm)
 {
 	char header[HEADER_SIZE], *body, *hp;
-	int32_t command, bsize;
+	char fname[FILENAME_MAX];
+	int32_t command, bsize, nsize;
 
 	if (recvt(sock, header, HEADER_SIZE, CPS) < 0)
 		return -1;
 
 	hp = EXTRACT(header, command);
 	hp = EXTRACT(hp, bsize);
+	hp = EXTRACT(hp, nsize);
+
+	strncpy(fname, hp, nsize);
 
 	logg(LOG_INF, "command: %d", command);
 	logg(LOG_INF, "bsize: %d", bsize);
+	logg(LOG_INF, "nsize: %d", nsize);
+	logg(LOG_INF, "filename: %s", fname);
 
 	if (bsize > 0) {
 		body = malloc(sizeof(char) * bsize);
@@ -253,31 +261,8 @@ int32_t handling_command(int sock, struct task_manager *tm)
 	switch (command) {
 	case IPC_REGISTER_DEVICE: break;
 	case IPC_REGISTER_GCODE: {
-		char fname[FILENAME_MAX];
-		int32_t id;
-		FILE *fp;
-
-		if ((id = make_task(tm)) < 0) {
-			free(body); return -4;
-		}
-
-		task_name(id, fname);
-		fp = fopen(fname, "wb");
-		if (fp == NULL) {
-			free(body); return -5;
-		}
-
-		task_name(id, fname);
-
-		if (fwrite(body, sizeof(char), bsize, fp) != bsize) {
-			free(body);
-			fclose(fp);
-			return -6;
-		}
-
-		free(body);
-		fclose(fp);
-
+		if (register_task(tm, fname, bsize, body) < 0)
+			return -4;
 		break;
 	}}
 
