@@ -42,7 +42,7 @@ int make_task(struct task_manager *tm)
 	for (int i = 0; i < tm->cur + 1; i++)
 		if (!tm->task[i]) {
 			tm->task[i] = true;
-			tm->cur++;
+			(tm->cur)++;
 			return i;
 		}
 
@@ -55,6 +55,9 @@ int remove_task(struct task_manager *tm, int id)
 
 	if (!tm->task[id])
 		return -1;
+
+	tm->task[id] = false;
+	tm->cur--;
 
 	task_name(id, fname);
 	if (remove(fname) == -1)
