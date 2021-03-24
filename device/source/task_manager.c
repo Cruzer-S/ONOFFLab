@@ -88,7 +88,7 @@ int register_task(struct task_manager *tm, char *name, char *buffer, int bsize)
 	if (fwrite(new_task, sizeof(struct task), 1, tm->manager) != 1)
 		return -4;
 
-	if (fwrite(buffer, bsize, 1, tfp) != -1)
+	if (fwrite(buffer, bsize, 1, tfp) != 1)
 		return -5;
 
 	tm->count++;
