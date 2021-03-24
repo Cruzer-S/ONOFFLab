@@ -93,7 +93,7 @@ bool delete_device_sock(struct device *dev, int sock)
 	return NULL;
 }
 
-bool check_device_key(struct device *dev, int id, char *key)
+bool check_device_key(struct device *dev, uint32_t id, uint8_t *key)
 {
 	for (struct node *dp = dev->head;
 		 dp != NULL;

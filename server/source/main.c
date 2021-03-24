@@ -188,15 +188,15 @@ int http_client(int clnt_sock, struct device *device)
 	logg(LOG_INF, "file name: %s", fname);
 
 	if (!check_device_key(device, device_id, device_key))
-	{	free(body); return -10;	}
+	{	free(body); return -9;	}
 
 	device_sock = find_device_sock(device, device_id);
 	if (device_sock < 0)
-	{	free(body); return -9;	}
+	{	free(body); return -10;	}
 
 	switch (parse_string_method(http.method)) {
 	case POST: method = IPC_REGISTER_GCODE; break;
-	default: free(body); return -11;
+	default: free(body); return -11; break;
 	}
 
 	hp = header;
