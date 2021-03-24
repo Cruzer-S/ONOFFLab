@@ -39,7 +39,7 @@ struct task_manager *create_task_manager(size_t size)
 	tm->head = tm->tail = NULL;
 	tm->count = 0;
 
-	tm->manager = fopen(TASK_DIRECTORY MANAGER_FILE_NAME, "w+");
+	tm->manager = fopen(TASK_DIRECTORY MANAGER_FILE_NAME, "wb+");
 	if (tm->manager == NULL)
 		return NULL;
 
@@ -70,7 +70,7 @@ int register_task(struct task_manager *tm, char *name, char *buffer, int bsize)
 		   TASK_DIRECTORY),
 		   name),
 		   TASK_EXTENSION);
-	tfp = fopen(dirname, "w");
+	tfp = fopen(dirname, "wb");
 	if (tfp == NULL)
 		return -3;
 
@@ -90,6 +90,8 @@ int register_task(struct task_manager *tm, char *name, char *buffer, int bsize)
 
 	if (fwrite(buffer, bsize, 1, tfp) != -1)
 		return -5;
+
+	tm->count++;
 
 	fclose(tfp);
 
