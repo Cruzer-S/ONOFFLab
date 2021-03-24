@@ -268,7 +268,7 @@ int32_t handling_command(int sock, struct task_manager *tm)
 	switch (command) {
 	case IPC_REGISTER_DEVICE: break;
 	case IPC_REGISTER_GCODE: {
-		if (register_task(tm, fname, bsize, body) < 0)
+		if (register_task(tm, fname, body, bsize) < 0)
 			return -4;
 		break;
 	}}
