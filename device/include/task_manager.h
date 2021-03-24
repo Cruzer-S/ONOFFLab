@@ -13,13 +13,14 @@
 #include <string.h>
 #include <sys/stat.h>
 
-#define MAX_TASK	1024
+#define MAX_TASK		1024
+#define TASK_NAME_SIZE	30
 
 struct task_manager;
 
 struct task_manager *create_task_manager(size_t size);
 int load_task_manager(struct task_manager *tm);
 
-int register_task(struct task_manager *tm, char *name, int size, char *buffer);
+int register_task(struct task_manager *tm, char *name, char *buffer, int bsize);
 
 #endif
