@@ -57,8 +57,6 @@ int main(int argc, char *argv[])
 	if (task_manager == NULL)
 		logg(LOG_CRI, "create_task_manager() error");
 
-	load_task_manager(task_manager);
-
 	logg(LOG_INF, "craete task manager");
 
 	do {
