@@ -155,7 +155,7 @@ int http_client(int clnt_sock, struct device *device)
 	struct http_header http;
 	char header[HEADER_SIZE], *body, *hp, fname[FILENAME_MAX];
 	uint8_t device_key[DEVICE_KEY_SIZE];
-	int32_t hsize, bsize;
+	int32_t hsize, bsize, nsize;
 	int32_t device_id, device_sock;
 	int32_t method, ret;
 
@@ -182,6 +182,8 @@ int http_client(int clnt_sock, struct device *device)
 	memset(device_key, 0x00, DEVICE_KEY_SIZE);
 	if (sscanf(http.url, "/%d/%[^/]/%s", &device_id, device_key, fname) != 3)
 	{	free(body); return -8;	}
+	else
+	{	nsize = strlen(fname) + 1;	}
 
 	logg(LOG_INF, "device id: %d", device_id);
 	logg(LOG_INF, "device key: %s", device_key);
@@ -202,6 +204,8 @@ int http_client(int clnt_sock, struct device *device)
 	hp = header;
 	hp = ASSIGN(hp, method);
 	hp = ASSIGN(hp, bsize);
+	hp = ASSIGN(hp, nsize);
+	hp = ASSIGN3(hp, fname, nsize);
 
 	if (sendt(device_sock, header, HEADER_SIZE, CPS) < 0)
 	{	free(body); return -12;	}
