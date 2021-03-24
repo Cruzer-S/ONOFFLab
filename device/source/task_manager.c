@@ -37,12 +37,11 @@ struct task_manager *create_task_manager(size_t size)
 		return NULL;
 
 	tm->head = tm->tail = NULL;
-
-	tm->manager = fopen(TASK_DIRECTORY MANAGER_FILE_NAME, "a+");
-	if (!tm->manager)
-		return NULL;
-
 	tm->count = 0;
+
+	tm->manager = fopen(TASK_DIRECTORY MANAGER_FILE_NAME, "w+");
+	if (tm->manager == NULL)
+		return NULL;
 
 	return tm;
 }
