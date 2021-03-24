@@ -285,10 +285,8 @@ int ipc_to_target(int sock, enum IPC_COMMAND cmd, ...)
 		int32_t dev_id = va_arg(args, int32_t);
 		hp = ASSIGN(hp, dev_id);
 
-		char *dev_key = va_arg(args, char *);
-		char key[DEVICE_KEY_SIZE] = { 0, };
-		memcpy(key, dev_key, strlen(dev_key));
-		hp = ASSIGN3(hp, dev_key, DEVICE_KEY_SIZE);
+		uint8_t *dev_key = va_arg(args, uint8_t *);
+		hp = ASSIGN3(hp, *dev_key, DEVICE_KEY_SIZE);
 		break;
 
 	default: break;
