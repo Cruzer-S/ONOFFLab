@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
+#include <string.h>
 #include <stdbool.h>
 #include <errno.h>
 #include <sys/socket.h>
@@ -13,8 +14,6 @@
 #include UNION_LIBRARY(utils.h)
 #include UNION_LIBRARY(ipc_manager.h)
 #include UNION_LIBRARY(logger.h)
-
-#define KEY_SIZE 30
 
 #include "device_manager.h"
 #include "http_handler.h"
@@ -155,7 +154,7 @@ int http_client(int clnt_sock, struct device *device)
 {
 	struct http_header http;
 	char header[HEADER_SIZE], *body, *hp, fname[FILENAME_MAX];
-	char device_key[KEY_SIZE];
+	uint8_t device_key[DEVICE_KEY_SIZE];
 	int32_t hsize, bsize;
 	int32_t device_id, device_sock;
 	int32_t method, ret;
@@ -180,6 +179,7 @@ int http_client(int clnt_sock, struct device *device)
 	if (http.url == NULL)
 	{	free(body); return -7;	}
 
+	memset(device_key, 0x00, DEVICE_KEY_SIZE);
 	if (sscanf(http.url, "/%d/%[^/]/%s", &device_id, device_key, fname) != 3)
 	{	free(body); return -8;	}
 
@@ -252,6 +252,8 @@ int device_client(int device_sock, char *data, struct device *device)
 
 		if (change_sockopt(device_sock, IPPROTO_TCP, TCP_KEEPINTVL, 60) < 0)
 			return -6;
+
+		insert_device(device, device_sock, device_id, device_key);
 		break;
 
 	default: return -7;

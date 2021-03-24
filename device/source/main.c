@@ -83,11 +83,16 @@ int main(int argc, char *argv[])
 	} while (false);
 
 	do {
+		uint8_t dev_key[DEVICE_KEY_SIZE];
+
+		memset(dev_key, 0x00, DEVICE_KEY_SIZE);
+		strncpy((char *)dev_key, DEVICE_KEY, DEVICE_KEY_SIZE);
+
 		dev_id = (argc == 4) ? strtol(argv[3], NULL, 10) : DEVICE_ID;
-		if (ipc_to_target(serv_sock, IPC_REGISTER_DEVICE, dev_id, DEVICE_KEY) < 0)
+		if (ipc_to_target(serv_sock, IPC_REGISTER_DEVICE, dev_id, dev_key) < 0)
 			logg(LOG_CRI, "ipc_to_target(IPC_REGISTER_DEVICE) error");
 
-		logg(LOG_INF, "register device to server %d", dev_id);
+		logg(LOG_INF, "register device to server (%d:%s)", dev_id, dev_key);
 	} while (false);
 
 	while (true) {
@@ -141,7 +146,7 @@ int main(int argc, char *argv[])
 
 		// ========================================================================
 		// Whatever you wants
-		// =======================================================================
+		// ========================================================================
 	}
 
 	close(serv_sock);
@@ -281,13 +286,14 @@ int ipc_to_target(int sock, enum IPC_COMMAND cmd, ...)
 	hp = ASSIGN(hp, command);
 
 	switch (cmd) {
-	case IPC_REGISTER_DEVICE: ;
+	case IPC_REGISTER_DEVICE: {
 		int32_t dev_id = va_arg(args, int32_t);
 		hp = ASSIGN(hp, dev_id);
 
 		uint8_t *dev_key = va_arg(args, uint8_t *);
 		hp = ASSIGN3(hp, *dev_key, DEVICE_KEY_SIZE);
 		break;
+	}
 
 	default: break;
 	}
