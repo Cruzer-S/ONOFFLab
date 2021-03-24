@@ -8,6 +8,7 @@ struct device {
 struct node {
 	int id;
 	int sock;
+	char key[DEVICE_KEY_SIZE];
 
 	struct node *next;
 };
@@ -24,7 +25,7 @@ struct device *init_device(void)
 	return dev;
 }
 
-bool insert_device(struct device *dev, int id, int sock)
+bool insert_device(struct device *dev, int sock, int32_t id, uint8_t *key)
 {
 	struct node *new_node = malloc(sizeof(struct node));
 	if (new_node == NULL) return false;
@@ -37,6 +38,7 @@ bool insert_device(struct device *dev, int id, int sock)
 	new_node->id = id;
 	new_node->sock = sock;
 	new_node->next = dev->head;
+	memcpy(new_node->key, key, DEVICE_KEY_SIZE);
 
 	dev->head = new_node;
 
@@ -89,6 +91,20 @@ bool delete_device_sock(struct device *dev, int sock)
 	}
 
 	return NULL;
+}
+
+bool check_device_key(struct device *dev, int id, char *key)
+{
+	for (struct node *dp = dev->head;
+		 dp != NULL;
+		 dp = dp->next)
+	{
+		if (dp->id == id
+		 && memcmp(dp->key, key, DEVICE_KEY_SIZE) == 0)
+			return true;
+	}
+
+	return false;
 }
 
 int find_device_id(struct device *dev, int sock)

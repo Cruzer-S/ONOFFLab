@@ -21,7 +21,10 @@
 
 #define BOAD_RATE			9600
 #define SERIAL_DEVICE		"/dev/ttyS0"
+
 #define DEVICE_ID			0x00000001
+#define DEVICE_KEY			"hello12"
+#define DEVICE_KEY_SIZE		32
 
 #define HEADER_SIZE			1024
 
@@ -81,7 +84,7 @@ int main(int argc, char *argv[])
 
 	do {
 		dev_id = (argc == 4) ? strtol(argv[3], NULL, 10) : DEVICE_ID;
-		if (ipc_to_target(serv_sock, IPC_REGISTER_DEVICE, dev_id) < 0)
+		if (ipc_to_target(serv_sock, IPC_REGISTER_DEVICE, dev_id, DEVICE_KEY) < 0)
 			logg(LOG_CRI, "ipc_to_target(IPC_REGISTER_DEVICE) error");
 
 		logg(LOG_INF, "register device to server %d", dev_id);
@@ -281,6 +284,11 @@ int ipc_to_target(int sock, enum IPC_COMMAND cmd, ...)
 	case IPC_REGISTER_DEVICE: ;
 		int32_t dev_id = va_arg(args, int32_t);
 		hp = ASSIGN(hp, dev_id);
+
+		char *dev_key = va_arg(args, char *);
+		char key[DEVICE_KEY_SIZE] = { 0, };
+		memcpy(key, dev_key, strlen(dev_key));
+		hp = ASSIGN3(hp, dev_key, DEVICE_KEY_SIZE);
 		break;
 
 	default: break;

@@ -173,46 +173,46 @@ int http_client(int clnt_sock, struct device *device)
 		if ((body = (char *)malloc(sizeof(char) * bsize)) == NULL)
 			return -4;
 
-		if (recvt(clnt_sock, body, bsize, CPS) < 0) {
-			free(body);
-			return -5;
-		}
+		if (recvt(clnt_sock, body, bsize, CPS) < 0)
+		{	free(body); return -5;	}
 	} else bsize = -6;
 
 	if (http.url == NULL)
-		return -7;
+	{	free(body); return -7;	}
 
-	if (sscanf(http.url, "/%d/%[^/]/%s", &device_id, device_key, fname) != 1)
-		return -8;
+	if (sscanf(http.url, "/%d/%[^/]/%s", &device_id, device_key, fname) != 3)
+	{	free(body); return -8;	}
 
 	logg(LOG_INF, "device id: %d", device_id);
 	logg(LOG_INF, "device key: %s", device_key);
-	logg(LOG_INF, "device id: %s", fname);
+	logg(LOG_INF, "file name: %s", fname);
+
+	if (!check_device_key(device, device_id, device_key))
+	{	free(body); return -10;	}
 
 	device_sock = find_device_sock(device, device_id);
-	if (device_sock < 0) return -9;
+	if (device_sock < 0)
+	{	free(body); return -9;	}
 
 	switch (parse_string_method(http.method)) {
 	case POST: method = IPC_REGISTER_GCODE; break;
-	default: free(body); return -10;
+	default: free(body); return -11;
 	}
 
 	hp = header;
 	hp = ASSIGN(hp, method);
 	hp = ASSIGN(hp, bsize);
 
-	if (sendt(device_sock, header, HEADER_SIZE, CPS) < 0) {
-		free(body); return -11;
-	}
+	if (sendt(device_sock, header, HEADER_SIZE, CPS) < 0)
+	{	free(body); return -12;	}
 
-	if (sendt(device_sock, body, bsize, CPS) < 0) {
-		free(body); return -12;
-	}
+	if (sendt(device_sock, body, bsize, CPS) < 0)
+	{	free(body); return -13;	}
 
 	free(body);
 
 	if (recvt(device_sock, &ret, sizeof(int32_t), CPS) < 0)
-		return -13;
+		return -14;
 
 	return (ret * 100);
 }
@@ -222,6 +222,7 @@ int device_client(int device_sock, char *data, struct device *device)
 	int hsize;
 	int32_t command;
 	int32_t device_id;
+	uint8_t device_key[DEVICE_KEY_SIZE];
 
 	if ((hsize = recvt(device_sock, (char *)data, HEADER_SIZE, MSG_DONTWAIT)) < 0)
 		return -1;
@@ -232,9 +233,12 @@ int device_client(int device_sock, char *data, struct device *device)
 	switch (command) {
 	case IPC_REGISTER_DEVICE:
 		data = EXTRACT(data, device_id);
-		logg(LOG_INF, "bind socket to device (%d to %d)", device_sock, device_id);
+		data = EXTRACT(data, device_key);
 
-		if (!insert_device(device, device_id, device_sock))
+		logg(LOG_INF, "bind socket to device %d (%d:%s)",
+			 device_sock, device_id, device_key);
+
+		if (!insert_device(device, device_sock, device_id, device_key))
 			return -2;
 
 		if (change_sockopt(device_sock, SOL_SOCKET, SO_KEEPALIVE, 1) < 0)
