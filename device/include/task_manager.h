@@ -19,7 +19,6 @@
 struct task_manager;
 
 struct task_manager *create_task_manager(size_t size);
-int load_task_manager(struct task_manager *tm);
 
 int register_task(struct task_manager *tm, char *name, char *buffer, int bsize);
 

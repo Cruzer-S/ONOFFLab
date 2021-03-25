@@ -25,6 +25,10 @@ struct task_manager {
 	int count;
 };
 
+
+static int load_task_manager(struct task_manager *tm);
+static int get_fsize(struct dirent *ep);
+
 static int get_fsize(struct dirent *ep)
 {
 	struct stat sb;
