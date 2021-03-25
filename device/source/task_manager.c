@@ -39,16 +39,17 @@ struct task_manager *create_task_manager(size_t size)
 	tm->head = tm->tail = NULL;
 	tm->count = 0;
 
-	tm->manager = fopen(TASK_DIRECTORY MANAGER_FILE_NAME, "wb+");
-	if (tm->manager == NULL)
-		return NULL;
+	if ((tm->manager = fopen(TASK_DIRECTORY MANAGER_FILE_NAME, "rb+")) == NULL) {
+		tm->manager = fopen(TASK_DIRECTORY MANAGER_FILE_NAME, "wb+");
+		if (tm->manager == NULL)
+			return NULL;
+	}
 
 	return tm;
 }
 
 int load_task_manager(struct task_manager *tm)
 {
-	int to_read;
 	struct task *new_task;
 
 	fseek(tm->manager, 0, SEEK_SET);
@@ -83,9 +84,11 @@ int load_task_manager(struct task_manager *tm)
 					tm->tail = new_task;
 			}
 		}
+
+		tm->count++;
 	}
 
-	return to_read;
+	return tm->count;
 }
 
 void delete_task_manager(struct task_manager *tm)
@@ -112,6 +115,7 @@ int register_task(struct task_manager *tm, char *name, char *buffer, int bsize)
 		   TASK_DIRECTORY),
 		   name),
 		   TASK_EXTENSION);
+
 	tfp = fopen(dirname, "wb");
 	if (tfp == NULL)
 		return -3;
