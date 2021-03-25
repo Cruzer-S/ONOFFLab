@@ -129,9 +129,15 @@ int register_task(struct task_manager *tm, char *name, char *buffer, int bsize)
 		   name),
 		   TASK_EXTENSION);
 
+	tfp = fopen(dirname, "rb");
+	if (tfp != NULL) {
+		fclose(tfp);
+		return -3;
+	}
+
 	tfp = fopen(dirname, "wb");
 	if (tfp == NULL)
-		return -3;
+		return -4;
 
 	strcpy(new_task->name, name);
 	new_task->next = NULL;
@@ -146,12 +152,12 @@ int register_task(struct task_manager *tm, char *name, char *buffer, int bsize)
 
 	if (fwrite(new_task, sizeof(struct task), 1, tm->manager) != 1) {
 		fclose(tfp);
-		return -4;
+		return -5;
 	} else fflush(tm->manager);
 
 	if (fwrite(buffer, bsize, 1, tfp) != 1) {
 		fclose(tfp);
-		return -5;
+		return -6;
 	}
 
 	tm->count++;
