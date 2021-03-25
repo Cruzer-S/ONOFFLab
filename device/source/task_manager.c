@@ -58,7 +58,7 @@ void show_task(struct task_manager *tm)
 	for (struct task *cur = tm->head;
 		 cur != NULL;
 		 cur = cur->next)
-		printf("%02d: %s\n", cur->order, cur->name);
+		printf("%2d: %s\n", cur->order, cur->name);
 }
 
 static int load_task_manager(struct task_manager *tm)
@@ -139,7 +139,7 @@ int register_task(struct task_manager *tm, char *name, char *buffer, int bsize)
 		new_task->order = 1;
 		tm->head = tm->tail = new_task;
 	} else {
-		new_task->order = tm->tail->order;
+		new_task->order = tm->tail->order + 1;
 		new_task->next = tm->tail;
 		tm->tail = new_task;
 	}
