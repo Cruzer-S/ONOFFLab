@@ -1,5 +1,10 @@
 #include "task_manager.h"
 
+#define stringify(x) #x
+#define UNION_LIBRARY(NAME) stringify(u_ ## NAME)
+
+#include UNION_LIBRARY(utils.h)
+
 #define TASK_EXTENSION		".gcode"
 #define TASK_DIRECTORY		"task/"
 #define MANAGER_FILE_NAME	"manager.dat"
@@ -45,10 +50,21 @@ struct task_manager *create_task_manager(size_t size)
 			return NULL;
 	}
 
+	load_task_manager(tm);
+
 	return tm;
 }
 
-int load_task_manager(struct task_manager *tm)
+void show_task(struct task_manager *tm)
+{
+	for (struct task *cur = tm->head;
+		 cur != NULL;
+		 cur = cur->next) {
+		logg(LOG_INF, "%d. %s", cur->order, cur->name);
+	}
+}
+
+static int load_task_manager(struct task_manager *tm)
 {
 	struct task *new_task;
 
