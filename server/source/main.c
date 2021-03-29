@@ -191,6 +191,7 @@ int http_to_packet(int sock, struct packet_header *packet, int32_t *dev_id, uint
 	case POST: packet->method = IPC_REGISTER_GCODE;
 		if (sscanf(http.url, "/%*d/%*[^/]/%[^/]/%d", packet->fname, &packet->quantity) != 2)
 			return -8;
+
 		break;
 
 	case DELETE: packet->method = IPC_DELETE_GCODE;
@@ -205,7 +206,6 @@ int http_to_packet(int sock, struct packet_header *packet, int32_t *dev_id, uint
 		}
 		break;
 	}
-
 
 	return 0;
 }

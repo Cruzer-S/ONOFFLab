@@ -21,8 +21,6 @@
 #include UNION_LIBRARY(ipc_manager.h)
 #include UNION_LIBRARY(logger.h)
 
-#define HEADER_SIZE			1024
-
 #define SERVER_DOMAIN		"www.mythos.ml"
 #define SERVER_PORT			1584
 
@@ -235,7 +233,7 @@ int32_t handling_command(int sock, struct task_manager *tm)
 {
 	struct packet_header packet;
 
-	if (recvt(sock, &packet, HEADER_SIZE, CPS) < 0)
+	if (recvt(sock, &packet, PACKET_SIZE, CPS) < 0)
 		return -1;
 
 	printf("%d %d %d %d \n", packet.method, packet.bsize, packet.order, packet.quantity);

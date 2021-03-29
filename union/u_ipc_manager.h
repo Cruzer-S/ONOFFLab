@@ -18,6 +18,8 @@
 #define CPS			CLOCKS_PER_SEC
 #define BUFFER_SIZE BUFSIZ
 
+#define PACKET_SIZE			sizeof(struct packet_header)
+
 enum IPC_COMMAND {
 	IPC_REGISTER_DEVICE = 0x01,
 	IPC_REGISTER_GCODE = 0x02,
