@@ -274,7 +274,7 @@ int32_t handling_command(int sock, struct task_manager *tm)
 int ipc_to_target(int sock, enum IPC_COMMAND cmd, ...)
 {
 	va_list args;
-	uint8_t header[HEADER_SIZE], *hp = header;
+	uint8_t header[PACKET_SIZE], *hp = header;
 	int32_t command = cmd;
 
 	va_start(args, cmd);
