@@ -254,7 +254,7 @@ int device_client(int device_sock, char *data, struct device *device)
 	int32_t device_id;
 	uint8_t device_key[DEVICE_KEY_SIZE];
 
-	if ((hsize = recvt(device_sock, (char *)data, HEADER_SIZE, MSG_DONTWAIT)) < 0)
+	if ((hsize = recvt(device_sock, (char *)data, PACKET_SIZE, MSG_DONTWAIT)) < 0)
 		return -1;
 
 	data = EXTRACT(data, command);
