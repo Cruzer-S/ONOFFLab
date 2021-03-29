@@ -23,7 +23,7 @@ struct task_manager *create_task_manager(size_t size);
 
 void show_task(struct task_manager *tm);
 
-int register_task(struct task_manager *tm, char *name, uint8_t *buffer, int bsize);
+int register_task(struct task_manager *tm, char *name, int32_t quantity, uint8_t *buffer, int bsize);
 
 bool delete_task(struct task_manager *tm, char *name);
 

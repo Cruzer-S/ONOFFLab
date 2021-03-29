@@ -238,6 +238,9 @@ int32_t handling_command(int sock, struct task_manager *tm)
 	if (recvt(sock, &packet, HEADER_SIZE, CPS) < 0)
 		return -1;
 
+	printf("%d %d %d %d \n", packet.method, packet.bsize, packet.order, packet.quantity);
+	printf("%s %s \n", packet.fname, packet.rname);
+
 	if (packet.bsize > 0) {
 		packet.body = malloc(sizeof(char) * packet.bsize);
 		if (packet.body == NULL)
@@ -251,7 +254,7 @@ int32_t handling_command(int sock, struct task_manager *tm)
 	switch (packet.method) {
 	case IPC_REGISTER_DEVICE: break;
 	case IPC_REGISTER_GCODE: {
-		if (register_task(tm, packet.fname, packet.body, packet.bsize) < 0)
+		if (register_task(tm, packet.fname, packet.quantity, packet.body, packet.bsize) < 0)
 			return -4;
 		break;
 

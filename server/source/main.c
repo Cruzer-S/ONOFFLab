@@ -186,20 +186,20 @@ int http_to_packet(int sock, struct packet_header *packet, int32_t *dev_id, uint
 	if (sscanf(http.url, "/%d/%[^/]", dev_id, dev_key) != 2)
 		return -7;
 
-	switch (parse_string_method(http.method)) {
+	switch (parse_string_method(http.method))
+	{
 	case POST: packet->method = IPC_REGISTER_GCODE;
-		if (sscanf(http.url, "/%*d/%*[^/]/%s/%d", packet->fname, &packet->quantity) != 2)
+		if (sscanf(http.url, "/%*d/%*[^/]/%[^/]/%d", packet->fname, &packet->quantity) != 2)
 			return -8;
 		break;
 
-	case DELETE:
-		packet->method = IPC_DELETE_GCODE;
-		if (sscanf(http.url, "/%*d/%*[^/]/%s", packet->fname) != 1) {
+	case DELETE: packet->method = IPC_DELETE_GCODE;
+		if (sscanf(http.url, "/%*d/%*[^/]/%[^/]", packet->fname) != 1) {
 			packet->method = IPC_CHANGE_QUANTITY_AND_ORDER;
-			if (sscanf(http.url, "/%*d/%*[^/]/%s/%d/%d",
-					   packet->fname, &packet->quantity, &packet->order) != 2) {
+			if (sscanf(http.url, "/%*d/%*[^/]/%[^/]/%d/%d",
+					   packet->fname, &packet->quantity, &packet->order) != 3) {
 				packet->method = IPC_RENAME_GCODE;
-				if (sscanf(http.url,"/%*d/%*[^/]/%s/%s", packet->fname, packet->rname) != 2)
+				if (sscanf(http.url,"/%*d/%*[^/]/%[^/]/%[^/]", packet->fname, packet->rname) != 2)
 					return -9;
 			}
 		}
@@ -235,15 +235,14 @@ int http_client(int clnt_sock, struct device *device)
 	if (sendt(dev_sock, &packet, HEADER_SIZE, CPS) < 0)
 	{	free(packet.body); return -53;	}
 
-	if (packet.body > 0) {
+	if (packet.body > 0)
 		if (sendt(dev_sock, packet.body, packet.bsize, CPS) < 0)
 		{	free(packet.body); return -54;	}
-	}
 
 	free(packet.body);
 
 	if (recvt(dev_sock, &ret, sizeof(int32_t), CPS) < 0)
-		return -14;
+		return -55;
 
 	return (ret * 100);
 }

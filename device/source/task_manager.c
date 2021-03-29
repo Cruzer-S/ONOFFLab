@@ -6,6 +6,7 @@
 
 struct task {
 	char name[TASK_NAME_SIZE + 1];
+	int quantity;
 	int order;
 
 	struct task *next;
@@ -146,7 +147,7 @@ void delete_task_manager(struct task_manager *tm)
 	free(tm);
 }
 
-int register_task(struct task_manager *tm, char *name, uint8_t *buffer, int bsize)
+int register_task(struct task_manager *tm, char *name, int32_t quantity, uint8_t *buffer, int bsize)
 {
 	struct task *new_task;
 	FILE *tfp;
