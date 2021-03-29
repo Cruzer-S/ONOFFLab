@@ -3,6 +3,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdlib.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
@@ -23,5 +24,7 @@ struct task_manager *create_task_manager(size_t size);
 void show_task(struct task_manager *tm);
 
 int register_task(struct task_manager *tm, char *name, char *buffer, int bsize);
+
+bool delete_task(struct task_manager *tm, char *name);
 
 #endif

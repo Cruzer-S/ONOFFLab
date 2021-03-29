@@ -158,6 +158,7 @@ int http_client(int clnt_sock, struct device *device)
 	int32_t hsize, bsize, nsize;
 	int32_t device_id, device_sock;
 	int32_t method, ret;
+	int32_t quantity;
 
 	if ((hsize = recv_until(clnt_sock, header, HEADER_SIZE, "\r\n\r\n")) < 0)
 		return -1;
@@ -179,33 +180,39 @@ int http_client(int clnt_sock, struct device *device)
 	if (http.url == NULL)
 	{	free(body); return -7;	}
 
-	memset(device_key, 0x00, DEVICE_KEY_SIZE);
-	if (sscanf(http.url, "/%d/%[^/]/%s", &device_id, device_key, fname) != 3)
-	{	free(body); return -8;	}
-	else
-	{	nsize = strlen(fname) + 1;	}
-
-	logg(LOG_INF, "device id: %d", device_id);
-	logg(LOG_INF, "device key: %s", device_key);
-	logg(LOG_INF, "file name: %s", fname);
-
-	if (!check_device_key(device, device_id, device_key))
-	{	free(body); return -9;	}
-
-	device_sock = find_device_sock(device, device_id);
-	if (device_sock < 0)
-	{	free(body); return -10;	}
-
 	switch (parse_string_method(http.method)) {
-	case POST: method = IPC_REGISTER_GCODE; break;
-	default: free(body); return -11; break;
-	}
+	case POST:
+		memset(device_key, 0x00, DEVICE_KEY_SIZE);
+		if (sscanf(http.url, "/%d/%[^/]/%s/%d", &device_id, device_key, fname, &quantity) != 3)
+		{	free(body); return -8;	}
+		else
+		{	nsize = strlen(fname) + 1;	}
 
-	hp = header;
-	hp = ASSIGN(hp, method);
-	hp = ASSIGN(hp, bsize);
-	hp = ASSIGN(hp, nsize);
-	hp = ASSIGN3(hp, fname, nsize);
+		logg(LOG_INF, "POST method");
+		logg(LOG_INF, "device id: %d", device_id);
+		logg(LOG_INF, "device key: %s", device_key);
+		logg(LOG_INF, "file name: %s", fname);
+		logg(LOG_INF, "quantity: %d", quantity);
+
+		if (!check_device_key(device, device_id, device_key))
+		{	free(body); return -9;	}
+
+		device_sock = find_device_sock(device, device_id);
+		if (device_sock < 0)
+		{	free(body); return -10;	}
+
+		hp = header;
+		hp = ASSIGN(hp, method);
+		hp = ASSIGN(hp, bsize);
+		hp = ASSIGN(hp, nsize);
+		hp = ASSIGN3(hp, fname, nsize);
+		hp = ASSIGN(hp, quantity);
+		break;
+
+	case DELETE:
+
+		break;
+	}
 
 	if (sendt(device_sock, header, HEADER_SIZE, CPS) < 0)
 	{	free(body); return -12;	}

@@ -104,6 +104,42 @@ static int load_task_manager(struct task_manager *tm)
 	return tm->count;
 }
 
+static void make_name(char *dirname, char *name)
+{
+	strcat(strcat(strcpy(
+	   dirname,
+	   TASK_DIRECTORY),
+	   name),
+	   TASK_EXTENSION);
+}
+
+bool delete_task(struct task_manager *tm, char *name)
+{
+	char dirname[1024];
+
+	make_name(dirname, name);
+
+	for (struct task *cur = tm->head, *prev = NULL;
+		 cur != NULL;
+		 prev = cur, cur = cur->next)
+	{
+		if (!strcmp(cur->name, name)) {
+			if (remove(dirname) < 0)
+				return false;
+
+			if (prev == NULL) {
+				tm->head = cur;
+			} else {
+				prev->next = cur->next;
+			}
+
+			return true;
+		}
+	}
+
+	return false;
+}
+
 void delete_task_manager(struct task_manager *tm)
 {
 	fclose(tm->manager);
@@ -123,11 +159,7 @@ int register_task(struct task_manager *tm, char *name, char *buffer, int bsize)
 	if (new_task == NULL)
 		return -2;
 
-	strcat(strcat(strcpy(
-		   dirname,
-		   TASK_DIRECTORY),
-		   name),
-		   TASK_EXTENSION);
+	make_name(dirname, name);
 
 	tfp = fopen(dirname, "rb");
 	if (tfp != NULL) {

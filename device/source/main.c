@@ -12,6 +12,7 @@
 
 #include "wifi_manager.h"
 #include "task_manager.h"
+#include "device_manager.h"
 
 #define stringify(x) #x
 #define UNION_LIBRARY(NAME) stringify(u_ ## NAME)
@@ -19,13 +20,6 @@
 #include UNION_LIBRARY(utils.h)
 #include UNION_LIBRARY(ipc_manager.h)
 #include UNION_LIBRARY(logger.h)
-
-#define BOAD_RATE			9600
-#define SERIAL_DEVICE		"/dev/ttyS0"
-
-#define DEVICE_ID			0x00000001
-#define DEVICE_KEY			"hello12"
-#define DEVICE_KEY_SIZE		32
 
 #define HEADER_SIZE			1024
 
