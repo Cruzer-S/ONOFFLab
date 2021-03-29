@@ -1,8 +1,5 @@
 #include "device_manager.h"
 
-#define MAX_DEVICE 1241
-
-
 struct device {
 	struct node *head;
 	int count;

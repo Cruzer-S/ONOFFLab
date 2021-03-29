@@ -150,79 +150,99 @@ int client_handling(int sock, struct device *device)
 	return ret;
 }
 
-int http_client(int clnt_sock, struct device *device)
+int http_to_packet(int sock, struct packet_header *packet, int32_t *dev_id, uint8_t *dev_key)
 {
 	struct http_header http;
-	char header[HEADER_SIZE], *body, *hp, fname[FILENAME_MAX];
-	uint8_t device_key[DEVICE_KEY_SIZE];
-	int32_t hsize, bsize, nsize;
-	int32_t device_id, device_sock;
-	int32_t method, ret;
-	int32_t quantity;
+	char header[HEADER_SIZE];
+	int32_t hsize;
 
-	if ((hsize = recv_until(clnt_sock, header, HEADER_SIZE, "\r\n\r\n")) < 0)
+	*packet = (struct packet_header) {
+		.method = -1,
+		.bsize = -1, .body = NULL,
+		.fname = { 0, }, .rname = { 0, },
+		.quantity = -1, .order = -1
+	};
+
+	if ((hsize = recv_until(sock, header, HEADER_SIZE, "\r\n\r\n")) < 0)
 		return -1;
 
 	if (parse_http_header(header, hsize, &http) < 0)
 		return -2;
 
 	if (http.content.length) {
-		if (sscanf(http.content.length, "%d", &bsize) != 1)
+		if (sscanf(http.content.length, "%d", &packet->bsize) != 1)
 			return -3;
 
-		if ((body = (char *)malloc(sizeof(char) * bsize)) == NULL)
+		if ((packet->body = malloc(sizeof(char) * packet->bsize)) == NULL)
 			return -4;
 
-		if (recvt(clnt_sock, body, bsize, CPS) < 0)
-		{	free(body); return -5;	}
-	} else bsize = -6;
+		if (recvt(sock, packet->body, packet->bsize, CPS) < 0)
+			return -5;
+	} else packet->body = NULL;
 
 	if (http.url == NULL)
-	{	free(body); return -7;	}
+		return -6;
+
+	if (sscanf(http.url, "/%d/%[^/]", dev_id, dev_key) != 2)
+		return -7;
 
 	switch (parse_string_method(http.method)) {
-	case POST:
-		memset(device_key, 0x00, DEVICE_KEY_SIZE);
-		if (sscanf(http.url, "/%d/%[^/]/%s/%d", &device_id, device_key, fname, &quantity) != 3)
-		{	free(body); return -8;	}
-		else
-		{	nsize = strlen(fname) + 1;	}
-
-		logg(LOG_INF, "POST method");
-		logg(LOG_INF, "device id: %d", device_id);
-		logg(LOG_INF, "device key: %s", device_key);
-		logg(LOG_INF, "file name: %s", fname);
-		logg(LOG_INF, "quantity: %d", quantity);
-
-		if (!check_device_key(device, device_id, device_key))
-		{	free(body); return -9;	}
-
-		device_sock = find_device_sock(device, device_id);
-		if (device_sock < 0)
-		{	free(body); return -10;	}
-
-		hp = header;
-		hp = ASSIGN(hp, method);
-		hp = ASSIGN(hp, bsize);
-		hp = ASSIGN(hp, nsize);
-		hp = ASSIGN3(hp, fname, nsize);
-		hp = ASSIGN(hp, quantity);
+	case POST: packet->method = IPC_REGISTER_GCODE;
+		if (sscanf(http.url, "/%*d/%*[^/]/%s/%d", packet->fname, &packet->quantity) != 2)
+			return -8;
 		break;
 
 	case DELETE:
-
+		packet->method = IPC_DELETE_GCODE;
+		if (sscanf(http.url, "/%*d/%*[^/]/%s", packet->fname) != 1) {
+			packet->method = IPC_CHANGE_QUANTITY_AND_ORDER;
+			if (sscanf(http.url, "/%*d/%*[^/]/%s/%d/%d",
+					   packet->fname, &packet->quantity, &packet->order) != 2) {
+				packet->method = IPC_RENAME_GCODE;
+				if (sscanf(http.url,"/%*d/%*[^/]/%s/%s", packet->fname, packet->rname) != 2)
+					return -9;
+			}
+		}
 		break;
 	}
 
-	if (sendt(device_sock, header, HEADER_SIZE, CPS) < 0)
-	{	free(body); return -12;	}
 
-	if (sendt(device_sock, body, bsize, CPS) < 0)
-	{	free(body); return -13;	}
+	return 0;
+}
 
-	free(body);
+int http_client(int clnt_sock, struct device *device)
+{
+	struct packet_header packet;
 
-	if (recvt(device_sock, &ret, sizeof(int32_t), CPS) < 0)
+	int32_t dev_id;
+	uint8_t dev_key[DEVICE_KEY_SIZE];
+	int dev_sock;
+
+	int32_t ret;
+
+	memset(dev_key, 0x00, DEVICE_KEY_SIZE);
+	if ((ret = http_to_packet(clnt_sock, &packet, &dev_id, dev_key)) < 0)
+		return ret;
+
+	if (!check_device_key(device, dev_id, dev_key))
+		return -51;
+
+	dev_sock = find_device_sock(device, dev_id);
+	if (dev_sock < 0)
+	{	free(packet.body); return -52;	}
+
+
+	if (sendt(dev_sock, &packet, HEADER_SIZE, CPS) < 0)
+	{	free(packet.body); return -53;	}
+
+	if (packet.body > 0) {
+		if (sendt(dev_sock, packet.body, packet.bsize, CPS) < 0)
+		{	free(packet.body); return -54;	}
+	}
+
+	free(packet.body);
+
+	if (recvt(dev_sock, &ret, sizeof(int32_t), CPS) < 0)
 		return -14;
 
 	return (ret * 100);

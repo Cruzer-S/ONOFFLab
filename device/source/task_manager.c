@@ -146,7 +146,7 @@ void delete_task_manager(struct task_manager *tm)
 	free(tm);
 }
 
-int register_task(struct task_manager *tm, char *name, char *buffer, int bsize)
+int register_task(struct task_manager *tm, char *name, uint8_t *buffer, int bsize)
 {
 	struct task *new_task;
 	FILE *tfp;

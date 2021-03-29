@@ -21,6 +21,22 @@
 enum IPC_COMMAND {
 	IPC_REGISTER_DEVICE = 0x01,
 	IPC_REGISTER_GCODE = 0x02,
+	IPC_DELETE_GCODE,
+	IPC_RENAME_GCODE,
+	IPC_CHANGE_QUANTITY_AND_ORDER,
+};
+
+struct packet_header {
+	int32_t method;
+
+	int32_t bsize;
+	uint8_t *body;
+
+	char fname[128];
+	char rname[128];
+
+	int32_t quantity;
+	int32_t order;
 };
 
 int make_listener(short port, int backlog);

@@ -62,7 +62,7 @@ struct printer_information
 	} wifi;
 	char bluetooth_name[BLUETOOTH_NAME_MAX];
 } printer_information = {
-	.product = "ONOFFLAB 3D",
+	.product = "ONOFFLAB 3D Printer",
 	.unique = 1,
 	.key = DEVICE_KEY
 };

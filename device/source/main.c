@@ -233,39 +233,37 @@ int32_t wait_command(int sock)
 
 int32_t handling_command(int sock, struct task_manager *tm)
 {
-	char header[HEADER_SIZE], *body, *hp;
-	char fname[FILENAME_MAX];
-	int32_t command, bsize, nsize;
+	struct packet_header packet;
 
-	if (recvt(sock, header, HEADER_SIZE, CPS) < 0)
+	if (recvt(sock, &packet, HEADER_SIZE, CPS) < 0)
 		return -1;
 
-	hp = EXTRACT(header, command);
-	hp = EXTRACT(hp, bsize);
-	hp = EXTRACT(hp, nsize);
-
-	strncpy(fname, hp, nsize);
-
-	logg(LOG_INF, "command: %d", command);
-	logg(LOG_INF, "bsize: %d", bsize);
-	logg(LOG_INF, "nsize: %d", nsize);
-	logg(LOG_INF, "filename: %s", fname);
-
-	if (bsize > 0) {
-		body = malloc(sizeof(char) * bsize);
-		if (body == NULL)
+	if (packet.bsize > 0) {
+		packet.body = malloc(sizeof(char) * packet.bsize);
+		if (packet.body == NULL)
 			return -2;
 
-		if (recvt(sock, body, bsize, CPS) < 0) {
-			free(body); return -3;
+		if (recvt(sock, packet.body, packet.bsize, CPS) < 0) {
+			free(packet.body); return -3;
 		}
 	}
 
-	switch (command) {
+	switch (packet.method) {
 	case IPC_REGISTER_DEVICE: break;
 	case IPC_REGISTER_GCODE: {
-		if (register_task(tm, fname, body, bsize) < 0)
+		if (register_task(tm, packet.fname, packet.body, packet.bsize) < 0)
 			return -4;
+		break;
+
+	case IPC_DELETE_GCODE:
+		if (delete_task(tm, packet.fname) < 0)
+			return -5;
+		break;
+
+	case IPC_RENAME_GCODE:
+		break;
+
+	case IPC_CHANGE_QUANTITY_AND_ORDER:
 		break;
 	}}
 
