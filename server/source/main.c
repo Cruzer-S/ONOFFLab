@@ -116,9 +116,9 @@ int worker_thread(int epfd, int serv_sock, struct device *device)
 int client_handling(int sock, struct device *device)
 {
 	int32_t ret;
-	char header[HEADER_SIZE];
+	char header[PACKET_SIZE];
 
-	if (recv(sock, (char *)header, HEADER_SIZE, MSG_PEEK) <= 0)
+	if (recv(sock, (char *)header, PACKET_SIZE, MSG_PEEK) <= 0)
 		return -1;
 
 	if (is_http_header((const char *)header)) {
@@ -132,7 +132,7 @@ int client_handling(int sock, struct device *device)
 
 		ITOS(ret, number); make_json(1, json, "result", number);
 
-		len = make_http_header_s(header, HEADER_SIZE, 200, "application/json", strlen(json));
+		len = make_http_header_s(header, PACKET_SIZE, 200, "application/json", strlen(json));
 		if (sendt(sock, header, len, CPS / 2) <= 0)
 			return -2;
 
