@@ -116,9 +116,9 @@ int worker_thread(int epfd, int serv_sock, struct device *device)
 int client_handling(int sock, struct device *device)
 {
 	int32_t ret;
-	char header[PACKET_SIZE];
+	char header[HEADER_SIZE];
 
-	if (recv(sock, (char *)header, PACKET_SIZE, MSG_PEEK) <= 0)
+	if (recv(sock, (char *)header, HEADER_SIZE, MSG_PEEK) <= 0)
 		return -1;
 
 	if (is_http_header((const char *)header)) {
