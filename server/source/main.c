@@ -132,7 +132,7 @@ int client_handling(int sock, struct device *device)
 
 		ITOS(ret, number); make_json(1, json, "result", number);
 
-		len = make_http_header_s(header, PACKET_SIZE, 200, "application/json", strlen(json));
+		len = make_http_header_s(header, HEADER_SIZE, 200, "application/json", strlen(json));
 		if (sendt(sock, header, len, CPS / 2) <= 0)
 			return -2;
 
@@ -231,7 +231,7 @@ int http_client(int clnt_sock, struct device *device)
 	if (dev_sock < 0)
 	{	free(packet.body); return -52;	}
 
-	if (sendt(dev_sock, &packet, HEADER_SIZE, CPS) < 0)
+	if (sendt(dev_sock, &packet, sizeof(packet), CPS) < 0)
 	{	free(packet.body); return -53;	}
 
 	if (packet.body > 0)
@@ -242,6 +242,8 @@ int http_client(int clnt_sock, struct device *device)
 
 	if (recvt(dev_sock, &ret, sizeof(int32_t), CPS) < 0)
 		return -55;
+
+	printf("ret: %d \n", ret);
 
 	return (ret * 100);
 }

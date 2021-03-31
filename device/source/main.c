@@ -30,7 +30,6 @@ int32_t wait_packet(int sock, struct packet_header *packet);
 int32_t handling_command(int sock, struct task_manager *task);
 
 int ipc_to_target(int sock, enum IPC_COMMAND cmd, ...);
-int ipc_receive_request(int sock);
 
 int main(int argc, char *argv[])
 {
@@ -234,7 +233,7 @@ int32_t handling_command(int sock, struct task_manager *tm)
 {
 	struct packet_header packet;
 
-	if (recvt(sock, &packet, PACKET_SIZE, CPS) < 0)
+	if (recvt(sock, &packet, PACKET_SIZE, CPS) <= 0)
 		return -1;
 
 	printf("%d %d %d %d \n", packet.method, packet.bsize, packet.order, packet.quantity);
@@ -245,7 +244,7 @@ int32_t handling_command(int sock, struct task_manager *tm)
 		if (packet.body == NULL)
 			return -2;
 
-		if (recvt(sock, packet.body, packet.bsize, CPS) < 0) {
+		if (recvt(sock, packet.body, packet.bsize, CPS) <= 0) {
 			free(packet.body); return -3;
 		}
 	}
@@ -305,13 +304,13 @@ int ipc_to_target(int sock, enum IPC_COMMAND cmd, ...)
 
 	va_end(args);
 
-	if (sendt(sock, header, sizeof(header), CPS) < 0)
+	if (sendt(sock, header, sizeof(header), CPS) <= 0)
 		return -1;
 
 	do {
 		int32_t result;
 
-		if (recvt(sock, &result, sizeof(result), CPS) < 0)
+		if (recvt(sock, &result, sizeof(result), CPS) <= 0)
 			return -2;
 
 		if (result < 0)
@@ -320,14 +319,3 @@ int ipc_to_target(int sock, enum IPC_COMMAND cmd, ...)
 
 	return 0;
 }
-
-int ipc_receive_request(int sock)
-{
-	int32_t command;
-
-	if (recv(sock, &command, sizeof(command), MSG_DONTWAIT) != sizeof(command))
-		return -1;
-
-	return command;
-}
-
