@@ -252,13 +252,17 @@ int32_t handling_command(int sock, struct task_manager *tm)
 	switch (packet.method) {
 	case IPC_REGISTER_DEVICE: break;
 	case IPC_REGISTER_GCODE: {
-		if (register_task(tm, packet.fname, packet.quantity, packet.body, packet.bsize) < 0)
+		if (register_task(tm, packet.fname, packet.quantity, packet.body, packet.bsize) < 0) {
+			free(packet.body);
 			return -4;
+		}
 		break;
 
 	case IPC_DELETE_GCODE:
-		if (delete_task(tm, packet.fname) < 0)
+		if (!delete_task(tm, packet.fname)) {
+			free(packet.body);
 			return -5;
+		}
 		break;
 
 	case IPC_RENAME_GCODE:
@@ -267,6 +271,8 @@ int32_t handling_command(int sock, struct task_manager *tm)
 	case IPC_CHANGE_QUANTITY_AND_ORDER:
 		break;
 	}}
+
+	free(packet.body);
 
 	return 0;
 }
