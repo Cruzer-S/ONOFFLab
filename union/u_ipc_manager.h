@@ -28,17 +28,18 @@ enum IPC_COMMAND {
 	IPC_CHANGE_QUANTITY_AND_ORDER,
 };
 
-struct packet_header {
+struct __attribute__((packed, aligned(4))) packet_header {
 	int32_t method;
 
 	int32_t bsize;
-	uint8_t *body;
 
 	char fname[128];
 	char rname[128];
 
 	int32_t quantity;
 	int32_t order;
+
+	uint8_t *body;
 };
 
 int make_listener(short port, int backlog);
