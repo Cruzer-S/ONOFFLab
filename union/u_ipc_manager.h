@@ -39,7 +39,10 @@ struct __attribute__((packed, aligned(4))) packet_header {
 	int32_t quantity;
 	int32_t order;
 
-	uint8_t *body;
+	union {
+		uint8_t *body;
+		int8_t _aligning[32];
+	};
 };
 
 int make_listener(short port, int backlog);
