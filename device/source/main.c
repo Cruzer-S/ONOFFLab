@@ -26,7 +26,7 @@
 
 bool is_initiate(int serial);
 int parse_data(int serial, char *ssid, char *psk);
-int wait_command(int sock);
+int32_t wait_packet(int sock, struct packet_header *packet);
 int32_t handling_command(int sock, struct task_manager *task);
 
 int ipc_to_target(int sock, enum IPC_COMMAND cmd, ...);
@@ -109,8 +109,9 @@ int main(int argc, char *argv[])
 		// ========================================================================
 		// checking whether the server sends command
 		// ========================================================================
-		int command;
-		if ((command = wait_command(serv_sock)) < 0) {
+		struct packet_header packet;
+		int32_t result;
+		if ((result = wait_packet(serv_sock, &packet)) < 0) {
 			if (serv_sock > 0) close(serv_sock);
 
 			serv_sock = connect_to_target(NULL, 0);
@@ -123,7 +124,7 @@ int main(int argc, char *argv[])
 
 			logg(LOG_INF, "re-register device to server %d", dev_id);
 		} else {
-			if (command == 0) continue;
+			if (result == 0) continue;
 
 			int32_t result = handling_command(serv_sock, task_manager);
 			logg(LOG_INF, "handling_command() %d", result);
@@ -216,17 +217,17 @@ bool is_initiate(int serial)
 	return false;
 }
 
-int32_t wait_command(int sock)
+int32_t wait_packet(int sock, struct packet_header *packet)
 {
 	int32_t command = 0;
 	int ret;
 
 	if (sock < 0) return -2;
 
-	if ((ret = recv(sock, &command, sizeof(command), MSG_PEEK | MSG_DONTWAIT)) < 0)
-		return -(errno == EAGAIN);
+	if ((ret = recv(sock, packet, sizeof(packet), MSG_PEEK | MSG_DONTWAIT)) != sizeof(packet))
+		return -(errno != EAGAIN);
 
-	return command;
+	return 0;
 }
 
 int32_t handling_command(int sock, struct task_manager *tm)
