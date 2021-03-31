@@ -224,7 +224,7 @@ int32_t wait_command(int sock)
 	if (sock < 0) return -2;
 
 	if ((ret = recv(sock, &command, sizeof(command), MSG_PEEK | MSG_DONTWAIT)) < 0)
-		return -1;
+		return -(errno == EAGAIN);
 
 	return command;
 }
