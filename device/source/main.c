@@ -227,7 +227,7 @@ int32_t wait_packet(int sock, struct packet_header *packet)
 	if ((ret = recv(sock, packet, sizeof(packet), MSG_PEEK | MSG_DONTWAIT)) != sizeof(packet))
 		return -(errno != EAGAIN);
 
-	return 0;
+	return 1;
 }
 
 int32_t handling_command(int sock, struct task_manager *tm)
