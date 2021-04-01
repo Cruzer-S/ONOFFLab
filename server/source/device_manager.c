@@ -6,8 +6,9 @@ struct device {
 };
 
 struct node {
-	int id;
 	int sock;
+
+	int32_t id;
 	char key[DEVICE_KEY_SIZE];
 
 	struct node *next;

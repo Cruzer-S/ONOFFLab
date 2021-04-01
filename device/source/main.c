@@ -128,7 +128,7 @@ int main(int argc, char *argv[])
 			int32_t result = handling_command(serv_sock, task_manager);
 			logg(LOG_INF, "handling_command() %d", result);
 
-			if (sendt(serv_sock, &result, sizeof(result), CPS) < 0) {
+			if (sendt(serv_sock, &result, sizeof(result), CPS) <= 0) {
 				logg(LOG_ERR, "failed to send result \n");
 				close(serv_sock);
 				serv_sock = -1;
@@ -232,6 +232,7 @@ int32_t wait_packet(int sock, struct packet_header *packet)
 int32_t handling_command(int sock, struct task_manager *tm)
 {
 	struct packet_header packet;
+	uint8_t *body;
 
 	if (recvt(sock, &packet, PACKET_SIZE, CPS) <= 0)
 		return -1;
@@ -240,27 +241,27 @@ int32_t handling_command(int sock, struct task_manager *tm)
 	printf("%s %s \n", packet.fname, packet.rname);
 
 	if (packet.bsize > 0) {
-		packet.body = malloc(sizeof(char) * packet.bsize);
-		if (packet.body == NULL)
+		body = malloc(sizeof(char) * packet.bsize);
+		if (body == NULL)
 			return -2;
 
-		if (recvt(sock, packet.body, packet.bsize, CPS) <= 0) {
-			free(packet.body); return -3;
+		if (recvt(sock, body, packet.bsize, CPS) <= 0) {
+			free(body); return -3;
 		}
 	}
 
 	switch (packet.method) {
 	case IPC_REGISTER_DEVICE: break;
 	case IPC_REGISTER_GCODE: {
-		if (register_task(tm, packet.fname, packet.quantity, packet.body, packet.bsize) < 0) {
-			free(packet.body);
+		if (register_task(tm, packet.fname, packet.quantity, body, packet.bsize) < 0) {
+			free(body);
 			return -4;
 		}
 		break;
 
 	case IPC_DELETE_GCODE:
 		if (!delete_task(tm, packet.fname)) {
-			free(packet.body);
+			free(body);
 			return -5;
 		}
 		break;
@@ -272,7 +273,7 @@ int32_t handling_command(int sock, struct task_manager *tm)
 		break;
 	}}
 
-	free(packet.body);
+	free(body);
 
 	return 0;
 }

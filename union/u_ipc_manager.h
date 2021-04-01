@@ -17,6 +17,8 @@
 #define MAX_EVENT	1024
 #define CPS			CLOCKS_PER_SEC
 #define BUFFER_SIZE BUFSIZ
+#define MAX_NAME_LEN 128
+#define DEVICE_KEY_SIZE		32
 
 #define PACKET_SIZE			sizeof(struct packet_header)
 
@@ -33,16 +35,14 @@ struct __attribute__((packed, aligned(4))) packet_header {
 
 	int32_t bsize;
 
-	char fname[128];
-	char rname[128];
+	char fname[MAX_NAME_LEN];
+	char rname[MAX_NAME_LEN];
 
 	int32_t quantity;
 	int32_t order;
 
-	union {
-		uint8_t *body;
-		int8_t _aligning[32];
-	};
+	int32_t device_id;
+	uint8_t device_key[DEVICE_KEY_SIZE];
 };
 
 int make_listener(short port, int backlog);

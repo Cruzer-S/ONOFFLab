@@ -4,6 +4,7 @@
 #include <string.h>
 #include <stdbool.h>
 #include <errno.h>
+#include <inttypes.h>
 #include <sys/socket.h>
 #include <sys/epoll.h>
 #include <netinet/tcp.h>
@@ -96,7 +97,7 @@ int worker_thread(int epfd, int serv_sock, struct device *device)
 					if ((ret = client_handling(epev->data.fd, device)) < 0)
 						goto DELETE;
 
-					logg(LOG_INF, "client_handling(%d): %d", epev->data.fd, ret);
+					logg(LOG_INF, "client_handling(%d) %d", epev->data.fd, ret);
  				} else if (epev->events & (EPOLLHUP | EPOLLRDHUP)) {
 					goto DELETE;
 				}
@@ -143,24 +144,24 @@ int client_handling(int sock, struct device *device)
 		if ((ret = device_client(sock, header, device)) < 0)
 			logg(LOG_ERR, "failed to device_client() %d", ret);
 
-		if (sendt(sock, &ret, sizeof(int32_t), CPS) < 0)
+		if (sendt(sock, &ret, sizeof(int32_t), CPS) <= 0)
 			return -4;
 	}
 
 	return ret;
 }
 
-int http_to_packet(int sock, struct packet_header *packet, int32_t *dev_id, uint8_t *dev_key)
+int http_to_packet(int sock, struct packet_header *packet, char **body)
 {
 	struct http_header http;
 	char header[HEADER_SIZE];
 	int32_t hsize;
 
 	*packet = (struct packet_header) {
-		.method = -1,
-		.bsize = -1, .body = NULL,
+		.method = -1, .bsize = -1,
 		.fname = { 0, }, .rname = { 0, },
-		.quantity = -1, .order = -1
+		.quantity = -1, .order = -1,
+		.device_id = -1, .device_key = { 0, }
 	};
 
 	if ((hsize = recv_until(sock, header, HEADER_SIZE, "\r\n\r\n")) < 0)
@@ -173,34 +174,34 @@ int http_to_packet(int sock, struct packet_header *packet, int32_t *dev_id, uint
 		if (sscanf(http.content.length, "%d", &packet->bsize) != 1)
 			return -3;
 
-		if ((packet->body = malloc(sizeof(char) * packet->bsize)) == NULL)
+		if ((*body = (char *)malloc(sizeof(char) * packet->bsize)) == NULL)
 			return -4;
 
-		if (recvt(sock, packet->body, packet->bsize, CPS) < 0)
+		if (recvt(sock, *body, packet->bsize, CPS) <= 0)
 			return -5;
-	} else packet->body = NULL;
+	} else *body = NULL;
 
 	if (http.url == NULL)
 		return -6;
 
-	if (sscanf(http.url, "/%d/%[^/]", dev_id, dev_key) != 2)
+	if (sscanf(http.url, "/%" PRId32 "/%[^/]", &packet->device_id, packet->device_key) != 2)
 		return -7;
 
 	switch (parse_string_method(http.method))
 	{
 	case POST: packet->method = IPC_REGISTER_GCODE;
-		if (sscanf(http.url, "/%*d/%*[^/]/%[^/]/%d", packet->fname, &packet->quantity) != 2)
+		if (sscanf(http.url, "/%*" PRId32 "/%*[^/]/%[^/]/%d", packet->fname, &packet->quantity) != 2)
 			return -8;
 
 		break;
 
 	case DELETE: packet->method = IPC_DELETE_GCODE;
-		if (sscanf(http.url, "/%*d/%*[^/]/%[^/]", packet->fname) != 1) {
+		if (sscanf(http.url, "/%*" PRId32 "/%*[^/]/%[^/]", packet->fname) != 1) {
 			packet->method = IPC_CHANGE_QUANTITY_AND_ORDER;
-			if (sscanf(http.url, "/%*d/%*[^/]/%[^/]/%d/%d",
+			if (sscanf(http.url, "/%*" PRId32 "/%*[^/]/%[^/]/%d/%d",
 					   packet->fname, &packet->quantity, &packet->order) != 3) {
 				packet->method = IPC_RENAME_GCODE;
-				if (sscanf(http.url,"/%*d/%*[^/]/%[^/]/%[^/]", packet->fname, packet->rname) != 2)
+				if (sscanf(http.url,"/%*" PRId32 "/%*[^/]/%[^/]/%[^/]", packet->fname, packet->rname) != 2)
 					return -9;
 			}
 		}
@@ -214,33 +215,31 @@ int http_client(int clnt_sock, struct device *device)
 {
 	struct packet_header packet;
 
-	int32_t dev_id;
-	uint8_t dev_key[DEVICE_KEY_SIZE];
 	int dev_sock;
+	char *body;
 
 	int32_t ret;
 
-	memset(dev_key, 0x00, DEVICE_KEY_SIZE);
-	if ((ret = http_to_packet(clnt_sock, &packet, &dev_id, dev_key)) < 0)
+	if ((ret = http_to_packet(clnt_sock, &packet, &body)) < 0)
 		return ret;
 
-	if (!check_device_key(device, dev_id, dev_key))
+	if (!check_device_key(device, packet.device_id, packet.device_key))
 		return -51;
 
-	dev_sock = find_device_sock(device, dev_id);
+	dev_sock = find_device_sock(device, packet.device_id);
 	if (dev_sock < 0)
-	{	free(packet.body); return -52;	}
+	{	free(body); return -52;	}
 
-	if (sendt(dev_sock, &packet, sizeof(packet), CPS) < 0)
-	{	free(packet.body); return -53;	}
+	if (sendt(dev_sock, &packet, sizeof(packet), CPS) <= 0)
+	{	free(body); return -53;	}
 
-	if (packet.body > 0)
-		if (sendt(dev_sock, packet.body, packet.bsize, CPS) < 0)
-		{	free(packet.body); return -54;	}
+	if (packet.bsize > 0)
+		if (sendt(dev_sock, body, packet.bsize, CPS) <= 0)
+		{	free(body); return -54;	}
 
-	free(packet.body);
+	free(body);
 
-	if (recvt(dev_sock, &ret, sizeof(int32_t), CPS) < 0)
+	if (recvt(dev_sock, &ret, sizeof(int32_t), CPS) <= 0)
 		return -55;
 
 	printf("ret: %d \n", ret);
@@ -250,26 +249,20 @@ int http_client(int clnt_sock, struct device *device)
 
 int device_client(int device_sock, char *data, struct device *device)
 {
+	struct packet_header packet;
 	int hsize;
-	int32_t command;
-	int32_t device_id;
-	uint8_t device_key[DEVICE_KEY_SIZE];
 
-	if ((hsize = recvt(device_sock, (char *)data, PACKET_SIZE, MSG_DONTWAIT)) < 0)
+	if (recvt(device_sock, &packet, PACKET_SIZE, MSG_DONTWAIT) != PACKET_SIZE)
 		return -1;
 
-	data = EXTRACT(data, command);
-	logg(LOG_INF, "request: %d", command);
+	logg(LOG_INF, "request: %d", packet.method);
 
-	switch (command) {
+	switch (packet.method) {
 	case IPC_REGISTER_DEVICE:
-		data = EXTRACT(data, device_id);
-		data = EXTRACT(data, device_key);
-
 		logg(LOG_INF, "bind socket to device %d (%d:%s)",
-			 device_sock, device_id, device_key);
+			 device_sock, packet.device_id, packet.device_key);
 
-		if (!insert_device(device, device_sock, device_id, device_key))
+		if (!insert_device(device, device_sock, packet.device_id, packet.device_key))
 			return -2;
 
 		if (change_sockopt(device_sock, SOL_SOCKET, SO_KEEPALIVE, 1) < 0)
@@ -284,7 +277,6 @@ int device_client(int device_sock, char *data, struct device *device)
 		if (change_sockopt(device_sock, IPPROTO_TCP, TCP_KEEPINTVL, 60) < 0)
 			return -6;
 
-		insert_device(device, device_sock, device_id, device_key);
 		break;
 
 	default: return -7;

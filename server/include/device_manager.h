@@ -8,7 +8,11 @@
 #include <stdint.h>
 
 #define MAX_DEVICE 1024
-#define DEVICE_KEY_SIZE 32
+
+#define stringify(x) #x
+#define UNION_LIBRARY(NAME) stringify(u_ ## NAME)
+
+#include UNION_LIBRARY(ipc_manager.h)
 
 struct device;
 

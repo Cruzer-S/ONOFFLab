@@ -3,6 +3,8 @@
 
 #include <time.h>
 
+#include UNION_LIBRARY(ipc_manager.h)
+
 #include "task_manager.h"
 #include "wifi_manager.h"
 
@@ -11,7 +13,6 @@
 
 #define DEVICE_ID			0x00000001
 #define DEVICE_KEY			"hello12"
-#define DEVICE_KEY_SIZE		32
 
 #define BLUETOOTH_NAME_MAX	32
 
