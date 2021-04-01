@@ -271,6 +271,10 @@ int32_t handling_command(int sock, struct task_manager *tm)
 
 	case IPC_CHANGE_QUANTITY_AND_ORDER:
 		break;
+
+	default:
+		return -6;
+		break;
 	}}
 
 	free(body);
@@ -312,3 +316,4 @@ int send_packet(int sock, ...)
 
 	return 0;
 }
+
