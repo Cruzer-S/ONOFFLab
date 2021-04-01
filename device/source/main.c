@@ -23,13 +23,14 @@
 
 #define SERVER_DOMAIN		"www.mythos.ml"
 #define SERVER_PORT			1584
+#define HEADER_SIZE			1024
 
 bool is_initiate(int serial);
 int parse_data(int serial, char *ssid, char *psk);
 int32_t wait_packet(int sock, struct packet_header *packet);
 int32_t handling_command(int sock, struct task_manager *task);
 
-int ipc_to_target(int sock, enum IPC_COMMAND cmd, ...);
+int send_packet(int sock, ...);
 
 int main(int argc, char *argv[])
 {
@@ -278,25 +279,17 @@ int32_t handling_command(int sock, struct task_manager *tm)
 	return 0;
 }
 
-#define HEADER_SIZE 1024
-
-int ipc_to_target(int sock, enum IPC_COMMAND cmd, ...)
+int send_packet(int sock, ...)
 {
+	struct packet_header packet;
 	va_list args;
-	uint8_t header[HEADER_SIZE], *hp = header;
-	int32_t command = cmd;
 
-	va_start(args, cmd);
+	va_start(args, sock);
 
-	hp = ASSIGN(hp, command);
-
-	switch (cmd) {
+	switch ((packet.method = va_arg(args, enum IPC_COMMAND))) {
 	case IPC_REGISTER_DEVICE: {
-		int32_t dev_id = va_arg(args, int32_t);
-		hp = ASSIGN(hp, dev_id);
-
-		uint8_t *dev_key = va_arg(args, uint8_t *);
-		hp = ASSIGN3(hp, *dev_key, DEVICE_KEY_SIZE);
+		packet.device_id = va_arg(args, int32_t);
+		memcpy(packet.device_key, va_arg(args, uint8_t *), DEVICE_KEY_SIZE);
 		break;
 	}
 
@@ -305,7 +298,7 @@ int ipc_to_target(int sock, enum IPC_COMMAND cmd, ...)
 
 	va_end(args);
 
-	if (sendt(sock, header, sizeof(header), CPS) <= 0)
+	if (sendt(sock, &packet, PACKET_SIZE, CPS) <= 0)
 		return -1;
 
 	do {
