@@ -175,7 +175,7 @@ int register_task(struct task_manager *tm, char *name, int32_t quantity, uint8_t
 {
 	struct task *new_task;
 	FILE *tfp;
-	char dirname[1024];
+	char dirname[TASK_NAME_SIZE * 2];
 
 	if (tm->count >= MAX_TASK)
 		return -1;
@@ -206,7 +206,7 @@ int register_task(struct task_manager *tm, char *name, int32_t quantity, uint8_t
 		tm->head = tm->tail = new_task;
 	} else {
 		new_task->order = tm->tail->order + 1;
-		new_task->next = tm->tail;
+		tm->tail->next = new_task;
 		tm->tail = new_task;
 	}
 
