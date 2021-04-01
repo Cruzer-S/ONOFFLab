@@ -153,13 +153,14 @@ void delete_task_manager(struct task_manager *tm)
 
 int save_task(struct task_manager *tm)
 {
-	fseek(tm->manager, 0L, SEEK_SET);
-	ftruncate(fileno(tm->manager), 0L);
+	int k = 0;
 
 	for (struct task *cur = tm->head;
 		 cur != NULL;
 		 cur = cur->next)
 	{
+		fseek(tm->manager, (k++) * sizeof(struct task), SEEK_SET);
+		ftruncate(fileno(tm->manager), k * sizeof(struct task));
 		if (fwrite(cur, sizeof(struct task), 1, tm->manager) != 1)
 			return -1;
 	}
