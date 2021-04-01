@@ -234,6 +234,7 @@ int32_t handling_command(int sock, struct task_manager *tm)
 {
 	struct packet_header packet;
 	uint8_t *body;
+	int ret;
 
 	if (recvt(sock, &packet, PACKET_SIZE, CPS) <= 0)
 		return -1;
@@ -254,7 +255,8 @@ int32_t handling_command(int sock, struct task_manager *tm)
 	switch (packet.method) {
 	case IPC_REGISTER_DEVICE: break;
 	case IPC_REGISTER_GCODE: {
-		if (register_task(tm, packet.fname, packet.quantity, body, packet.bsize) < 0) {
+		if ((ret = register_task(tm, packet.fname, packet.quantity, body, packet.bsize)) < 0) {
+			logg(LOG_ERR, "register_task() error %d", ret);
 			free(body);
 			return -4;
 		}
