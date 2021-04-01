@@ -239,9 +239,6 @@ int32_t handling_command(int sock, struct task_manager *tm)
 	if (recvt(sock, &packet, PACKET_SIZE, CPS) <= 0)
 		return -1;
 
-	printf("%d %d %d %d \n", packet.method, packet.bsize, packet.order, packet.quantity);
-	printf("%s %s \n", packet.fname, packet.rname);
-
 	if (packet.bsize > 0) {
 		body = malloc(sizeof(char) * packet.bsize);
 		if (body == NULL)

@@ -242,8 +242,6 @@ int http_client(int clnt_sock, struct device *device)
 	if (recvt(dev_sock, &ret, sizeof(int32_t), CPS) <= 0)
 		return -55;
 
-	printf("ret: %d \n", ret);
-
 	return (ret * 100);
 }
 
