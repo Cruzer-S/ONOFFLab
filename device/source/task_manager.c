@@ -121,6 +121,7 @@ static void make_name(char *dirname, char *name)
 bool delete_task(struct task_manager *tm, char *name)
 {
 	char dirname[1024];
+	bool is_find = false;
 
 	make_name(dirname, name);
 
@@ -128,24 +129,28 @@ bool delete_task(struct task_manager *tm, char *name)
 		 cur != NULL;
 		 prev = cur, cur = cur->next)
 	{
-		if (!strcmp(cur->name, name)) {
-			if (remove(dirname) < 0)
-				return false;
+		if (is_find) {
+			cur->order++;
+		} else {
+			if (!strcmp(cur->name, name)) {
+				if (remove(dirname) < 0)
+					return false;
 
-			if (prev == NULL) {
-				tm->head = cur;
-			} else {
-				prev->next = cur->next;
+				if (prev == NULL) {
+					tm->head = cur;
+				} else {
+					prev->next = cur->next;
+				}
+
+				save_task(tm);
+				show_task(tm);
+
+				return true;
 			}
-
-			save_task(tm);
-			show_task(tm);
-
-			return true;
 		}
 	}
 
-	return false;
+	return is_find;
 }
 
 void delete_task_manager(struct task_manager *tm)
