@@ -61,7 +61,7 @@ void show_task(struct task_manager *tm)
 	for (struct task *cur = tm->head;
 		 cur != NULL;
 		 cur = cur->next)
-		printf("%2d: %s\n", cur->order, cur->name);
+		printf("%2d: %s (%d) \n", cur->order, cur->name, cur->quantity);
 }
 
 static int load_task_manager(struct task_manager *tm)
