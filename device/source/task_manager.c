@@ -209,7 +209,9 @@ int register_task(struct task_manager *tm, char *name, int32_t quantity, uint8_t
 		return -5;
 
 	strcpy(new_task->name, name);
+	new_task->quantity = quantity;
 	new_task->next = NULL;
+
 	if (tm->head == NULL) {
 		new_task->order = 1;
 		tm->head = tm->tail = new_task;
