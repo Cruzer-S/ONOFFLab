@@ -104,6 +104,8 @@ static int load_task_manager(struct task_manager *tm)
 		tm->count++;
 	}
 
+	show_task(tm);
+
 	return tm->count;
 }
 
@@ -136,13 +138,12 @@ bool delete_task(struct task_manager *tm, char *name)
 				prev->next = cur->next;
 			}
 
+			save_task(tm);
+			show_task(tm);
+
 			return true;
 		}
 	}
-
-	save_task(tm);
-
-	show_task(tm);
 
 	return false;
 }
