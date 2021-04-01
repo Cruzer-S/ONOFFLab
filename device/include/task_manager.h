@@ -1,6 +1,8 @@
 #ifndef TASK_MANAGER_H__
 #define TASK_MANAGER_H__
 
+#define _XOPEN_SOURCE 500
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdlib.h>
@@ -9,10 +11,10 @@
 #include <string.h>
 #include <fcntl.h>
 #include <sys/types.h>
+#include <sys/stat.h>
 #include <dirent.h>
 #include <unistd.h>
 #include <string.h>
-#include <sys/stat.h>
 
 #define MAX_TASK		1024
 #define TASK_NAME_SIZE	30

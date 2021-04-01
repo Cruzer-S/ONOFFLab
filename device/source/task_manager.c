@@ -16,13 +16,15 @@ struct task_manager {
 	struct task *head;
 	struct task *tail;
 
-	FILE *manager;
-
 	int count;
+
+	FILE *manager;
 };
 
 static int load_task_manager(struct task_manager *tm);
 static int get_fsize(struct dirent *ep);
+static bool search_task(struct task_manager *tm, char *name);
+static int save_task(struct task_manager *tm);
 
 static int get_fsize(struct dirent *ep)
 {
@@ -138,6 +140,8 @@ bool delete_task(struct task_manager *tm, char *name)
 		}
 	}
 
+	save_task(tm);
+
 	return false;
 }
 
@@ -145,6 +149,22 @@ void delete_task_manager(struct task_manager *tm)
 {
 	fclose(tm->manager);
 	free(tm);
+}
+
+int save_task(struct task_manager *tm)
+{
+	fseek(tm->manager, 0L, SEEK_SET);
+	ftruncate(fileno(tm->manager), 0L);
+
+	for (struct task *cur = tm->head;
+		 cur != NULL;
+		 cur = cur->next)
+	{
+		if (fwrite(cur, sizeof(struct task), 1, tm->manager) != 1)
+			return -1;
+	}
+
+	return 0;
 }
 
 int register_task(struct task_manager *tm, char *name, int32_t quantity, uint8_t *buffer, int bsize)
@@ -156,21 +176,24 @@ int register_task(struct task_manager *tm, char *name, int32_t quantity, uint8_t
 	if (tm->count >= MAX_TASK)
 		return -1;
 
+	if (search_task(tm, name))
+		return -2;
+
 	new_task = (struct task *)malloc(sizeof(struct task));
 	if (new_task == NULL)
-		return -2;
+		return -3;
 
 	make_name(dirname, name);
 
 	tfp = fopen(dirname, "rb");
 	if (tfp != NULL) {
 		fclose(tfp);
-		return -3;
+		return -4;
 	}
 
 	tfp = fopen(dirname, "wb");
 	if (tfp == NULL)
-		return -4;
+		return -5;
 
 	strcpy(new_task->name, name);
 	new_task->next = NULL;
@@ -183,19 +206,27 @@ int register_task(struct task_manager *tm, char *name, int32_t quantity, uint8_t
 		tm->tail = new_task;
 	}
 
-	if (fwrite(new_task, sizeof(struct task), 1, tm->manager) != 1) {
-		fclose(tfp);
-		return -5;
-	} else fflush(tm->manager);
-
-	if (fwrite(buffer, bsize, 1, tfp) != 1) {
-		fclose(tfp);
-		return -6;
-	}
-
 	tm->count++;
+
+	if (save_task(tm) < 0)
+		return -6;
 
 	fclose(tfp);
 
 	return 0;
 }
+
+bool search_task(struct task_manager *tm, char *name)
+{
+	for (struct task *check = tm->head;
+		 check != NULL;
+		 check = check->next)
+	{
+		if (!strcmp(check->name, name))
+			return true;
+	}
+
+	return false;
+}
+
+

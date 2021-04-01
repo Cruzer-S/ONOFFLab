@@ -8,7 +8,7 @@ enum HTTP_ENTITY {
 
 static const char *http_method_string[] = {
 	[GET]    = "GET",    [POST]  = "POST",
-	[PATCH]  = "PATCH", [DELETE] = "DELTE"
+	[PATCH]  = "PATCH", [DELETE] = "DELETE"
 };
 
 static const char *http_entity_name[] = {
