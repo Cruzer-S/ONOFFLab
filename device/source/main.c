@@ -84,8 +84,8 @@ int main(int argc, char *argv[])
 		strncpy((char *)dev_key, DEVICE_KEY, DEVICE_KEY_SIZE);
 
 		dev_id = (argc == 4) ? strtol(argv[3], NULL, 10) : DEVICE_ID;
-		if (ipc_to_target(serv_sock, IPC_REGISTER_DEVICE, dev_id, dev_key) < 0)
-			logg(LOG_CRI, "ipc_to_target(IPC_REGISTER_DEVICE) error");
+		if (send_packet(serv_sock, IPC_REGISTER_DEVICE, dev_id, dev_key) < 0)
+			logg(LOG_CRI, "send_packet(IPC_REGISTER_DEVICE) error");
 
 		logg(LOG_INF, "register device to server (%d:%s)", dev_id, dev_key);
 	} while (false);
@@ -119,8 +119,8 @@ int main(int argc, char *argv[])
 
 			logg(LOG_INF, "reconnect to target", dev_id);
 
-			if (ipc_to_target(serv_sock, IPC_REGISTER_DEVICE, dev_id) < 0)
-				logg(LOG_ERR, "ipc_to_target(IPC_REGISTER_DEVICE) error");
+			if (send_packet(serv_sock, IPC_REGISTER_DEVICE, dev_id) < 0)
+				logg(LOG_ERR, "send_packet(IPC_REGISTER_DEVICE) error");
 
 			logg(LOG_INF, "re-register device to server %d", dev_id);
 		} else {
