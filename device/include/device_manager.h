@@ -3,6 +3,9 @@
 
 #include <time.h>
 
+#define stringify(x) #x
+#define UNION_LIBRARY(NAME) stringify(u_ ## NAME)
+
 #include UNION_LIBRARY(ipc_manager.h)
 
 #include "task_manager.h"
