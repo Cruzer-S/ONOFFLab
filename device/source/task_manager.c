@@ -165,6 +165,7 @@ int save_task(struct task_manager *tm)
 		ftruncate(fileno(tm->manager), k * sizeof(struct task));
 		if (fwrite(cur, sizeof(struct task), 1, tm->manager) != 1)
 			return -1;
+		fseek(tm->manager, k * sizeof(struct task), SEEK_SET);
 	}
 
 	return 0;
