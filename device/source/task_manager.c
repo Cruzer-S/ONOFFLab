@@ -142,6 +142,8 @@ bool delete_task(struct task_manager *tm, char *name)
 
 	save_task(tm);
 
+	show_task(tm);
+
 	return false;
 }
 
@@ -213,6 +215,8 @@ int register_task(struct task_manager *tm, char *name, int32_t quantity, uint8_t
 		return -6;
 
 	fclose(tfp);
+
+	show_task(tm);
 
 	return 0;
 }
