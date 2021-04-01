@@ -130,7 +130,7 @@ bool delete_task(struct task_manager *tm, char *name)
 		 prev = cur, cur = cur->next)
 	{
 		if (is_find) {
-			cur->order++;
+			cur->order--;
 		} else {
 			if (!strcmp(cur->name, name)) {
 				if (remove(dirname) < 0)
@@ -145,7 +145,7 @@ bool delete_task(struct task_manager *tm, char *name)
 				save_task(tm);
 				show_task(tm);
 
-				return true;
+				is_find = true;
 			}
 		}
 	}
