@@ -241,6 +241,10 @@ int change_task_quantity_and_order(
 		tm->tail = find;
 	}
 
+	save_task(tm);
+
+	show_task(tm);
+
 	return 0;
 }
 
