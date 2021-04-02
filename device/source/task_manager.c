@@ -189,12 +189,13 @@ int change_task_quantity_and_order(
 	struct task_manager *tm,
 	char *name, int32_t quantity, int32_t order)
 {
-	struct task *find = NULL;
+	struct task *find = NULL,
+				*prev, *cur;
 
 	if (order > tm->count)
 		return -5;
 
-	for (struct task *prev = NULL, *cur = tm->head;
+	for (prev = NULL, cur = tm->head;
 		 cur != NULL;
 		 prev = cur, cur = cur->next)
 	{
@@ -220,7 +221,7 @@ int change_task_quantity_and_order(
 	find->quantity = (quantity < 0) ? find->quantity : quantity;
 	find->next = NULL;
 
-	for (struct task *prev = NULL, *cur = tm->head;
+	for (prev = NULL, cur = tm->head;
 		 cur != NULL;
 		 prev = cur, cur = cur->next)
 	{
@@ -236,7 +237,7 @@ int change_task_quantity_and_order(
 	}
 
 	if (find->next == NULL) {
-		tm->tail->next = find;
+		prev->next = find;
 		tm->tail = find;
 	}
 
