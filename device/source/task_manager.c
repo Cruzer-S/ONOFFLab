@@ -315,10 +315,10 @@ int register_task(struct task_manager *tm, char *name, int32_t quantity, uint8_t
 
 	tm->count++;
 
-	if (save_task(tm) < 0)
+	if (save_task(tm) < 0) {
+		fclose(tfp);
 		return -6;
-
-	fclose(tfp);
+	}
 
 	show_task(tm);
 
