@@ -155,8 +155,9 @@ bool delete_task(struct task_manager *tm, char *name)
 	}
 
 	save_task(tm);
-
 	show_task(tm);
+
+	tm->count--;
 
 	return is_find;
 }
