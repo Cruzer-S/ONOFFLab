@@ -198,6 +198,11 @@ int change_task_quantity_and_order(
 		 cur != NULL;
 		 prev = cur, cur = cur->next)
 	{
+		if (find) {
+			cur->order--;
+			continue;
+		}
+
 		if (!strcmp(cur->name, name))
 		{
 			if (prev != NULL)
@@ -205,7 +210,6 @@ int change_task_quantity_and_order(
 			else
 				tm->head = cur->next;
 			find = cur;
-			break;
 		}
 	}
 
@@ -220,9 +224,14 @@ int change_task_quantity_and_order(
 		 cur != NULL;
 		 prev = cur, cur = cur->next)
 	{
-		if (cur->order > find->order) {
-			find->next = cur->next;
-			cur->next = find->next;
+		if (find->next) {
+			cur->order++;
+			continue;
+		}
+
+		if (cur->order == find->order) {
+			prev->next = find;
+			find->next = cur;
 		}
 	}
 
@@ -231,7 +240,7 @@ int change_task_quantity_and_order(
 		tm->tail = find;
 	}
 
-	return -1;
+	return 0;
 }
 
 int save_task(struct task_manager *tm)
