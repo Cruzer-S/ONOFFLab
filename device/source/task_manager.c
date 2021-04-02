@@ -192,8 +192,7 @@ int change_task_quantity_and_order(
 	struct task *find = NULL,
 				*prev, *cur;
 
-	if (order > tm->count)
-		return -5;
+	if (order > tm->count) return -5;
 
 	for (prev = NULL, cur = tm->head;
 		 cur != NULL;
@@ -204,18 +203,15 @@ int change_task_quantity_and_order(
 			continue;
 		}
 
-		if (!strcmp(cur->name, name))
-		{
-			if (prev != NULL)
-				prev->next = cur->next;
-			else
-				tm->head = cur->next;
+		if (!strcmp(cur->name, name)) {
+			if (prev != NULL) prev->next = cur->next;
+			else tm->head = cur->next;
+
 			find = cur;
 		}
 	}
 
-	if (find == NULL)
-		return -2;
+	if (find == NULL) return -2;
 
 	find->order = (order < 0) ? find->order : order;
 	find->quantity = (quantity < 0) ? find->quantity : quantity;
@@ -231,7 +227,9 @@ int change_task_quantity_and_order(
 		}
 
 		if (cur->order == find->order) {
-			prev->next = find;
+			if (prev != NULL) prev->next = find;
+			else tm->head = find;
+
 			find->next = cur;
 		}
 	}
@@ -242,7 +240,6 @@ int change_task_quantity_and_order(
 	}
 
 	save_task(tm);
-
 	show_task(tm);
 
 	return 0;
