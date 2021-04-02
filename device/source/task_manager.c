@@ -191,19 +191,19 @@ int change_task_quantity_and_order(
 {
 	struct task *find = NULL;
 
-	if (order >= tm->count)
+	if (order > tm->count)
 		return -5;
 
 	for (struct task *prev = NULL, *cur = tm->head;
 		 cur != NULL;
 		 prev = cur, cur = cur->next)
 	{
-		if (cur->order == order)
-			return -3;
-
 		if (!strcmp(cur->name, name))
 		{
-			prev->next = cur->next;
+			if (prev != NULL)
+				prev->next = cur->next;
+			else
+				tm->head = cur->next;
 			find = cur;
 			break;
 		}

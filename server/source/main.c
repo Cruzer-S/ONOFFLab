@@ -197,7 +197,7 @@ int http_to_packet(int sock, struct packet_header *packet, char **body)
 
 	case DELETE:
 		packet->method = IPC_CHANGE_QUANTITY_AND_ORDER;
-		if (sscanf(http.url, "/%*" PRId32 "%*[^/]/%[^/]/%d/%d",
+		if (sscanf(http.url, "/%*" PRId32 "/%*[^/]/%[^/]/%d/%d",
 				   packet->fname, &packet->quantity, &packet->order) != 3) {
 
 			packet->method = IPC_RENAME_GCODE;
