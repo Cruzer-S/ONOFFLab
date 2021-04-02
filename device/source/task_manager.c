@@ -170,8 +170,14 @@ void delete_task_manager(struct task_manager *tm)
 int rename_task(struct task_manager *tm, char *fname, char *rname)
 {
 	for (struct task *cur = tm->head;
-		 cur != NULL;
-		 cur = cur->next)
+		 cur != NULL; cur = cur->next)
+	{
+		if (!strcmp(cur->name, rname))
+			return -2;
+	}
+
+	for (struct task *cur = tm->head;
+		 cur != NULL; cur = cur->next)
 	{
 		if (!strcmp(cur->name, fname))
 		{
@@ -227,6 +233,8 @@ int change_task_quantity_and_order(
 		}
 
 		if (cur->order == find->order) {
+			cur->order++;
+
 			if (prev != NULL) prev->next = find;
 			else tm->head = find;
 
