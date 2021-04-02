@@ -195,17 +195,24 @@ int http_to_packet(int sock, struct packet_header *packet, char **body)
 
 		break;
 
-	case DELETE: packet->method = IPC_DELETE_GCODE;
-		if (sscanf(http.url, "/%*" PRId32 "/%*[^/]/%[^/]", packet->fname) != 1) {
-			packet->method = IPC_CHANGE_QUANTITY_AND_ORDER;
+	case DELETE:
+		packet->method = IPC_CHANGE_QUANTITY_AND_ORDER;
+		if (sscanf(http.url, "/%*" PRId32 "%*[^/]/%[^/]/%d/%d",
+				   packet->fname, &packet->quantity, &packet->order) != 3) {
+
+			packet->method = IPC_RENAME_GCODE;
 			if (sscanf(http.url, "/%*" PRId32 "/%*[^/]/%[^/]/%d/%d",
 					   packet->fname, &packet->quantity, &packet->order) != 3) {
-				packet->method = IPC_RENAME_GCODE;
-				if (sscanf(http.url,"/%*" PRId32 "/%*[^/]/%[^/]/%[^/]", packet->fname, packet->rname) != 2)
+				packet->method = IPC_DELETE_GCODE;
+
+				if (sscanf(http.url, "/%*" PRId32 "/%*[^/]/%[^/]", packet->fname) != 1)
 					return -9;
 			}
 		}
 		break;
+
+	default:
+		return -10;
 	}
 
 	return 0;

@@ -250,7 +250,10 @@ int32_t handling_command(int sock, struct task_manager *tm)
 	}
 
 	switch (packet.method) {
-	case IPC_REGISTER_DEVICE: break;
+	case IPC_REGISTER_DEVICE:
+		return -6;
+		break;
+
 	case IPC_REGISTER_GCODE: {
 		if ((ret = register_task(tm, packet.fname, packet.quantity, body, packet.bsize)) < 0) {
 			logg(LOG_ERR, "register_task() error %d", ret);
@@ -267,9 +270,13 @@ int32_t handling_command(int sock, struct task_manager *tm)
 		break;
 
 	case IPC_RENAME_GCODE:
+		if (rename_task(tm, packet.fname, packet.rname) < 0)
+			return -8;
 		break;
 
 	case IPC_CHANGE_QUANTITY_AND_ORDER:
+		if (change_task_quantity_and_order(tm, packet.fname, packet.quantity, packet.order) < 0)
+			return -7;
 		break;
 
 	default:

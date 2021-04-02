@@ -17,6 +17,7 @@ struct task_manager {
 	struct task *tail;
 
 	int count;
+	int max;
 
 	FILE *manager;
 };
@@ -44,6 +45,7 @@ struct task_manager *create_task_manager(size_t size)
 
 	tm->head = tm->tail = NULL;
 	tm->count = 0;
+	tm->max = size;
 
 	if ((tm->manager = fopen(TASK_DIRECTORY MANAGER_FILE_NAME, "rb+")) == NULL) {
 		tm->manager = fopen(TASK_DIRECTORY MANAGER_FILE_NAME, "wb+");
@@ -58,6 +60,7 @@ struct task_manager *create_task_manager(size_t size)
 
 void show_task(struct task_manager *tm)
 {
+	printf("count: %d\n", tm->count);
 	for (struct task *cur = tm->head;
 		 cur != NULL;
 		 cur = cur->next)
@@ -131,26 +134,28 @@ bool delete_task(struct task_manager *tm, char *name)
 	{
 		if (is_find) {
 			cur->order--;
-		} else {
-			if (!strcmp(cur->name, name)) {
-				if (remove(dirname) < 0)
-					return false;
+			continue;
+		}
 
-				if (prev == NULL) {
-					tm->head = cur;
-				} else {
-					prev->next = cur->next;
-				}
+		if (!strcmp(cur->name, name)) {
+			if (remove(dirname) < 0)
+				return false;
 
-				free(cur);
-
-				is_find = true;
-				cur = prev;
+			if (prev == NULL) {
+				tm->head = cur;
+			} else {
+				prev->next = cur->next;
 			}
+
+			free(cur);
+			cur = prev;
+
+			is_find = true;
 		}
 	}
 
 	save_task(tm);
+
 	show_task(tm);
 
 	return is_find;
@@ -160,6 +165,73 @@ void delete_task_manager(struct task_manager *tm)
 {
 	fclose(tm->manager);
 	free(tm);
+}
+
+int rename_task(struct task_manager *tm, char *fname, char *rname)
+{
+	for (struct task *cur = tm->head;
+		 cur != NULL;
+		 cur = cur->next)
+	{
+		if (!strcmp(cur->name, fname))
+		{
+			strcpy(cur->name, rname);
+			return 0;
+		}
+	}
+
+	show_task(tm);
+
+	return -1;
+}
+
+int change_task_quantity_and_order(
+	struct task_manager *tm,
+	char *name, int32_t quantity, int32_t order)
+{
+	struct task *find = NULL;
+
+	if (order >= tm->count)
+		return -5;
+
+	for (struct task *prev = NULL, *cur = tm->head;
+		 cur != NULL;
+		 prev = cur, cur = cur->next)
+	{
+		if (cur->order == order)
+			return -3;
+
+		if (!strcmp(cur->name, name))
+		{
+			prev->next = cur->next;
+			find = cur;
+			break;
+		}
+	}
+
+	if (find == NULL)
+		return -2;
+
+	find->order = (order < 0) ? find->order : order;
+	find->quantity = (quantity < 0) ? find->quantity : quantity;
+	find->next = NULL;
+
+	for (struct task *prev = NULL, *cur = tm->head;
+		 cur != NULL;
+		 prev = cur, cur = cur->next)
+	{
+		if (cur->order > find->order) {
+			find->next = cur->next;
+			cur->next = find->next;
+		}
+	}
+
+	if (find->next == NULL) {
+		tm->tail->next = find;
+		tm->tail = find;
+	}
+
+	return -1;
 }
 
 int save_task(struct task_manager *tm)
@@ -186,7 +258,7 @@ int register_task(struct task_manager *tm, char *name, int32_t quantity, uint8_t
 	FILE *tfp;
 	char dirname[TASK_NAME_SIZE * 2];
 
-	if (tm->count >= MAX_TASK)
+	if (tm->count >= tm->max)
 		return -1;
 
 	if (search_task(tm, name))
