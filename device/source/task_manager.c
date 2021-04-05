@@ -64,7 +64,7 @@ struct task_manager *create_task_manager(size_t size, bool is_loaded)
 
 void show_task(struct task_manager *tm)
 {
-	int index = 0;
+	int index = 1;
 
 	printf("count: %d\n", tm->count);
 	for (struct task *cur = tm->head;
