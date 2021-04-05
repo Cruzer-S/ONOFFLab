@@ -77,12 +77,11 @@ static int load_task_manager(struct task_manager *tm)
 	while (!feof(tm->manager)) {
 		new_task = (struct task *)malloc(sizeof(struct task));
 		if (new_task == NULL) return -1;
-		else new_task->next = NULL;
 
 		if (fread(new_task, sizeof(struct task), 1, tm->manager) != 1) {
 			free(new_task);
 			return -2;
-		}
+		} else new_task->next = NULL;
 
 		for (prev = NULL, cur = tm->head;
 			 (cur != NULL) && (cur->order < new_task->order);
