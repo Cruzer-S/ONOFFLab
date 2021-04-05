@@ -177,7 +177,7 @@ int http_to_packet(int sock, struct packet_header *packet, char **body)
 		if ((*body = (char *)malloc(sizeof(char) * packet->bsize)) == NULL)
 			return -4;
 
-		if (recvt(sock, *body, packet->bsize, CPS * 2) <= 0)
+		if (recvt(sock, *body, packet->bsize, CPS) <= 0)
 			return -5;
 	} else *body = NULL;
 
