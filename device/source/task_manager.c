@@ -127,7 +127,7 @@ bool delete_task(struct task_manager *tm, char *name)
 	make_name(dirname, name);
 
 	for (prev = NULL, cur = tm->head;
-		 cur != NULL && !(is_find = !strcmp(cur->name, name));
+		 cur != NULL && !(is_find = !strncmp(cur->name, name, TASK_NAME_SIZE));
 		 prev = cur, cur = cur->next);
 
 	if (!is_find) 				return false;
@@ -156,24 +156,18 @@ void delete_task_manager(struct task_manager *tm)
 
 int rename_task(struct task_manager *tm, char *fname, char *rname)
 {
-	for (struct task *cur = tm->head;
-		 cur != NULL; cur = cur->next)
-	{
-		if (!strncmp(cur->name, rname, TASK_NAME_SIZE))
-			return -2;
-	}
+	struct task *cur;
+	bool is_find = false;
 
-	for (struct task *cur = tm->head;
-		 cur != NULL; cur = cur->next)
-	{
-		if (!strncmp(cur->name, fname, TASK_NAME_SIZE))
-		{
-			strncpy(cur->name, rname, TASK_NAME_SIZE);
-			return 0;
-		}
-	}
+	for (cur = tm->head;
+		 cur != NULL && !(is_find = !strncmp(cur->name, rname, TASK_NAME_SIZE));
+		 cur = cur->next);
 
-	return -1;
+	if (!is_find) return -1;
+
+	strncpy(cur->name, rname, TASK_NAME_SIZE);
+
+	return 0;
 }
 
 int change_task_quantity_and_order(
@@ -182,58 +176,39 @@ int change_task_quantity_and_order(
 {
 	struct task *find = NULL,
 				*prev, *cur;
+	bool is_find = false;
+	int index;
 
-	if (order > tm->count)	return -5;
-	if (order < 1)			return -6;
-
-	for (prev = NULL, cur = tm->head;
-		 cur != NULL;
-		 prev = cur, cur = cur->next)
-	{
-		if (find) {
-			cur->order--;
-			continue;
-		}
-
-		if (!strncmp(cur->name, name, TASK_NAME_SIZE)) {
-			if (prev != NULL) prev->next = cur->next;
-			else tm->head = cur->next;
-
-			find = cur;
-		}
-	}
-
-	if (find == NULL) return -2;
-
-	find->order = (order < 0) ? find->order : order;
-	find->quantity = (quantity < 0) ? find->quantity : quantity;
-	find->next = NULL;
+	if (order > tm->count)	return -1;
+	if (order < 1)			return -2;
 
 	for (prev = NULL, cur = tm->head;
-		 cur != NULL;
-		 prev = cur, cur = cur->next)
-	{
-		if (find->next) {
-			cur->order++;
-			continue;
-		}
+		 cur != NULL && !(is_find = !strncmp(cur->name, name, TASK_NAME_SIZE));
+		 prev = cur, cur = cur->next);
 
-		if (cur->order == find->order) {
-			cur->order++;
+	if (!is_find) return -3;
+	else find = cur;
 
-			if (prev != NULL) prev->next = find;
-			else tm->head = find;
+	if (prev == NULL) tm->head = cur->next;
+	else prev->next = cur->next;
 
-			find->next = cur;
-		}
-	}
+	cur->quantity = quantity;
 
-	if (find->next == NULL) {
-		prev->next = find;
+	for (prev = NULL, cur = tm->head, index = 1;
+		 cur != NULL && (index < order);
+		 prev = cur, cur = cur->next, index++);
+
+	if (prev == NULL) {
+		find->next = tm->head;
+		tm->head = find;
+	} else if (cur == NULL) {
+		tm->tail->next = find;
 		tm->tail = find;
+		find->next = NULL;
+	} else {
+		find->next = prev->next;
+		prev->next = find;
 	}
-
-	save_task(tm);
 
 	return 0;
 }
