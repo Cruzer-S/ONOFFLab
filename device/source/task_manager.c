@@ -54,6 +54,7 @@ struct task_manager *create_task_manager(size_t size, bool is_loaded)
 	}
 
 	if (is_loaded && (load_task_manager(tm) < 0)) {
+		printf("failed to load task\n");
 		fclose(tm->manager);
 		free(tm);
 		tm = NULL;
