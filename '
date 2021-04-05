@@ -130,8 +130,7 @@ bool delete_task(struct task_manager *tm, char *name)
 
 	for (struct task *cur = tm->head, *prev = NULL;
 		 cur != NULL;
-		 (prev == cur) ? (prev = NULL)
-		               : (prev = cur, cur = cur->next))
+		 prev = cur, cur = cur->next)
 	{
 		if (is_find) {
 			cur->order--;
@@ -143,13 +142,15 @@ bool delete_task(struct task_manager *tm, char *name)
 				return false;
 
 			if (prev == NULL) {
-				tm->head = cur->next;
+				tm->head = cur = cur->next;
+				if (cur != NULL)
+					cur->order--;
 			} else {
 				prev->next = cur->next;
+				cur = prev;
 			}
 
 			free(cur);
-			cur = prev;
 
 			is_find = true;
 		}
@@ -334,7 +335,7 @@ bool search_task(struct task_manager *tm, char *name)
 		 check != NULL;
 		 check = check->next)
 	{
-		if (!strncmp(check->name, name, TASK_NAME_SIZE))
+		if (!strcmp(check->name, name))
 			return true;
 	}
 
