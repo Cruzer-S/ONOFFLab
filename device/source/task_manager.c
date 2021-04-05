@@ -85,7 +85,7 @@ static int load_task_manager(struct task_manager *tm)
 		}
 
 		for (prev = NULL, cur = tm->head;
-			 cur != NULL && cur->order < new_task->order;
+			 (cur != NULL) && (cur->order < new_task->order);
 			 prev = cur, cur = cur->next);
 
 		if (cur == NULL) {
