@@ -84,8 +84,7 @@ static int load_task_manager(struct task_manager *tm)
 		if (new_task == NULL) return -1;
 
 		if (fread(new_task, sizeof(struct task), 1, tm->manager) != 1) {
-			free(new_task);
-			return -2;
+			free(new_task); break;
 		} else new_task->next = NULL;
 
 		for (prev = NULL, cur = tm->head;
