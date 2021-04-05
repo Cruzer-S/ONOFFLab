@@ -133,12 +133,13 @@ bool delete_task(struct task_manager *tm, char *name)
 	if (!is_find) 				return false;
 	if (remove(dirname) < 0) 	return false;
 
-	if (prev == NULL)
+	if (prev == NULL) {
 		tm->head = cur->next;
-	else if (cur == tm->tail)
+	} else if (cur == tm->tail) {
 		tm->tail = prev;
+		prev->next = cur->next;
+	}
 
-	prev->next = cur->next;
 	free(cur);
 
 	tm->count--;
