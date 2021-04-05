@@ -189,8 +189,12 @@ int change_task_quantity_and_order(
 	if (!is_find) return -3;
 	else find = cur;
 
-	if (prev == NULL) tm->head = cur->next;
-	else prev->next = cur->next;
+	if (prev == NULL) {
+		tm->head = cur->next;
+	} else {
+		if (cur == tm->tail) tm->head = prev;
+		prev->next = cur->next;
+	}
 
 	cur->quantity = quantity;
 
