@@ -142,13 +142,15 @@ bool delete_task(struct task_manager *tm, char *name)
 				return false;
 
 			if (prev == NULL) {
-				tm->head = cur;
+				tm->head = cur = cur->next;
+				if (cur != NULL)
+					cur->order--;
 			} else {
 				prev->next = cur->next;
+				cur = prev;
 			}
 
 			free(cur);
-			cur = prev;
 
 			is_find = true;
 		}
