@@ -104,8 +104,6 @@ static int load_task_manager(struct task_manager *tm)
 		tm->count++;
 	}
 
-	show_task(tm);
-
 	return tm->count;
 }
 
