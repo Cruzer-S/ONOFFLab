@@ -21,7 +21,7 @@
 #include UNION_LIBRARY(ipc_manager.h)
 #include UNION_LIBRARY(logger.h)
 
-#define SERVER_DOMAIN		"www.mythos.ml"
+#define SERVER_DOMAIN		"cloud.onofflab.tk"
 #define SERVER_PORT			1584
 #define HEADER_SIZE			1024
 

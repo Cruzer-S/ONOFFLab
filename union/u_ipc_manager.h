@@ -30,13 +30,13 @@ enum IPC_COMMAND {
 	IPC_CHANGE_QUANTITY_AND_ORDER,
 };
 
-struct __attribute__((packed, aligned(4))) packet_header {
+struct packet_header {
 	int32_t method;
 
 	int32_t bsize;
 
-	char fname[MAX_NAME_LEN];
-	char rname[MAX_NAME_LEN];
+	char fname[MAX_NAME_LEN + 1];
+	char rname[MAX_NAME_LEN + 1];
 
 	int32_t quantity;
 	int32_t order;

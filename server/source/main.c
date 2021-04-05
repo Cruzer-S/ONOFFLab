@@ -184,28 +184,32 @@ int http_to_packet(int sock, struct packet_header *packet, char **body)
 	if (http.url == NULL)
 		return -6;
 
-	if (sscanf(http.url, "/%" PRId32 "/%[^/]", &packet->device_id, packet->device_key) != 2)
+	/********************************************************************************
+	 * Warning: sscanf format string uses a constant value, not a variable.         *
+	 * YOU MUST CHECK member variables OUT how long they are.                       *
+	 ********************************************************************************/
+	if (sscanf(http.url, "/%8" PRId32 "/%32[^/]", &packet->device_id, packet->device_key) != 2)
 		return -7;
 
 	switch (parse_string_method(http.method))
 	{
 	case POST: packet->method = IPC_REGISTER_GCODE;
-		if (sscanf(http.url, "/%*" PRId32 "/%*[^/]/%[^/]/%d", packet->fname, &packet->quantity) != 2)
+		if (sscanf(http.url, "/%*8" PRId32 "/%*32[^/]/%128[^/]/%d", packet->fname, &packet->quantity) != 2)
 			return -8;
 
 		break;
 
 	case DELETE:
 		packet->method = IPC_CHANGE_QUANTITY_AND_ORDER;
-		if (sscanf(http.url, "/%*" PRId32 "/%*[^/]/%[^/]/%d/%d",
+		if (sscanf(http.url, "/%*8" PRId32 "/%*32[^/]/%128[^/]/%d/%d",
 				   packet->fname, &packet->quantity, &packet->order) != 3) {
 
 			packet->method = IPC_RENAME_GCODE;
-			if (sscanf(http.url, "/%*" PRId32 "/%*[^/]/%[^/]/%d/%d",
+			if (sscanf(http.url, "/%*8" PRId32 "/%*32[^/]/%128[^/]/%d/%d",
 					   packet->fname, &packet->quantity, &packet->order) != 3) {
 				packet->method = IPC_DELETE_GCODE;
 
-				if (sscanf(http.url, "/%*" PRId32 "/%*[^/]/%[^/]", packet->fname) != 1)
+				if (sscanf(http.url, "/%*8" PRId32 "/%*32[^/]/%128[^/]", packet->fname) != 1)
 					return -9;
 			}
 		}
