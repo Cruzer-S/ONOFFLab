@@ -49,7 +49,7 @@ int main(int argc, char *argv[])
 
 	logg(LOG_INF, "open bluetooth port");
 
-	task_manager = create_task_manager(5);
+	task_manager = create_task_manager(5, true);
 	if (task_manager == NULL)
 		logg(LOG_CRI, "create_task_manager() error");
 
