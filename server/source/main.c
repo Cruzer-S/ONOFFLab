@@ -177,11 +177,8 @@ int http_to_packet(int sock, struct packet_header *packet, char **body)
 		if ((*body = (char *)malloc(sizeof(char) * packet->bsize)) == NULL)
 			return -4;
 
-		int ret ;
-		if ((ret = recvt(sock, *body, packet->bsize, CPS * 2)) <= 0) {
-			logg(LOG_ERR, "ret %d", ret);
+		if (recvt(sock, *body, packet->bsize, CPS * 2) <= 0)
 			return -5;
-		}
 	} else *body = NULL;
 
 	if (http.url == NULL)
