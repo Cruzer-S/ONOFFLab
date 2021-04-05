@@ -154,10 +154,12 @@ bool delete_task(struct task_manager *tm, char *name)
 		}
 	}
 
-	save_task(tm);
-	show_task(tm);
+	if (is_find) {
+		save_task(tm);
+		show_task(tm);
 
-	tm->count--;
+		tm->count--;
+	}
 
 	return is_find;
 }
