@@ -192,7 +192,7 @@ int change_task_quantity_and_order(
 	if (prev == NULL) {
 		tm->head = cur->next;
 	} else {
-		if (cur == tm->tail) tm->head = prev;
+		if (cur == tm->tail) tm->tail = prev;
 		prev->next = cur->next;
 	}
 
