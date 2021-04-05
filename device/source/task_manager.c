@@ -69,6 +69,7 @@ void show_task(struct task_manager *tm)
 
 static int load_task_manager(struct task_manager *tm)
 {
+	struct task *cur, *prev;
 	struct task *new_task;
 
 	fseek(tm->manager, 0, SEEK_SET);
@@ -81,27 +82,20 @@ static int load_task_manager(struct task_manager *tm)
 		if (fread(new_task, sizeof(struct task), 1, tm->manager) != 1) {
 			free(new_task);
 			return -2;
-		} else new_task->next = NULL;
+		}
 
-		if (tm->head == NULL) {
-			tm->head = tm->tail = new_task;
-		} else {
-			struct task *cur, *prev;
+		for (prev = NULL, cur = tm->head;
+			 cur != NULL && cur->order < new_task->order;
+			 prev = cur, cur = cur->next);
 
-			for (prev = NULL, cur = tm->head;
-				 cur != NULL && cur->order < new_task->order;
-				 prev = cur, cur = cur->next);
-
-			if (prev == NULL) {
-				new_task->next = tm->head;
-				tm->head = new_task;
-			} else {
-				new_task->next = prev->next;
+		if (cur == NULL) {
+			if (prev != NULL) {
 				prev->next = new_task;
-
-				if (cur == NULL)
-					tm->tail = new_task;
-			}
+				tm->tail = new_task;
+			} else tm->head = tm->tail = new_task;
+		} else {
+			new_task->next = prev->next;
+			prev->next = new_task;
 		}
 
 		tm->count++;
@@ -123,21 +117,15 @@ static void make_name(char *dirname, char *name)
 
 bool delete_task(struct task_manager *tm, char *name)
 {
+	struct task *cur, *prev;
 	char dirname[1024];
 	bool is_find = false;
 
 	make_name(dirname, name);
 
-	for (struct task *cur = tm->head, *prev = NULL;
-		 cur != NULL;
-		 (prev == cur) ? (prev = NULL)
-		               : (prev = cur, cur = cur->next))
+	for (cur = tm->head, prev = NULL;
+		 cur != NULL; prev = cur, cur = cur->next)
 	{
-		if (is_find) {
-			cur->order--;
-			continue;
-		}
-
 		if (!strncmp(cur->name, name, TASK_NAME_SIZE)) {
 			if (remove(dirname) < 0)
 				return false;
@@ -150,16 +138,16 @@ bool delete_task(struct task_manager *tm, char *name)
 				tm->tail = prev;
 				prev->next = NULL;
 				free(cur);
-
-				break;
 			} else {
 				prev->next = cur->next;
 				free(cur);
+				cur = prev->next;
 			}
-
-			is_find = true;
+			break;
 		}
 	}
+
+	while (cur != NULL) cur->order--;
 
 	if (is_find) {
 		save_task(tm);
