@@ -141,9 +141,10 @@ bool delete_task(struct task_manager *tm, char *name)
 	prev->next = cur->next;
 	free(cur);
 
-	save_task(tm);
-
 	tm->count--;
+
+	if (save_task(tm) < 0)
+		return false;
 
 	return true;
 }
@@ -166,6 +167,9 @@ int rename_task(struct task_manager *tm, char *fname, char *rname)
 	if (!is_find) return -1;
 
 	strncpy(cur->name, rname, TASK_NAME_SIZE);
+
+	if (save_task(tm) < 0)
+		return -2;
 
 	return 0;
 }
@@ -213,6 +217,9 @@ int change_task_quantity_and_order(
 		find->next = prev->next;
 		prev->next = find;
 	}
+
+	if (save_task(tm) < 0)
+		return -4;
 
 	return 0;
 }
@@ -278,12 +285,12 @@ int register_task(struct task_manager *tm, char *name, int32_t quantity, uint8_t
 		tm->tail = new_task;
 	}
 
+	tm->count++;
+
 	if (save_task(tm) < 0) {
 		fclose(tfp);
 		return -6;
 	}
-
-	tm->count++;
 
 	return 0;
 }
