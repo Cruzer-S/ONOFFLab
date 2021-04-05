@@ -76,6 +76,7 @@ static int load_task_manager(struct task_manager *tm)
 	struct task *cur, *prev;
 	struct task *new_task;
 
+	tm->count = 0;
 	fseek(tm->manager, 0, SEEK_SET);
 
 	while (!feof(tm->manager)) {
