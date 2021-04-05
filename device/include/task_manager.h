@@ -21,7 +21,7 @@
 
 struct task_manager;
 
-struct task_manager *create_task_manager(size_t size);
+struct task_manager *create_task_manager(size_t size, bool is_loaded);
 
 void show_task(struct task_manager *tm);
 

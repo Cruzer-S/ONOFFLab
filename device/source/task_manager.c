@@ -37,7 +37,7 @@ static int get_fsize(struct dirent *ep)
 	return sb.st_size;
 }
 
-struct task_manager *create_task_manager(size_t size)
+struct task_manager *create_task_manager(size_t size, bool is_loaded)
 {
 	struct task_manager *tm = malloc(sizeof(struct task_manager));
 	if (tm == NULL)
@@ -53,7 +53,11 @@ struct task_manager *create_task_manager(size_t size)
 			return NULL;
 	}
 
-	load_task_manager(tm);
+	if (is_loaded && (load_task_manager(tm) < 0)) {
+		fclose(tm->manager);
+		free(tm);
+		tm = NULL;
+	}
 
 	return tm;
 }
@@ -122,40 +126,26 @@ bool delete_task(struct task_manager *tm, char *name)
 
 	make_name(dirname, name);
 
-	for (cur = tm->head, prev = NULL;
-		 cur != NULL; prev = cur, cur = cur->next)
-	{
-		if (!strncmp(cur->name, name, TASK_NAME_SIZE)) {
-			if (remove(dirname) < 0)
-				return false;
+	for (prev = NULL, cur = tm->head;
+		 cur != NULL && !(is_find = !strcmp(cur->name, name));
+		 prev = cur, cur = cur->next);
 
-			if (prev == NULL) {
-				tm->head = cur->next;
-				free(cur);
-				prev = cur = tm->head;
-			} else if (cur == tm->tail) {
-				tm->tail = prev;
-				prev->next = NULL;
-				free(cur);
-			} else {
-				prev->next = cur->next;
-				free(cur);
-				cur = prev->next;
-			}
-			break;
-		}
-	}
+	if (!is_find) 				return false;
+	if (remove(dirname) < 0) 	return false;
 
-	while (cur != NULL) cur->order--;
+	if (prev == NULL)
+		tm->head = cur->next;
+	else if (cur == tm->tail)
+		tm->tail = prev;
 
-	if (is_find) {
-		save_task(tm);
-		show_task(tm);
+	prev->next = cur->next;
+	free(cur);
 
-		tm->count--;
-	}
+	save_task(tm); show_task(tm);
 
-	return is_find;
+	tm->count--;
+
+	return true;
 }
 
 void delete_task_manager(struct task_manager *tm)
@@ -253,18 +243,19 @@ int change_task_quantity_and_order(
 
 int save_task(struct task_manager *tm)
 {
-	int k = 0;
+	int index = 0;
 
 	for (struct task *cur = tm->head;
 		 cur != NULL;
 		 cur = cur->next)
 	{
-		fseek(tm->manager, (k++) * sizeof(struct task), SEEK_SET);
-		ftruncate(fileno(tm->manager), k * sizeof(struct task));
+		fseek(tm->manager, (index++) * sizeof(struct task), SEEK_SET);
 		if (fwrite(cur, sizeof(struct task), 1, tm->manager) != 1)
 			return -1;
-		fseek(tm->manager, k * sizeof(struct task), SEEK_SET);
+		fseek(tm->manager, index * sizeof(struct task), SEEK_SET);
 	}
+
+	ftruncate(fileno(tm->manager), index * sizeof(struct task));
 
 	return 0;
 }
