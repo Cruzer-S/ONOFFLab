@@ -64,11 +64,13 @@ struct task_manager *create_task_manager(size_t size, bool is_loaded)
 
 void show_task(struct task_manager *tm)
 {
+	int index = 0;
+
 	printf("count: %d\n", tm->count);
 	for (struct task *cur = tm->head;
 		 cur != NULL;
-		 cur = cur->next)
-		printf("%2d: %s (%d) \n", cur->order, cur->name, cur->quantity);
+		 cur = cur->next, index++)
+		printf("%d: %s (%d) \n", index, cur->name, cur->quantity);
 }
 
 static int load_task_manager(struct task_manager *tm)
@@ -139,7 +141,7 @@ bool delete_task(struct task_manager *tm, char *name)
 	prev->next = cur->next;
 	free(cur);
 
-	save_task(tm); show_task(tm);
+	save_task(tm);
 
 	tm->count--;
 
@@ -170,8 +172,6 @@ int rename_task(struct task_manager *tm, char *fname, char *rname)
 			return 0;
 		}
 	}
-
-	show_task(tm);
 
 	return -1;
 }
@@ -234,7 +234,6 @@ int change_task_quantity_and_order(
 	}
 
 	save_task(tm);
-	show_task(tm);
 
 	return 0;
 }
@@ -248,6 +247,7 @@ int save_task(struct task_manager *tm)
 		 cur = cur->next)
 	{
 		fseek(tm->manager, (index++) * sizeof(struct task), SEEK_SET);
+		cur->order = index;
 		if (fwrite(cur, sizeof(struct task), 1, tm->manager) != 1)
 			return -1;
 		fseek(tm->manager, index * sizeof(struct task), SEEK_SET);
@@ -305,7 +305,6 @@ int register_task(struct task_manager *tm, char *name, int32_t quantity, uint8_t
 	}
 
 	tm->count++;
-	show_task(tm);
 
 	return 0;
 }

@@ -284,6 +284,8 @@ int32_t handling_command(int sock, struct task_manager *tm)
 		break;
 	}}
 
+	show_task(tm);
+
 	free(body);
 
 	return 0;
