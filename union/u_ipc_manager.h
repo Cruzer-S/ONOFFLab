@@ -15,7 +15,7 @@
 #include <netdb.h>			// gethostbyname
 
 #define MAX_EVENT	1024
-#define CPS			CLOCKS_PER_SEC
+#define CPS			(CLOCKS_PER_SEC * 10)
 #define BUFFER_SIZE BUFSIZ
 #define MAX_NAME_LEN 128
 #define DEVICE_KEY_SIZE		32

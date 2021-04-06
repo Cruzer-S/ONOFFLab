@@ -268,7 +268,6 @@ int register_task(struct task_manager *tm, char *name, int32_t quantity, uint8_t
 	if (tfp != NULL) {
 		fclose(tfp);
 		return -4;
-	}
 
 	tfp = fopen(dirname, "wb");
 	if (tfp == NULL)
@@ -276,6 +275,8 @@ int register_task(struct task_manager *tm, char *name, int32_t quantity, uint8_t
 
 	if (fwrite(buffer, bsize, 1, tfp) != 1)
 		return -6;
+	else
+		fclose(tfp);
 
 	strncpy(new_task->name, name, TASK_NAME_SIZE);
 	new_task->quantity = quantity;
@@ -292,10 +293,8 @@ int register_task(struct task_manager *tm, char *name, int32_t quantity, uint8_t
 
 	tm->count++;
 
-	if (save_task(tm) < 0) {
-		fclose(tfp);
+	if (save_task(tm) < 0)
 		return -7;
-	}
 
 	return 0;
 }
