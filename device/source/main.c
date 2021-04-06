@@ -23,7 +23,6 @@
 
 #define SERVER_DOMAIN		"cloud.onofflab.tk"
 #define SERVER_PORT			1584
-#define HEADER_SIZE			1024
 
 bool is_initiate(int serial);
 int parse_data(int serial, char *ssid, char *psk);
