@@ -177,7 +177,7 @@ int http_to_packet(int sock, struct packet_header *packet, char **body)
 		if ((*body = (char *)malloc(sizeof(char) * packet->bsize)) == NULL)
 			return -4;
 
-		if (recvt(sock, *body, packet->bsize, CPS) <= 0)
+		if (recvt(sock, *body, packet->bsize, CPS * 10) <= 0)
 			return -5;
 	} else *body = NULL;
 
@@ -241,7 +241,7 @@ int http_client(int clnt_sock, struct device *device)
 	if (dev_sock < 0)
 	{	free(body); return -52;	}
 
-	if (sendt(dev_sock, &packet, sizeof(packet), CPS * 10) <= 0)
+	if (sendt(dev_sock, &packet, sizeof(packet), CPS) <= 0)
 	{	free(body); return -53;	}
 
 	if (packet.bsize > 0)
