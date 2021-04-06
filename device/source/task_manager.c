@@ -274,6 +274,9 @@ int register_task(struct task_manager *tm, char *name, int32_t quantity, uint8_t
 	if (tfp == NULL)
 		return -5;
 
+	if (fwrite(buffer, bsize, 1, tfp) != 1)
+		return -6;
+
 	strncpy(new_task->name, name, TASK_NAME_SIZE);
 	new_task->quantity = quantity;
 	new_task->next = NULL;
@@ -291,7 +294,7 @@ int register_task(struct task_manager *tm, char *name, int32_t quantity, uint8_t
 
 	if (save_task(tm) < 0) {
 		fclose(tfp);
-		return -6;
+		return -7;
 	}
 
 	return 0;
