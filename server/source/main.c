@@ -250,7 +250,7 @@ int http_client(int clnt_sock, struct device *device)
 
 	free(body);
 
-	if (recvt(dev_sock, &ret, sizeof(int32_t), CPS) <= 0)
+	if (recvt(dev_sock, &ret, sizeof(int32_t), CPS * 3) <= 0)
 		return -55;
 
 	return (ret * 100);
