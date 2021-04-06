@@ -241,7 +241,7 @@ int http_client(int clnt_sock, struct device *device)
 	if (dev_sock < 0)
 	{	free(body); return -52;	}
 
-	if (sendt(dev_sock, &packet, sizeof(packet), CPS) <= 0)
+	if (sendt(dev_sock, &packet, sizeof(packet), CPS * 10) <= 0)
 	{	free(body); return -53;	}
 
 	if (packet.bsize > 0)

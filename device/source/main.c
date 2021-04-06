@@ -98,10 +98,13 @@ int main(int argc, char *argv[])
 			char psk[PSK_SIZ + 1];
 
 			if (parse_data(bluetooth_port, ssid, psk)) {
-				if (change_wifi(ssid, psk))
+				if (change_wifi(ssid, psk)) {
+					close(serv_sock);
+					serv_sock = -1;
 					serialPutchar(bluetooth_port, true);
-				else
+				} else {
 					serialPutchar(bluetooth_port, false);
+				}
 			}
 		}
 
@@ -111,7 +114,10 @@ int main(int argc, char *argv[])
 		struct packet_header packet;
 		int32_t result;
 		if ((result = wait_packet(serv_sock, &packet)) < 0) {
-			if (serv_sock > 0) close(serv_sock);
+			if (serv_sock > 0) {
+				close(serv_sock);
+				serv_sock = -1;
+			}
 
 			serv_sock = connect_to_target(NULL, 0);
 			if (serv_sock < 0) continue;
@@ -243,7 +249,7 @@ int32_t handling_command(int sock, struct task_manager *tm)
 		if (body == NULL)
 			return -2;
 
-		if (recvt(sock, body, packet.bsize, CPS) <= 0) {
+		if (recvt(sock, body, packet.bsize, CPS * 10) <= 0) {
 			free(body); return -3;
 		}
 	}
