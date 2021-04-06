@@ -268,6 +268,7 @@ int register_task(struct task_manager *tm, char *name, int32_t quantity, uint8_t
 	if (tfp != NULL) {
 		fclose(tfp);
 		return -4;
+	}
 
 	tfp = fopen(dirname, "wb");
 	if (tfp == NULL)
