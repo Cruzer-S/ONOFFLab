@@ -132,56 +132,60 @@ int stringify_json(struct json *root, char *str)
 	return 0;
 }
 
-struct json *jsonify_string(char *str, struct json *root)
+char *parse_dquote(char *dquote, char *parse)
 {
-	char name[1024], string[1024];
-	union json_value value;
-	enum json_type type;
-
-	str = strchr(str, '{');
-	if (str == NULL) return NULL;
-	else str++;
-
-	for (struct json *first = root, *next;
-		 first != NULL;
-		 first = next)
+	for (char prev = '\0', cur = *dquote;
+		 !(prev != '\\' && cur == '\"');
+		 prev = cur, cur = *dquote)
 	{
-		str = strchr(str, '\"');
-		if (str == NULL) break;
-		else str++;
-
-		if (sscanf(str, "%[\"]", name) != 1)
-			return NULL;
-
-		if ((str = strchr(str, '\"')) == NULL) return NULL;
-		else if ((str = strchr(str, ':')) == NULL) return NULL;
-		else str++;
-
-		type = JSON_TYPE_NUMBER;
-		if (sscanf(str, " %lf", &value.n) != 1) {
-			if (sscanf(str, " %s", value.s) != 1)
-				return NULL;
-
-			if (! (value.b = strcmp(string, "true")) || !strcmp(string, "false")) {
-				type = JSON_TYPE_BOOLEAN;
-			} else if ((str = strchr(string, '{')) != NULL) {
-				type = JSON_TYPE_OBJECT;
-			} else if (strchr(string, '\"') != NULL) {
-				type = JSON_TYPE_STRING;
-			} else return NULL;
-		}
-
-		if (type != JSON_TYPE_OBJECT) {
-			next = make_json(name, type, value, NULL);
-		}
-
-		link_json(first, next);
+		*parse++ = *dquote++;
 	}
 
-	return root;
+	*parse = '\0';
+
+	return dquote;
+}
+
+struct json *jsonify_string(char *string)
+{
+	struct json *new_json;
+	union json_value value;
+
+	new_json = (struct json *) malloc(sizeof(struct json));
+	if (new_json == NULL)
+		return NULL;
+
+	string = strchr(string, '{');
+	if (string == NULL) return NULL;
+	else string++;
+
+	if ((string = strchr(string, '\"')) == NULL) return NULL;
+	else string++;
+
+	string = parse_dquote(string, new_json->name);
+	printf("name: %s\n", new_json->name);
+
+	string = strchr(string, ':');
+	if (string == NULL) return NULL;
+	else string++;
+
+	char check[1024];
+	if (sscanf(string, " %lf", &value.n) == 1) {
+		new_json->type = JSON_TYPE_NUMBER;
+	} else if (sscanf(string, " %s", check) == 1
+		&& (value.b = !strcmp(check, "true")
+			       || !strcmp(check, "false")))
+	{
+		new_json->type = JSON_TYPE_BOOLEAN;
+	} else if (sscanf(string, " %c", 
+
+	new_json->value = value;
+
+	return new_json;
 }
 
 struct json *link_json(struct json *first, struct json *next)
 {
 	return (first->next = next, first);
 }
+

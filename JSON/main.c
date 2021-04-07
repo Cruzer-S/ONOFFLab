@@ -31,7 +31,11 @@ int main(void)
 
 	stringify_json(my_json, json_str);
 
-	printf("%s", json_str);
+	printf("%s\n", json_str);
+
+	my_json = jsonify_string(json_str);
+
+	//show_json(my_json);
 
 	/*
 	my_json = make_json("print", JSON_TYPE_STRING, (union json_value) { .s = "next" }, NULL);

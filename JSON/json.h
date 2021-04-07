@@ -5,6 +5,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <ctype.h>
 
 /***********************************************/
 #define MAKE_JSON(NAME, VALUE, NEXT) make_json(	\
@@ -27,7 +28,7 @@
 			struct json *: from_json			\
 		)(VALUE),								\
 /**********************************************/\
-		NEXT)
+		NEXT)                                  //
 /***********************************************/
 enum json_type {
 	JSON_TYPE_NUMBER,
@@ -57,6 +58,6 @@ struct json *make_json(char *name,
 struct json *link_json(struct json *first, struct json *next);
 void show_json(struct json *root);
 int stringify_json(struct json *root, char *str);
-struct json *jsonfy_string(char *str, struct json *root);
+struct json *jsonify_string(char *str);
 
 #endif
