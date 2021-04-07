@@ -26,23 +26,23 @@ union json_value from_json(struct json *value)
 struct json *make_json(char *name,
 		               enum json_type type, union json_value value, struct json *next)
 {
-	struct json *new_json;
+	struct json *root;
 
-	new_json = malloc(sizeof(struct json));
-	if (new_json == NULL)
+	root = malloc(sizeof(struct json));
+	if (root == NULL)
 		return NULL;
 
-	strcpy(new_json->name, name);
-	new_json->type = type;
-	new_json->next = next;
-	new_json->value = value;
+	strcpy(root->name, name);
+	root->type = type;
+	root->next = next;
+	root->value = value;
 
-	return new_json;
+	return root;
 }
 
 void show_json(struct json *root)
 {
-	static int depth = 0;
+	static int depth = 1;
 
 	printf("{\n");
 	for (struct json *cur = root;
@@ -66,10 +66,11 @@ void show_json(struct json *root)
 			printf("\"%s\"", cur->value.s);
 			break;
 
-		case JSON_TYPE_OBJECT:
+		case JSON_TYPE_OBJECT: ;
+			int prev = depth;
 			depth++;
 			show_json(cur->value.o);
-			depth--;
+			depth = prev;
 			break;
 		}
 		printf((cur->next ? ",\n" : "\n"));
@@ -79,7 +80,7 @@ void show_json(struct json *root)
 		printf("\t");
 	printf("}");
 
-	depth = 0;
+	depth = 1;
 }
 
 int stringify_json(struct json *root, char *str)
@@ -146,42 +147,105 @@ char *parse_dquote(char *dquote, char *parse)
 	return dquote;
 }
 
+char *skip_whitespace(char *str)
+{
+	while (isspace(*str)) str++;
+
+	return str;
+}
+
 struct json *jsonify_string(char *string)
 {
-	struct json *new_json;
+	static char *str;
+	struct json *root;
 	union json_value value;
 
-	new_json = (struct json *) malloc(sizeof(struct json));
-	if (new_json == NULL)
+	if (string != NULL) str = string;
+
+	root = (struct json *) malloc(sizeof(struct json));
+	if (root == NULL) return NULL;
+	else root->next = NULL;
+
+	str = strchr(str, '{');
+	if (str == NULL) {
+		free(root);
 		return NULL;
+	} else str++;
 
-	string = strchr(string, '{');
-	if (string == NULL) return NULL;
-	else string++;
-
-	if ((string = strchr(string, '\"')) == NULL) return NULL;
-	else string++;
-
-	string = parse_dquote(string, new_json->name);
-	printf("name: %s\n", new_json->name);
-
-	string = strchr(string, ':');
-	if (string == NULL) return NULL;
-	else string++;
-
-	char check[1024];
-	if (sscanf(string, " %lf", &value.n) == 1) {
-		new_json->type = JSON_TYPE_NUMBER;
-	} else if (sscanf(string, " %s", check) == 1
-		&& (value.b = !strcmp(check, "true")
-			       || !strcmp(check, "false")))
+	for (struct json *cur = root, *next = NULL;
+		 cur != NULL;
+		 cur->next = next, cur = next)
 	{
-		new_json->type = JSON_TYPE_BOOLEAN;
-	} else if (sscanf(string, " %c", 
+		if ((str = strchr(str, '\"')) == NULL) {
+			free(cur);
+			return NULL;
+		} else str++;
 
-	new_json->value = value;
+		str = parse_dquote(str, cur->name);
+		printf("name: %s\n", cur->name);
 
-	return new_json;
+		str = strchr(str, ':');
+		if (str == NULL) {
+			free(cur);
+			return NULL;
+		} else str++;
+
+		str = skip_whitespace(str);
+
+		 if (*str == '{') {
+			cur->type = JSON_TYPE_OBJECT;
+			if ((value.o = jsonify_string(NULL)) == NULL) {
+				free(cur);
+				return NULL;
+			}
+		} else if (*str == '\"') {
+			char temp[1024];
+
+			cur->type = JSON_TYPE_STRING;
+			str = parse_dquote(temp, str);
+
+			cur->value.s = strdup(temp);
+		} else if (!strncmp(str, "true", 4)) {
+			cur->value.b = true;
+			cur->type = JSON_TYPE_BOOLEAN;
+			str += 4;
+		} else if (!strncmp(str, "false", 5)) {
+			cur->value.b = false;
+			cur->type = JSON_TYPE_BOOLEAN;
+			str += 5;
+		} else {
+			int n;
+			if (sscanf(str, "%lf%n", &value.n, &n) == 1) {
+				cur->type = JSON_TYPE_NUMBER;
+				str += n;
+			} else {
+				free(cur);
+				return NULL;
+			}
+		}
+
+		cur->value = value;
+
+		str = skip_whitespace(str);
+
+		if (*str == ',') {
+			next = (struct json *) malloc(sizeof(struct json));
+			if (next == NULL) {
+				free(cur);
+				return NULL;
+			} else next->next = NULL;
+			str++;
+		} else next = NULL;
+	}
+
+	str = skip_whitespace(str);
+
+	if ((str = strchr(str, '}')) == NULL) {
+		free(root);
+		return NULL;
+	} else str++;
+
+	return root;
 }
 
 struct json *link_json(struct json *first, struct json *next)
