@@ -15,11 +15,11 @@ TARGET = output
 
 SRC_DIR = ./source
 OBJ_DIR = ./build
-INC_DIR = ./include $(UNION_DIR)
+INC_DIR = ./include $(UNION_DIR)/include
 
 SRCS = $(wildcard $(SRC_DIR)/*.c)
 OBJS = $(patsubst %.c, $(OBJ_DIR)/%.o, $(notdir $(SRCS)))
-LIBS = $(shell find $(UNION_DIR)/*.o)
+LIBS = $(shell find $(UNION_DIR)/build/*.o)
 
 all: $(TARGET)
 	@make $(TARGET)
