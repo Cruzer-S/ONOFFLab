@@ -21,8 +21,11 @@ SRCS = $(wildcard $(SRC_DIR)/*.c)
 OBJS = $(patsubst %.c, $(OBJ_DIR)/%.o, $(notdir $(SRCS)))
 LIBS = $(shell find $(UNION_DIR)/build/*.o)
 
-all: $(TARGET)
+all: $(OBJ_DIR) $(TARGET)
 	@make $(TARGET)
+
+$(OBJ_DIR):
+	@mkdir $(OBJ_DIR)
 
 $(TARGET): union
 $(TARGET): $(OBJS)

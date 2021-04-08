@@ -13,10 +13,13 @@ INC_DIR = ./include
 SRCS = $(wildcard $(SRC_DIR)/*.c)
 OBJS = $(patsubst %.c, $(OBJ_DIR)/%.o, $(notdir $(SRCS)))
 
-all: $(OBJS)
+all: $(OBJ_DIR) $(OBJS)
 
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c
 	$(CC) -o $@ -c $< $(addprefix -I ,$(INC_DIR)) $(CFLAGS)
+
+$(OBJ_DIR):
+	@mkdir $(OBJ_DIR)
 
 clean:
 	@rm -f $(wildcard $(OBJ_DIR)/*.o)
