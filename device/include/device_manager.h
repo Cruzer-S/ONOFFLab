@@ -19,9 +19,19 @@
 
 #define BLUETOOTH_NAME_MAX	32
 
+enum DEVICE_STATUS_CODE {
+	DSTATUS_START,
+	DSTATUS_PAUSE,
+	DSTATUS_STOP,
+	DSTATUS_LEVELING,
+	DSTATUS_ERROR,
+	DSTATUS_CRITICAL,
+	DSTATUS_FILAMENT
+};
+
 struct
 {
-	int status;
+	enum DEVICE_STATUS_CODE status;
 	union {
 		int error_code;
 		struct {

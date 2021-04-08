@@ -139,10 +139,10 @@ int client_handling(int sock, struct device *device)
 			return -2;
 
 		len = make_http_header_s(header, HEADER_SIZE, 200, "application/json", strlen(json_str));
-		if (sendt(sock, header, len, CPS / 2) <= 0)
+		if (sendt(sock, header, len, CPS) <= 0)
 			return -3;
 
-		if (sendt(sock, json_str, strlen(json_str), CPS / 2) <= 0)
+		if (sendt(sock, json_str, strlen(json_str), CPS) <= 0)
 			return -4;
 	} else {
 		logg(LOG_INF, "binary request from %d", sock);
