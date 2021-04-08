@@ -17,6 +17,7 @@
 #include UNION_LIBRARY(logger.h)
 #include UNION_LIBRARY(json.h)
 
+#include "u_json.h"
 #include "device_manager.h"
 #include "http_handler.h"
 
@@ -134,20 +135,22 @@ int client_handling(int sock, struct device *device)
 
 		json = MAKE_JSON("result", ret, NULL);
 		stringify_json(json, json_str);
+		if (delete_json(json) != 1)
+			return -2;
 
 		len = make_http_header_s(header, HEADER_SIZE, 200, "application/json", strlen(json_str));
 		if (sendt(sock, header, len, CPS / 2) <= 0)
-			return -2;
+			return -3;
 
 		if (sendt(sock, json_str, strlen(json_str), CPS / 2) <= 0)
-			return -3;
+			return -4;
 	} else {
 		logg(LOG_INF, "binary request from %d", sock);
 		if ((ret = device_client(sock, header, device)) < 0)
 			logg(LOG_ERR, "failed to device_client() %d", ret);
 
 		if (sendt(sock, &ret, sizeof(int32_t), CPS) <= 0)
-			return -4;
+			return -5;
 	}
 
 	return ret;

@@ -48,7 +48,6 @@ union json_value {
 
 struct json;
 
-struct json* just_json(struct json *json);
 union json_value from_number(double value);
 union json_value from_string(char *value);
 union json_value from_boolean(bool value);
@@ -57,8 +56,10 @@ union json_value from_json(struct json *value);
 struct json *make_json(char *name,
 		               enum json_type type, union json_value value,
 					   struct json *next);
-struct json *link_json(struct json *first, struct json *next);
+int delete_json(struct json *root);
+
 void show_json(struct json *root);
+
 int stringify_json(struct json *root, char *str);
 struct json *jsonify_string(char *str);
 

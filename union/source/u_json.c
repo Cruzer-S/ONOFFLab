@@ -8,23 +8,21 @@ struct json {
 	struct json *next;
 };
 
-struct json* just_json(struct json *json)
-{ return json; }
-
-union json_value from_number(double value)
+inline union json_value from_number(double value)
 { return (union json_value) { .n = value }; }
 
-union json_value from_string(char *value)
+inline union json_value from_string(char *value)
 { return (union json_value) { .s = value }; }
 
-union json_value from_boolean(bool value)
+inline union json_value from_boolean(bool value)
 { return (union json_value) { .b = value }; }
 
-union json_value from_json(struct json *value)
+inline union json_value from_json(struct json *value)
 { return (union json_value) { .o = value }; }
 
 struct json *make_json(char *name,
-		               enum json_type type, union json_value value, struct json *next)
+		               enum json_type type, union json_value value,
+					   struct json *next)
 {
 	struct json *root;
 
@@ -38,6 +36,26 @@ struct json *make_json(char *name,
 	root->value = value;
 
 	return root;
+}
+
+int delete_json(struct json *root)
+{
+	int result = 0;
+
+	for (struct json *cur = root, *temp;
+		 cur != NULL;
+		 temp = cur->next, free(cur), cur = temp)
+	{
+		if (cur->type == JSON_TYPE_OBJECT) {
+			result += delete_json(cur->value.o);
+		} else if (cur->type == JSON_TYPE_STRING) {
+			free(cur->value.s);
+		}
+
+		result++;
+	}
+
+	return result;
 }
 
 void show_json(struct json *root)
@@ -247,9 +265,3 @@ struct json *jsonify_string(char *string)
 
 	return root;
 }
-
-struct json *link_json(struct json *first, struct json *next)
-{
-	return (first->next = next, first);
-}
-
