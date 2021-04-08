@@ -15,10 +15,10 @@
 #include UNION_LIBRARY(utils.h)
 #include UNION_LIBRARY(ipc_manager.h)
 #include UNION_LIBRARY(logger.h)
+#include UNION_LIBRARY(json.h)
 
 #include "device_manager.h"
 #include "http_handler.h"
-#include "json_parser.h"
 
 int client_handling(int sock, struct device *device);
 int worker_thread(int epfd, int serv_sock, struct device *device);
@@ -118,12 +118,13 @@ int client_handling(int sock, struct device *device)
 {
 	int32_t ret;
 	char header[HEADER_SIZE];
+	struct json *json;
 
 	if (recv(sock, (char *)header, HEADER_SIZE, MSG_PEEK) <= 0)
 		return -1;
 
 	if (is_http_header((const char *)header)) {
-		char json[BUFSIZ], number[10];
+		char json_str[BUFSIZ], number[10];
 		int32_t len;
 
 		logg(LOG_INF, "HTTP request from %d", sock);
@@ -131,13 +132,14 @@ int client_handling(int sock, struct device *device)
 
 		logg(((ret < 0) ? LOG_ERR : LOG_INF), "http_client() error %d", ret);
 
-		ITOS(ret, number); make_json(1, json, "result", number);
+		json = MAKE_JSON("result", ret, NULL);
+		stringify_json(json, json_str);
 
-		len = make_http_header_s(header, HEADER_SIZE, 200, "application/json", strlen(json));
+		len = make_http_header_s(header, HEADER_SIZE, 200, "application/json", strlen(json_str));
 		if (sendt(sock, header, len, CPS / 2) <= 0)
 			return -2;
 
-		if (sendt(sock, json, strlen(json), CPS / 2) <= 0)
+		if (sendt(sock, json_str, strlen(json_str), CPS / 2) <= 0)
 			return -3;
 	} else {
 		logg(LOG_INF, "binary request from %d", sock);

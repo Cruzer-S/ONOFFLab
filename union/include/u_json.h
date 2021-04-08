@@ -1,6 +1,8 @@
 #ifndef JSON_H__
 #define JSON_H__
 
+#define _XOPEN_SOURCE 500
+
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>

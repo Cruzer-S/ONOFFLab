@@ -14,6 +14,7 @@ SRCS = $(wildcard $(SRC_DIR)/*.c)
 OBJS = $(patsubst %.c, $(OBJ_DIR)/%.o, $(notdir $(SRCS)))
 
 all: $(OBJS)
+
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c
 	$(CC) -o $@ -c $< $(addprefix -I ,$(INC_DIR)) $(CFLAGS)
 
