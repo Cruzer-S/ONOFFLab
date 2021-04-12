@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -std=c11
+CFLAGS = -std=c11 -lpthread
 DEBUG = DEBUG
 
 ifeq ($(DEBUG), 1)
@@ -41,7 +41,7 @@ clean:
 
 union:
 ifeq ($(DEBUG), 1)
-	@make -C $(UNION_DIR) debug
+	@make -C $(UNION_DIR) DEBUG=1
 else
 	@make -C $(UNION_DIR) all
 endif

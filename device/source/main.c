@@ -284,6 +284,9 @@ int32_t handling_command(int sock, struct task_manager *tm)
 			return -7;
 		break;
 
+	case IPC_GET_PRINTER_STATUS:
+		break;
+
 	default:
 		return -6;
 		break;

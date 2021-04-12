@@ -7,7 +7,7 @@
 #include <stdio.h>
 #include <time.h>
 
-#define HEADER_SIZE (1024 * 4)
+#define HEADER_SIZE (1024)
 
 struct http_header {
 	char *method;

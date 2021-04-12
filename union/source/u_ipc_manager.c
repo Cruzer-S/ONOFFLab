@@ -1,6 +1,7 @@
 #include "u_ipc_manager.h"
 #include <asm-generic/socket.h>
 
+/*
 int accept_epoll_client(int epfd, int serv_sock, int flags)
 {
 	int count = 0;
@@ -27,6 +28,7 @@ int accept_epoll_client(int epfd, int serv_sock, int flags)
 
 	return count;
 }
+*/
 
 int connect_to_target(const char *host, uint16_t port)
 {
@@ -63,7 +65,7 @@ int connect_to_target(const char *host, uint16_t port)
 	return sock;
 }
 
-int make_listener(short port, int backlog)
+int make_listener(short port, int backlog, bool addr_reuse)
 {
 	struct sockaddr_in sock_adr;
 	int sock;
@@ -72,16 +74,20 @@ int make_listener(short port, int backlog)
 	if (sock == -1)
 		return -1;
 
+	if (addr_reuse)
+		if (change_sockopt(sock, SOL_SOCKET, SO_REUSEADDR, true) < 0)
+			return -2;
+
 	memset(&sock_adr, 0, sizeof(sock_adr));
 	sock_adr.sin_family = AF_INET;
 	sock_adr.sin_addr.s_addr = htonl(INADDR_ANY);
 	sock_adr.sin_port = htons(port);
 
 	if (bind(sock, (struct sockaddr *)&sock_adr, sizeof(sock_adr)) == -1)
-		return -2;
+		return -3;
 
 	if (listen(sock, backlog) == -1)
-		return -3;
+		return -4;
 
 	return sock;
 }
@@ -119,12 +125,25 @@ int change_sockopt(int fd, int level, int flag, int value)
 	return 0;
 }
 
-int register_epoll_fd(int epfd, int tgfd, int flag)
+int change_epoll_event(int epfd, int tgfd, void *data_ptr, int flag)
 {
 	struct epoll_event event;
 
 	event.events = flag;
-	event.data.fd = tgfd;
+	event.data.ptr = data_ptr;
+
+	if (epoll_ctl(epfd, EPOLL_CTL_MOD, tgfd, &event) == -1)
+		return -1;
+
+	return 0;
+}
+
+int register_epoll_fd(int epfd, int tgfd, void *data_ptr, int flag)
+{
+	struct epoll_event event;
+
+	event.events = flag;
+	event.data.ptr = data_ptr;
 
 	if (epoll_ctl(epfd, EPOLL_CTL_ADD, tgfd, &event) == -1)
 		return -1;
