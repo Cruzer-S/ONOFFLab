@@ -22,6 +22,7 @@
 int parse_arguments(int argc, char *argv[], ...);
 int start_epoll_server(int serv_sock);
 int register_to_epoll(int epfd, int tgfd, int events);
+int delete_to_epoll(int epfd, int tgfd);
 
 int main(int argc, char *argv[])
 {
@@ -166,15 +167,62 @@ int start_epoll_server(int serv_sock)
 		ret = -3; goto ERROR_MALLOC_EVENTS;
 	}
 
-
 	while (true)
 	{
 		char buf_time[128];
+		int nclient;
+
 		pr_out("[%s] epoll waiting ...", GET_TIME0(buf_time));
 
-		if (epoll_wait(epoll_fd, ep_events, MAX_EVENTS, -1) == -1)
+		if ((nclient = epoll_wait(epoll_fd, ep_events, MAX_EVENTS, -1)) == -1) {
 			pr_err("failed to epoll_wait(%d): %s", serv_sock, strerror(errno));
-	}
+			continue;
+		}
+
+		for (int i = 0; i < nclient; i++) {
+			if (ep_events[i].data.fd == serv_sock) {
+				while (true)
+				{
+					int clnt_sock = accept(serv_sock, NULL, NULL);
+					if(clnt_sock == -1) {
+						if (errno == EAGAIN)
+							break;
+
+						pr_err("failed to accept(): %s", strerror(errno));
+						break;
+					}
+
+					change_nonblocking(clnt_sock);
+
+					register_to_epoll(epoll_fd, clnt_sock, EPOLLIN);
+
+					pr_out("accept: add new socket: %d", clnt_sock);
+				} 
+			} else { // received data from client socket
+				int ret_recv;
+				char buf[BUFSIZ];
+				int clnt_sock = ep_events[i].data.fd;
+
+				if ((ret_recv = recv(clnt_sock, buf, sizeof(buf), 0)) == -1) {
+					pr_err("failed to recv(): %s", strerror(errno));
+					continue;
+				}
+
+				if (ret_recv == 0) { // disconnect client
+					pr_out("closed by foreign host (sfd = %d)", ep_events[i].data.fd);
+					if (delete_to_epoll(epoll_fd, clnt_sock) < 0) {
+						pr_err("%s", "failed to delete_to_epoll(): force socket disconnection.");
+						close(clnt_sock);
+					}
+
+					continue;
+				}
+
+				pr_out("Message from client(%d): %s", clnt_sock, buf);
+			} // end of if - else (ep_events[i].data.fd == serv_sock)
+		} // end of for (int i = 0; i < nclient; i++)
+
+	} // end of while (true)
 
 	return 0;
 
@@ -202,4 +250,15 @@ int register_to_epoll(int epfd, int tgfd, int events)
 	return 0;
 }
 
+int delete_to_epoll(int epfd, int tgfd)
+{
+	if (epoll_ctl(epfd, EPOLL_CTL_DEL, tgfd, NULL) == -1) {
+		pr_err("failed to epoll_ctl(): %s", strerror(errno));
+		return -1;
+	}
+
+	close(tgfd);
+
+	return 0;
+}
 

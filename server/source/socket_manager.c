@@ -51,13 +51,13 @@ int make_listener(uint16_t port, int backlog,
 		ret = -2; goto CLEANUP;
 	}
 
-	if (!(option | MAKE_LISTENER_DONTREUSE))
+	if (!(option & MAKE_LISTENER_DONTREUSE))
 		if ((ret = socket_reuseaddr(sock)) == -1) {
 			pr_err("failed to socket_reuseaddr(): %s (%d)", strerror(errno), ret);
 			ret = -3; goto CLEANUP;
 		}
 
-	if (!(option | MAKE_LISTENER_BLOCKING))
+	if (!(option & MAKE_LISTENER_BLOCKING))
 		if ((ret = change_nonblocking(sock)) < 0) {
 			pr_err("failed to change_nonblocking(): %s (%d)", strerror(errno), ret);
 			ret = -4; goto CLEANUP;
@@ -76,7 +76,7 @@ int make_listener(uint16_t port, int backlog,
 	if (ai_ret_arg != NULL)
 		*ai_ret_arg = ai_ret;
 
-	return 0;
+	return sock;
 
 CLEANUP:
 	freeaddrinfo(ai_ret);
