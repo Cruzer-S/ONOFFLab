@@ -14,8 +14,8 @@
 #include "task_manager.h"
 #include "device_manager.h"
 
-#define stringify(x) #x
-#define UNION_LIBRARY(NAME) stringify(u_ ## NAME)
+#define stringify(x, y) #x #y
+#define UNION_LIBRARY(NAME) stringify(u_ ## NAME, .h)
 
 #include UNION_LIBRARY(utils.h)
 #include UNION_LIBRARY(ipc_manager.h)

@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -std=c11 -lpthread
+CFLAGS = -std=c99 -lpthread -lrt
 DEBUG = DEBUG
 
 ifeq ($(DEBUG), 1)
