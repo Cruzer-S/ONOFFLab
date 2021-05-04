@@ -1,5 +1,6 @@
-#include "logger.h"
 #include "socket_manager.h"
+
+#include "logger.h"
 
 int socket_reuseaddr(int sock)
 {
