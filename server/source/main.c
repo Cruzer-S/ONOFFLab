@@ -10,6 +10,8 @@
 
 #include <pthread.h>
 
+#include "queue.h"
+
 #include "socket_manager.h"
 #include "logger.h"
 
@@ -19,83 +21,115 @@
 #define DEFAULT_DEVICE_BACKLOG 30
 
 #define MAX_EVENTS 128
-#define BUFFER_SIZE 4096
+#define BUFFER_SIZE (1024 * 4) // 4 KiB
+
+#define HTTP 0
+#define DEVICE 1
 
 struct client_data {
 	int fd;
+
 	uint8_t *buffer;
-	int buffer_size;
-	int usage;
+	size_t bsize;
+	size_t busage;
+};
+
+struct thread_args {
+	struct epoll_struct *ep_struct;
+	int serv_sock;
+};
+
+struct epoll_struct {
+	int fd;
+	struct epoll_event *events;
 };
 
 int parse_arguments(int argc, char *argv[], ...);
-int start_epoll_server(int serv_sock);
+void *start_epoll_server(void *args);
 int register_to_epoll(int epfd, int tgfd, int events);
 int delete_to_epoll(int epfd, struct client_data *clnt_data);
 struct client_data *make_client_data(int fd, int buffer_size);
 void destroy_client_data(struct client_data *clnt_data);
+int make_epoll(size_t max_events, struct epoll_struct *ep_struct);
 
 int main(int argc, char *argv[])
 {
-	int http_sock, device_sock;
-	struct addrinfo *http_ai, *device_ai;
-	int http_backlog, device_backlog;
-	uint16_t http_port, device_port;
+	int serv_sock[2];
+	int backlog[2];
+	uint16_t port[2];
+	struct addrinfo *ai[2];
+	struct epoll_struct ep_struct[2];
+	struct thread_args thd_arg[2];
+	pthread_t tid[2];
+
 	int ret;
 
-	http_port = DEFAULT_HTTP_PORT;
-	device_port = DEFAULT_DEVICE_PORT;
-	http_backlog = DEFAULT_HTTP_BACKLOG;
-	device_backlog = DEFAULT_DEVICE_BACKLOG;
+	port[HTTP] = DEFAULT_HTTP_PORT;
+	port[DEVICE] = DEFAULT_DEVICE_PORT;
 
-	if (parse_arguments(argc, argv, 
-		    16, &http_port, 
-			16, &device_port, 
-			 4, &http_backlog,
-			 4, &device_backlog) < 0)
-		pr_crt("%s", "failed to parse_arguments()");
+	backlog[HTTP] = DEFAULT_HTTP_BACKLOG;
+	backlog[DEVICE] = DEFAULT_DEVICE_BACKLOG;
 
-	http_sock = make_listener(http_port, http_backlog, &http_ai, 
-			                  MAKE_LISTENER_DEFAULT);
-	device_sock = make_listener(device_port, device_backlog, &device_ai,
-								MAKE_LISTENER_DEFAULT);
-	if (http_sock < 0 || device_sock < 0)
-		pr_crt("%s", "make_listener() error");
+	if ((ret = parse_arguments(argc, argv, 
+		    16, &port[HTTP], 
+			16, &port[DEVICE], 
+			 4, &backlog[HTTP],
+			 4, &backlog[DEVICE])) < 0)
+		pr_crt("failed to parse_arguments(): %d", ret);
 
-	do {char hoststr[INET6_ADDRSTRLEN], portstr[10];
+	for (int i = 0; i < 2; i++)
+	{
+		serv_sock[i] = make_listener(port[i], backlog[i], &ai[i], MAKE_LISTENER_DEFAULT);
+		if (serv_sock[i] < 0)
+			pr_crt("make_listener() error: %d", serv_sock[i]);
 
+		char hoststr[INET6_ADDRSTRLEN], portstr[10];
 		if ((ret = getnameinfo(
-						http_ai->ai_addr, http_ai->ai_addrlen,		// address
-						hoststr, sizeof(hoststr),					// host name
-						portstr, sizeof(portstr),					// service name (port number)
-						NI_NUMERICHOST | NI_NUMERICSERV)) != 0)		// flags
+						ai[i]->ai_addr, ai[i]->ai_addrlen,		// address
+						hoststr, sizeof(hoststr),				// host name
+						portstr, sizeof(portstr),				// service name (port number)
+						NI_NUMERICHOST | NI_NUMERICSERV)) != 0)	// flags
 			pr_crt("failed to getnameinfo(): %s (%d)", gai_strerror(ret), ret);
 
-		pr_out("http server running at %s:%s (backlog %d)", hoststr, portstr, http_backlog);
+		pr_out("%s server running at %s:%s (backlog %d)", 
+			   (i == HTTP) ? "HTTP" : "DEVICE", hoststr, portstr, backlog[i]);
 
-		if ((ret = getnameinfo(
-						device_ai->ai_addr, device_ai->ai_addrlen,	// address
-						hoststr, sizeof(hoststr),					// host name
-						portstr, sizeof(portstr),					// service name (port number)
-						NI_NUMERICHOST | NI_NUMERICSERV)) != 0)		// flags
-			pr_crt("failed to getnameinfo(): %s (%d)", gai_strerror(ret), ret);
+		freeaddrinfo(ai[i]);
 
-		pr_out("device server running at %s:%s (backlog %d)", hoststr, portstr, device_backlog);
+		if ((ret = make_epoll(MAX_EVENTS, &ep_struct[i])) < 0)
+			pr_crt("failed to make_epoll(): %d", ret);
+		
+		if ((ret = register_to_epoll(ep_struct[i].fd, serv_sock[i], EPOLLIN)) < 0)
+			pr_crt("failed to register_to_epoll(): %d", ret);
 
-		freeaddrinfo(device_ai);
-		freeaddrinfo(http_ai);
-	} while (false);
-			    
-	while (true) {
-		if (start_epoll_server(http_sock) < 0)
-			pr_crt("%s", "failed to start_epoll_server()");
-
-		if (start_epoll_server(device_sock) < 0)
-			pr_crt("%s", "failed to start_epoll_server()");
+		thd_arg[i].ep_struct = &ep_struct[i];
+		thd_arg[i].serv_sock = serv_sock[i];
+		if ((ret = pthread_create(&tid[i], NULL, start_epoll_server, &thd_arg[i])) != 0)
+			pr_crt("failed to pthread_create(): %s", strerror(ret));
 	}
 
-	close(http_sock); close(device_sock);
+	for (int i = 0; i < 2; i++)
+		if ((ret = pthread_join(tid[i], NULL)) != 0)
+			pr_crt("failed to pthread_join: %s", strerror(ret));
+
+	return 0;
+}
+
+int make_epoll(size_t max_events, struct epoll_struct *ep_struct)
+{
+	ep_struct->fd = epoll_create(MAX_EVENTS);
 	
+	if (ep_struct->fd == -1) {
+		pr_err("failed to epoll_create(): %s", strerror(errno));
+		return -1;
+	}
+
+	ep_struct->events = malloc(sizeof(struct epoll_event) * MAX_EVENTS);
+	if (ep_struct->events == NULL) {
+		pr_err("failed to malloc(): %s", strerror(errno));
+		return -2;
+	}
+
 	return 0;
 }
 
@@ -158,29 +192,18 @@ CLEANUP:
 	return ret;
 }
 
-int start_epoll_server(int serv_sock)
+void *start_epoll_server(void *args)
 {
-	int epoll_fd;
+	struct thread_args *targs = args;
+
 	int ret;
-	struct epoll_event *ep_events;
+	int epoll_fd, serv_sock;
+	struct epoll_event *epoll_events;
 
-	epoll_fd = epoll_create(MAX_EVENTS);
-	if (epoll_fd == -1) {
-		pr_err("failed to epoll_create(): %s", strerror(errno));
-		ret = -1; goto ERROR_EPOLL_CREATE;
-	}
-
-	ep_events = malloc(sizeof(struct epoll_event) * MAX_EVENTS);
-	if (ep_events == NULL) {
-		pr_err("failed to malloc(ep_events): %s", strerror(errno));
-		ret = -2; goto ERROR_MALLOC_EVENTS;
-	}
-
-	if (register_to_epoll(epoll_fd, serv_sock, EPOLLIN) < 0) {
-		pr_err("%s", "failed to register_to_epoll()");
-		ret = -3; goto ERROR_MALLOC_EVENTS;
-	}
-
+	epoll_fd = targs->ep_struct->fd;
+	epoll_events = targs->ep_struct->events;
+	serv_sock = targs->serv_sock;
+	
 	while (true)
 	{
 		struct client_data *clnt_data;
@@ -189,14 +212,14 @@ int start_epoll_server(int serv_sock)
 
 		pr_out("[%s] epoll waiting ...", GET_TIME0(buf_time));
 
-		if ((nclient = epoll_wait(epoll_fd, ep_events, MAX_EVENTS, -1)) == -1) {
-			pr_err("failed to epoll_wait(%d): %s", serv_sock, strerror(errno));
+		if ((nclient = epoll_wait(targs->ep_struct->fd, epoll_events, MAX_EVENTS, -1)) == -1) {
+			pr_err("failed to epoll_wait(): %s", strerror(errno));
 			continue;
 		}
 
-		for (int i = 0; i < nclient; i++) 
+		for (int i = 0; i < nclient; i++)
 		{
-			clnt_data = ep_events[i].data.ptr;
+			clnt_data = epoll_events[i].data.ptr;
 
 			if (clnt_data->fd == serv_sock) { // accept new socket
 				while (true)
@@ -218,9 +241,10 @@ int start_epoll_server(int serv_sock)
 
 					pr_out("accept: add new socket: %d", clnt_sock);
 				} 
-			} else { // received data from client
+			} else { // client handling
+				// received data from client
 				int ret_recv;
-				int remain_space = clnt_data->buffer_size - clnt_data->usage;
+				int remain_space = clnt_data->bsize - clnt_data->busage;
 
 				if (remain_space == 0) {
 					pr_out("there's no space to receive data from client(%d)", clnt_data->fd);
@@ -228,22 +252,21 @@ int start_epoll_server(int serv_sock)
 				}
 
 				if ((ret_recv = recv(clnt_data->fd,
-								     clnt_data->buffer + clnt_data->usage, 
+									 clnt_data->buffer + clnt_data->busage,
 									 remain_space, 0)) == -1) {
 					pr_err("failed to recv(): %s", strerror(errno));
-
+					
 					if (delete_to_epoll(epoll_fd, clnt_data) < 0)
 						pr_err("%s", "failed to delete_to_epoll()");
 
 					continue;
-				} else clnt_data->usage += ret_recv;
+				} else clnt_data->busage += ret_recv;
 
 				if (ret_recv == 0) { // disconnect client
 					pr_out("closed by foreign host (sfd = %d)", clnt_data->fd);
 
-					if (delete_to_epoll(epoll_fd, clnt_data) < 0) {
+					if (delete_to_epoll(epoll_fd, clnt_data) < 0)
 						pr_err("failed to delete_to_epoll(): %s", "force socket disconnection");
-					}
 
 					continue;
 				}
@@ -254,12 +277,12 @@ int start_epoll_server(int serv_sock)
 	return 0;
 
 ERROR_MALLOC_EVENTS:
-	free(ep_events);
+	free(epoll_events);
 
 ERROR_EPOLL_CREATE:
 	close(epoll_fd);
 
-	return ret;
+	return NULL;
 }
 
 int register_to_epoll(int epfd, int tgfd, int events)
@@ -314,8 +337,8 @@ struct client_data *make_client_data(int fd, int buffer_size)
 	}
 
 	clnt_data->fd = fd;
-	clnt_data->usage = 0;
-	clnt_data->buffer_size = buffer_size;
+	clnt_data->busage = 0;
+	clnt_data->bsize = buffer_size;
 
 	return clnt_data;
 }
