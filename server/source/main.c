@@ -19,11 +19,21 @@
 #define DEFAULT_DEVICE_BACKLOG 30
 
 #define MAX_EVENTS 128
+#define BUFFER_SIZE 4096
+
+struct client_data {
+	int fd;
+	uint8_t *buffer;
+	int buffer_size;
+	int usage;
+};
 
 int parse_arguments(int argc, char *argv[], ...);
 int start_epoll_server(int serv_sock);
 int register_to_epoll(int epfd, int tgfd, int events);
-int delete_to_epoll(int epfd, int tgfd);
+int delete_to_epoll(int epfd, struct client_data *clnt_data);
+struct client_data *make_client_data(int fd, int buffer_size);
+void destroy_client_data(struct client_data *clnt_data);
 
 int main(int argc, char *argv[])
 {
@@ -167,12 +177,13 @@ int start_epoll_server(int serv_sock)
 	}
 
 	if (register_to_epoll(epoll_fd, serv_sock, EPOLLIN) < 0) {
-		pr_err("failed to register_to_epoll(): %s", strerror(errno));
+		pr_err("%s", "failed to register_to_epoll()");
 		ret = -3; goto ERROR_MALLOC_EVENTS;
 	}
 
 	while (true)
 	{
+		struct client_data *clnt_data;
 		char buf_time[128];
 		int nclient;
 
@@ -183,8 +194,11 @@ int start_epoll_server(int serv_sock)
 			continue;
 		}
 
-		for (int i = 0; i < nclient; i++) {
-			if (ep_events[i].data.fd == serv_sock) {
+		for (int i = 0; i < nclient; i++) 
+		{
+			clnt_data = ep_events[i].data.ptr;
+
+			if (clnt_data->fd == serv_sock) { // accept new socket
 				while (true)
 				{
 					int clnt_sock = accept(serv_sock, NULL, NULL);
@@ -194,38 +208,47 @@ int start_epoll_server(int serv_sock)
 
 						pr_err("failed to accept(): %s", strerror(errno));
 						break;
+					} else change_nonblocking(clnt_sock);
+										
+					if (register_to_epoll(epoll_fd, clnt_sock, EPOLLIN) < 0) {
+						pr_err("%s", "failed to register_to_epoll()");
+						close(clnt_sock);
+						continue;
 					}
-
-					change_nonblocking(clnt_sock);
-
-					register_to_epoll(epoll_fd, clnt_sock, EPOLLIN);
 
 					pr_out("accept: add new socket: %d", clnt_sock);
 				} 
-			} else { // received data from client socket
+			} else { // received data from client
 				int ret_recv;
-				char buf[BUFSIZ];
-				int clnt_sock = ep_events[i].data.fd;
+				int remain_space = clnt_data->buffer_size - clnt_data->usage;
 
-				if ((ret_recv = recv(clnt_sock, buf, sizeof(buf), 0)) == -1) {
-					pr_err("failed to recv(): %s", strerror(errno));
+				if (remain_space == 0) {
+					pr_out("there's no space to receive data from client(%d)", clnt_data->fd);
 					continue;
 				}
 
+				if ((ret_recv = recv(clnt_data->fd,
+								     clnt_data->buffer + clnt_data->usage, 
+									 remain_space, 0)) == -1) {
+					pr_err("failed to recv(): %s", strerror(errno));
+
+					if (delete_to_epoll(epoll_fd, clnt_data) < 0)
+						pr_err("%s", "failed to delete_to_epoll()");
+
+					continue;
+				} else clnt_data->usage += ret_recv;
+
 				if (ret_recv == 0) { // disconnect client
-					pr_out("closed by foreign host (sfd = %d)", ep_events[i].data.fd);
-					if (delete_to_epoll(epoll_fd, clnt_sock) < 0) {
-						pr_err("%s", "failed to delete_to_epoll(): force socket disconnection.");
-						close(clnt_sock);
+					pr_out("closed by foreign host (sfd = %d)", clnt_data->fd);
+
+					if (delete_to_epoll(epoll_fd, clnt_data) < 0) {
+						pr_err("failed to delete_to_epoll(): %s", "force socket disconnection");
 					}
 
 					continue;
 				}
-
-				pr_out("Message from client(%d): %s", clnt_sock, buf);
 			} // end of if - else (ep_events[i].data.fd == serv_sock)
 		} // end of for (int i = 0; i < nclient; i++)
-
 	} // end of while (true)
 
 	return 0;
@@ -244,25 +267,62 @@ int register_to_epoll(int epfd, int tgfd, int events)
 	struct epoll_event ev;
 
 	ev.events = events;
-	ev.data.fd = tgfd;
+
+	struct client_data *clnt_data = make_client_data(tgfd, BUFFER_SIZE);
+	if (clnt_data == NULL) {
+		pr_err("%s", "failed to make_client_data(): %s");
+		return -1;
+	} else ev.data.ptr = clnt_data;
 
 	if (epoll_ctl(epfd, EPOLL_CTL_ADD, tgfd, &ev) == -1) {
 		pr_err("failed to epoll_ctl(): %s", strerror(errno));
-		return -1;
+		destroy_client_data(clnt_data);
+		return -2;
 	}
 
 	return 0;
 }
 
-int delete_to_epoll(int epfd, int tgfd)
+int delete_to_epoll(int epfd, struct client_data *clnt_data)
 {
-	if (epoll_ctl(epfd, EPOLL_CTL_DEL, tgfd, NULL) == -1) {
+	int ret = 0;
+
+	ret = epoll_ctl(epfd, EPOLL_CTL_DEL, clnt_data->fd, NULL);
+	close(clnt_data->fd);
+	destroy_client_data(clnt_data);
+
+	if (ret == -1)
 		pr_err("failed to epoll_ctl(): %s", strerror(errno));
-		return -1;
+
+	return ret;
+}
+
+struct client_data *make_client_data(int fd, int buffer_size)
+{
+	struct client_data *clnt_data;
+
+	clnt_data = malloc(sizeof(struct client_data));
+	if (clnt_data == NULL) {
+		pr_err("failed to malloc(): %s", strerror(errno));
+		return NULL;
 	}
 
-	close(tgfd);
+	clnt_data->buffer = malloc(buffer_size);
+	if (clnt_data->buffer == NULL) {
+		pr_err("failed to malloc(): %s", strerror(errno));
+		return NULL;
+	}
 
-	return 0;
+	clnt_data->fd = fd;
+	clnt_data->usage = 0;
+	clnt_data->buffer_size = buffer_size;
+
+	return clnt_data;
+}
+
+void destroy_client_data(struct client_data *clnt_data)
+{
+	free(clnt_data->buffer);
+	free(clnt_data);
 }
 
