@@ -15,7 +15,8 @@
 
 #define DEFAULT_HTTP_PORT	1584
 #define DEFAULT_DEVICE_PORT	3606
-#define DEFAULT_BLOG 30
+#define DEFAULT_HTTP_BACKLOG 30
+#define DEFAULT_DEVICE_BACKLOG 30
 
 #define MAX_EVENTS 128
 
@@ -28,22 +29,25 @@ int main(int argc, char *argv[])
 {
 	int http_sock, device_sock;
 	struct addrinfo *http_ai, *device_ai;
-	int backlog, ret;
+	int http_backlog, device_backlog;
 	uint16_t http_port, device_port;
+	int ret;
 
 	http_port = DEFAULT_HTTP_PORT;
 	device_port = DEFAULT_DEVICE_PORT;
-	backlog = DEFAULT_BLOG;
+	http_backlog = DEFAULT_HTTP_BACKLOG;
+	device_backlog = DEFAULT_DEVICE_BACKLOG;
 
 	if (parse_arguments(argc, argv, 
 		    16, &http_port, 
 			16, &device_port, 
-			 4, &backlog) < 0)
+			 4, &http_backlog,
+			 4, &device_backlog) < 0)
 		pr_crt("%s", "failed to parse_arguments()");
 
-	http_sock = make_listener(http_port, backlog, &http_ai, 
+	http_sock = make_listener(http_port, http_backlog, &http_ai, 
 			                  MAKE_LISTENER_DEFAULT);
-	device_sock = make_listener(device_port, backlog, &device_ai,
+	device_sock = make_listener(device_port, device_backlog, &device_ai,
 								MAKE_LISTENER_DEFAULT);
 	if (http_sock < 0 || device_sock < 0)
 		pr_crt("%s", "make_listener() error");
@@ -57,7 +61,7 @@ int main(int argc, char *argv[])
 						NI_NUMERICHOST | NI_NUMERICSERV)) != 0)		// flags
 			pr_crt("failed to getnameinfo(): %s (%d)", gai_strerror(ret), ret);
 
-		pr_out("http server running at %s:%s (backlog %d)", hoststr, portstr, backlog);
+		pr_out("http server running at %s:%s (backlog %d)", hoststr, portstr, http_backlog);
 
 		if ((ret = getnameinfo(
 						device_ai->ai_addr, device_ai->ai_addrlen,	// address
@@ -66,7 +70,7 @@ int main(int argc, char *argv[])
 						NI_NUMERICHOST | NI_NUMERICSERV)) != 0)		// flags
 			pr_crt("failed to getnameinfo(): %s (%d)", gai_strerror(ret), ret);
 
-		pr_out("device server running at %s:%s (backlog %d)", hoststr, portstr, backlog);
+		pr_out("device server running at %s:%s (backlog %d)", hoststr, portstr, device_backlog);
 
 		freeaddrinfo(device_ai);
 		freeaddrinfo(http_ai);
