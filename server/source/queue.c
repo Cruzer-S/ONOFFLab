@@ -47,11 +47,19 @@ int queue_enqueue(struct queue *queue, void *data)
 	if (new_node == NULL)
 		return -1;
 
+	sem_wait(&queue->sem);
+	// -------------------------------------
+	// Critical Section Start
+	// -------------------------------------
 	new_node->data = data;
 	new_node->next = queue->tail;
 	queue->tail = new_node;
 
 	queue->usage++;
+	// -------------------------------------
+	// Critical Section End
+	// -------------------------------------
+	sem_post(&queue->sem);
 
 	return 0;
 }
@@ -60,7 +68,11 @@ void *queue_dequeue(struct queue *queue)
 {
 	void *ret;
 	struct node *prev;
-
+	
+	sem_wait(&queue->sem);
+	// -------------------------------------
+	// Critical Section Start
+	// -------------------------------------
 	if (queue->usage == 0)
 		return NULL;
 
@@ -68,9 +80,13 @@ void *queue_dequeue(struct queue *queue)
 	prev = queue->tail;
 	queue->tail = queue->tail->next;
 
-	free(prev);
-
 	queue->usage--;
+	// -------------------------------------
+	// Critical Section End
+	// -------------------------------------
+	sem_post(&queue->sem);
+
+	free(prev);
 
 	return ret;
 }
