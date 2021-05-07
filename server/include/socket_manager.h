@@ -9,6 +9,9 @@
 #include <netdb.h>
 #include <string.h>
 #include <errno.h>
+#include <sys/epoll.h>
+
+#define EPOLL_MAX_EVENTS 1024
 
 enum make_listener_option {
 	MAKE_LISTENER_DEFAULT = 0x00,
@@ -18,10 +21,19 @@ enum make_listener_option {
 	MAKE_LISTENER_DGRAM = 0x08,
 };
 
+struct epoll_handler;
+
 int socket_reuseaddr(int sock);
 int change_nonblocking(int fd);
 int make_listener(uint16_t port, int backlog,
                   struct addrinfo **ai_ret_arg,
                   enum make_listener_option option);
+
+int epoll_handler_register(struct epoll_handler *handler, int tgfd, void *ptr, int events);
+int epoll_handler_unregister(struct epoll_handler *handler, int tgfd);
+int epoll_handler_wait(struct epoll_handler *handler, int timeout);
+struct epoll_event *epoll_handler_pop(struct epoll_handler *handler);
+void epoll_handler_destroy(struct epoll_handler *handler);
+struct epoll_handler *epoll_handler_create(size_t max_events);
 
 #endif

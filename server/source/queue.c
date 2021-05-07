@@ -2,25 +2,27 @@
 
 #include <stdlib.h>
 #include <pthread.h>
-#include <semaphore.h>
 
 struct node {
-	void *data;
+	struct queue_data data;
 	struct node *next;
 };
 
 struct queue {
 	struct node *tail;
 
-	sem_t sem;
+	pthread_mutex_t mutex;
 
 	size_t size;
 	size_t usage;
 };
 
-struct queue *queue_make(size_t size)
+struct queue *queue_create(size_t size)
 {
 	struct queue *queue;
+
+	if (size > QUEUE_MAX_SIZE)
+		return NULL;
 
 	queue = malloc(sizeof(struct queue));
 	if (queue == NULL)
@@ -31,7 +33,7 @@ struct queue *queue_make(size_t size)
 	queue->size = size;
 	queue->usage = 0;
 
-	if (sem_init(&queue->sem, 0, 1) == -1) {
+	if (pthread_mutex_init(&queue->mutex, NULL) == -1) {
 		free(queue);
 		return NULL;
 	}
@@ -39,7 +41,7 @@ struct queue *queue_make(size_t size)
 	return queue;
 }
 
-int queue_enqueue(struct queue *queue, void *data)
+int queue_enqueue(struct queue *queue, struct queue_data data)
 {
 	struct node *new_node;
 
@@ -47,34 +49,34 @@ int queue_enqueue(struct queue *queue, void *data)
 	if (new_node == NULL)
 		return -1;
 
-	sem_wait(&queue->sem);
+	new_node->data = data;
+	new_node->next = queue->tail;
+
+	pthread_mutex_lock(&queue->mutex);
 	// -------------------------------------
 	// Critical Section Start
 	// -------------------------------------
-	new_node->data = data;
-	new_node->next = queue->tail;
 	queue->tail = new_node;
-
 	queue->usage++;
 	// -------------------------------------
 	// Critical Section End
 	// -------------------------------------
-	sem_post(&queue->sem);
+	pthread_mutex_unlock(&queue->mutex);
 
 	return 0;
 }
 
-void *queue_dequeue(struct queue *queue)
+struct queue_data queue_dequeue(struct queue *queue)
 {
-	void *ret;
+	struct queue_data ret = { .type = QUEUE_DATA_UNDEF };
 	struct node *prev;
-	
-	sem_wait(&queue->sem);
+
+	pthread_mutex_lock(&queue->mutex);
 	// -------------------------------------
 	// Critical Section Start
 	// -------------------------------------
 	if (queue->usage == 0)
-		return NULL;
+		return ret;
 
 	ret = queue->tail->data;
 	prev = queue->tail;
@@ -84,25 +86,31 @@ void *queue_dequeue(struct queue *queue)
 	// -------------------------------------
 	// Critical Section End
 	// -------------------------------------
-	sem_post(&queue->sem);
+	pthread_mutex_unlock(&queue->mutex);
 
 	free(prev);
 
 	return ret;
 }
 
-void *queue_peek(struct queue *queue)
+struct queue_data ueue_peek(struct queue *queue)
 {
-	return NULL;
+	return queue->tail->data;
 }
 
 void queue_destroy(struct queue *queue)
 {
-	while (queue_dequeue(queue))
+	while (queue_dequeue(queue).type != QUEUE_DATA_UNDEF)
 		/* empty loop body */ ;
 
-	sem_destroy(&queue->sem);
+	pthread_mutex_destroy(&queue->mutex);
+	
 	free(queue);
+}
+
+size_t queue_usage(struct queue *queue)
+{
+	return queue->usage;
 }
 
 bool queue_empty(struct queue *queue)
@@ -117,6 +125,9 @@ size_t queue_size(struct queue *queue)
 
 size_t queue_resize(struct queue *queue, size_t resize)
 {
+	if (resize > QUEUE_MAX_SIZE)
+		return queue->size;
+
 	return (resize < queue->usage) ? (queue->size = queue->usage) 
 		                           : (queue->size = resize);
 }
