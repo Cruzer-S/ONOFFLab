@@ -24,6 +24,8 @@
 
 #define BUFFER_SIZE (1024 * 4) // 4 KiB
 
+#define HTTP_MAX_BODY_SIZE ((size_t) (1024UL * 1024UL * 10UL)) // 5 MiB
+
 #define HTTP 0
 #define DEVICE 1
 
@@ -35,7 +37,7 @@ struct client_data {
 
 	pthread_mutex_t mutex;
 
-	void *for_the_handler;
+	struct handler_struct *handler;
 };
 
 struct thread_args {
@@ -53,10 +55,15 @@ struct server_data {
 	uint16_t port;
 };
 
+struct handler_struct {
+	char *header;
+	char *body;
+};
+
 void *start_epoll_server(void *args);
 struct client_data *make_client_data(int fd, int buffer_size);
 void destroy_client_data(struct client_data *clnt_data);
-int handle_client_data(struct client_data *clnt_data);
+int handle_client_data(struct client_data *clnt_data, int tid);
 
 int main(int argc, char *argv[])
 {
@@ -138,13 +145,14 @@ void *start_epoll_server(void *args)
 	int ret;
 
 	free(args);
+
+	if (targs.tid == 2)
+		return NULL;
 	
 	while (true)
 	{
 		struct client_data *clnt_data;
 		int nclient;
-
-		pr_out("[%d] epoll waiting ...", targs.tid);
 
 		if ((nclient = epoll_handler_wait(targs.handler, -1)) == -1) {
 			pr_err("[%d] failed to epoll_handler_wait(): %d", targs.tid, nclient);
@@ -188,7 +196,7 @@ void *start_epoll_server(void *args)
 
 				remain_space = clnt_data->bsize - clnt_data->busage;
 				if (remain_space <= 0) {
-					pr_err("[%d] there's no space to receive data from client(%d)", targs.tid, clnt_data->fd);
+					pr_err("[%d] there's no space to receive data from the client: %d", targs.tid, clnt_data->fd);
 					goto CLEANUP;
 				}
 
@@ -200,9 +208,8 @@ void *start_epoll_server(void *args)
 						pr_err("[%d] failed to delete_to_epoll(): %d", targs.tid, ret);
 
 					goto CLEANUP;
-				}
+				} else clnt_data->busage += ret_recv;
 
-				clnt_data->busage += ret_recv;
 				if (ret_recv == 0) { // disconnect client
 					pr_out("[%d] closed by foreign host (sfd = %d)", targs.tid, clnt_data->fd);
 					if (epoll_handler_unregister(targs.handler, clnt_data->fd) < 0)
@@ -212,13 +219,16 @@ void *start_epoll_server(void *args)
 					goto CLEANUP;
 				}
 
-				if ((ret = handle_client_data(clnt_data)) < 0) {
-					pr_err("failed to handle_client_data(): %d", ret);
+				if ((ret = handle_client_data(clnt_data, targs.tid)) < 0) {
+					pr_err("[%d] failed to handle_client_data(): %d", targs.tid, ret);
 					goto CLEANUP;
+				} else if (ret == 1) {
+					pr_out("[%d] receive all the data from the client: %d", targs.tid, clnt_data->fd);
 				}
 
 				continue;
-	   CLEANUP: close(clnt_data->fd);
+       CLEANUP: pr_err("[%d] forced to close the client by the server: %d", targs.tid, clnt_data->fd);
+				close(clnt_data->fd);
 				destroy_client_data(clnt_data);
 			} // end of if - else (ep_events[i].data.fd == serv_sock)
 		} // end of for (int i = 0; i < nclient; i++)
@@ -227,52 +237,62 @@ void *start_epoll_server(void *args)
 	return (void *) 0;
 }
 
-int handle_client_data(struct client_data *clnt_data)
+int handle_client_data(struct client_data *clnt_data, int tid)
 {
-	struct handler_struct {
-		char *header;
-		char *body;
-	} *handler;
-
-	char *eob; //End-of-body
+	char *eoh; //End-of-body
 	char *has_body;
 	size_t body_len, over_len;
 
-	if (clnt_data->for_the_handler != NULL)
-		return 0;
+	if (clnt_data->handler != NULL)
+		return (clnt_data->bsize == clnt_data->busage);
 
-	if ((eob = strstr((char *) clnt_data->buffer, "\r\n\r\n"))) {
-		pr_out("HTTP Header: size %zu", (eob + 4) - (char *) clnt_data->buffer);
+	if ((eoh = strstr((char *) clnt_data->buffer, "\r\n\r\n"))) {
+		pr_out("[%d] HTTP request from the client: %d", tid, clnt_data->fd);
 
-		handler = malloc(sizeof(struct handler_struct));
-		if (handler == NULL) {
-			pr_err("failed to malloc(): %s", strerror(errno));
+		eoh += 4;
+
+		// Do NOT call free() function to clnt_data->handler
+		// It will be freed by destroy_client_data() function
+		clnt_data->handler = malloc(sizeof(struct handler_struct));
+		if (clnt_data->handler == NULL) {
+			pr_err("[%d] failed to malloc(): %s", tid, strerror(errno));
 			return -2;
-		}
-		clnt_data->for_the_handler = handler;
+		} else clnt_data->handler->body = clnt_data->handler->header = NULL;
 
 		if ((has_body = strstr((char *) clnt_data->buffer, "Content-Length: "))) {
 			if (sscanf(has_body, "Content-Length: %zu", &body_len) != 1) {
-				pr_err("invalid HTTP Header: %s", "failed to parse Content-Length");
+				pr_err("[%d] invalid HTTP Header: %s", tid, "failed to parse Content-Length");
 				return -1;
 			}
+
+			if (body_len > HTTP_MAX_BODY_SIZE || body_len == 0) {
+				pr_err("[%d] request body size is too big/small to receive: %zu / %zu", 
+						tid, body_len, HTTP_MAX_BODY_SIZE);
+				return -4;
+			}
 			
-			handler->body = malloc(sizeof(char) * body_len);
-			if (handler->body == NULL) {
-				pr_err("failed to malloc(): %s", strerror(errno));
-				free(handler);
+			clnt_data->handler->body = malloc(sizeof(char) * body_len);
+			if (clnt_data->handler->body == NULL) {
+				pr_err("[%d] failed to malloc(): %s", tid, strerror(errno));
 				return -3;
 			}
 
-			handler->header = (char *) clnt_data->buffer;
-			over_len = (handler->header + clnt_data->busage) - (eob + 4);
+			clnt_data->handler->header = (char *) clnt_data->buffer;
+			clnt_data->buffer = (uint8_t *) clnt_data->handler->body;
 
-			strncpy(handler->body, eob, over_len);
+			over_len = (clnt_data->handler->header + clnt_data->busage) - eoh;
+
+			strncpy(clnt_data->handler->body, eoh, over_len);
 
 			clnt_data->busage = over_len;
 			clnt_data->bsize = body_len;
 
-			pr_out("has body: size: %zu, over-read: %zu", clnt_data->bsize, clnt_data->busage);
+			pr_out("[%d] HTTP request from the client: %d\n"
+				   "body-size: %zu, over-read: %zu", 
+				   tid, clnt_data->fd, clnt_data->bsize, clnt_data->busage);
+		} else {
+			pr_out("[%d] HTTP request from the client: %d\n"
+					"header-only, no body", tid, clnt_data->fd);
 		}
 	}
 
@@ -308,7 +328,7 @@ struct client_data *make_client_data(int fd, int buffer_size)
 		return NULL;
 	}
 
-	clnt_data->for_the_handler = NULL;
+	clnt_data->handler = NULL;
 
 	return clnt_data;
 }
@@ -317,8 +337,15 @@ void destroy_client_data(struct client_data *clnt_data)
 {
 	pthread_mutex_destroy(&clnt_data->mutex);
 
-	free(clnt_data->buffer);
-	free(clnt_data);
+	if (clnt_data->handler != NULL) {
+		free(clnt_data->handler->body);
+		free(clnt_data->handler->header);
+		free(clnt_data->handler);
+		free(clnt_data);
+	} else {
+		free(clnt_data->buffer);
+		free(clnt_data);
+	}
 }
 
 void *producer_thread(void *arg)
