@@ -3,6 +3,7 @@
 
 #include <stdio.h>
 #include <stdbool.h>
+#include <pthread.h>
 
 #define QUEUE_MAX_SIZE 1024
 
@@ -24,7 +25,9 @@ enum queue_data_type {
 
 	QUEUE_DATA_PTR,
 
-	QUEUE_DATA_UNDEF
+	QUEUE_DATA_UNDEF,
+
+	QUEUE_DATA_ERROR,
 };
 
 struct queue_data {
@@ -51,7 +54,7 @@ struct queue_data {
 
 struct queue;
 
-struct queue *queue_create(size_t size);
+struct queue *queue_create(size_t size, pthread_cond_t *use_cond);
 int queue_enqueue(struct queue *queue, struct queue_data data);
 struct queue_data queue_dequeue(struct queue *queue);
 struct queue_data queue_peek(struct queue *queue);

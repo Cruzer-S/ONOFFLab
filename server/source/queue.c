@@ -11,13 +11,14 @@ struct node {
 struct queue {
 	struct node *tail;
 
+	pthread_cond_t cond;
 	pthread_mutex_t mutex;
 
 	size_t size;
 	size_t usage;
 };
 
-struct queue *queue_create(size_t size)
+struct queue *queue_create(size_t size, pthread_cond_t *use_cond)
 {
 	struct queue *queue;
 
@@ -33,9 +34,20 @@ struct queue *queue_create(size_t size)
 	queue->size = size;
 	queue->usage = 0;
 
-	if (pthread_mutex_init(&queue->mutex, NULL) == -1) {
+	if (pthread_mutex_init(&queue->mutex, NULL) != 0) {
 		free(queue);
 		return NULL;
+	}
+
+	if (use_cond != NULL) {
+		if (pthread_cond_init(use_cond, NULL) != 0) {
+			if (pthread_mutex_destroy(&queue->mutex) != 0)
+				/* do nothing */ ;
+			
+			free(queue);
+
+			return NULL;
+		}
 	}
 
 	return queue;
@@ -63,6 +75,8 @@ int queue_enqueue(struct queue *queue, struct queue_data data)
 	// -------------------------------------
 	pthread_mutex_unlock(&queue->mutex);
 
+	pthread_cond_broadcast(&queue->cond);
+
 	return 0;
 }
 
@@ -75,8 +89,15 @@ struct queue_data queue_dequeue(struct queue *queue)
 	// -------------------------------------
 	// Critical Section Start
 	// -------------------------------------
-	if (queue->usage == 0)
-		return ret;
+	if (pthread_cond_wait(&queue->cond, &queue->mutex) != 0) {
+		pthread_mutex_unlock(&queue->mutex);
+		return (struct queue_data) { .type = QUEUE_DATA_ERROR };
+	}
+
+	if (queue->usage == 0) {
+		pthread_mutex_unlock(&queue->mutex);
+		return (struct queue_data) { .type = QUEUE_DATA_UNDEF };
+	}
 
 	ret = queue->tail->data;
 	prev = queue->tail;
@@ -100,10 +121,11 @@ struct queue_data ueue_peek(struct queue *queue)
 
 void queue_destroy(struct queue *queue)
 {
-	while (queue_dequeue(queue).type != QUEUE_DATA_UNDEF)
+	while (queue_dequeue(queue).type != (QUEUE_DATA_UNDEF | QUEUE_DATA_ERROR))
 		/* empty loop body */ ;
 
 	pthread_mutex_destroy(&queue->mutex);
+	pthread_cond_destroy(&queue->cond);
 	
 	free(queue);
 }
@@ -115,7 +137,7 @@ size_t queue_usage(struct queue *queue)
 
 bool queue_empty(struct queue *queue)
 {
-	return queue->usage;
+	return queue_usage(queue);
 }
 
 size_t queue_size(struct queue *queue)

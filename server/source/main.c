@@ -29,6 +29,8 @@
 #define HTTP 0
 #define DEVICE 1
 
+#define PRODUCER_THREADS 3
+
 struct client_data {
 	int fd;
 	uint8_t *buffer;
@@ -64,6 +66,7 @@ void *start_epoll_server(void *args);
 struct client_data *make_client_data(int fd, int buffer_size);
 void destroy_client_data(struct client_data *clnt_data);
 int handle_client_data(struct client_data *clnt_data, int tid);
+void *producer_thread(void *args);
 
 int main(int argc, char *argv[])
 {
@@ -86,7 +89,7 @@ int main(int argc, char *argv[])
 		pr_crt("failed to parse_arguments(): %d", ret);
 
 	for (int i = 0; i < 2; i++)
-	{		
+	{
 		struct addrinfo *ai;
 		serv_data[i].fd = make_listener(serv_data[i].port, serv_data[i].backlog, &ai, MAKE_LISTENER_DEFAULT);
 		if (serv_data[i].fd < 0)
@@ -100,7 +103,7 @@ int main(int argc, char *argv[])
 						NI_NUMERICHOST | NI_NUMERICSERV)) != 0)	// flags
 			pr_crt("failed to getnameinfo(): %s (%d)", gai_strerror(ret), ret);
 
-		pr_out("%s server running at %s:%s (backlog %d)", 
+		pr_out("%s server running at %s:%s (backlog %d)",
 			   (i == HTTP) ? "HTTP" : "DEVICE", hoststr, portstr, serv_data[i].backlog);
 
 		freeaddrinfo(ai);
@@ -121,17 +124,32 @@ int main(int argc, char *argv[])
 		if ((ret = epoll_handler_register(thd_arg->handler, clnt_data->fd, clnt_data, EPOLLIN)) < 0)
 			pr_crt("failed to epoll_handler_register(): %d", ret);
 
-		thd_arg->queue = queue_create(1024);
+		if ((ret = pthread_cond_init(&thd_arg->cond, NULL)) != 0)
+			pr_crt("failed to pthread_cond_init(): %s", strerror(ret));
+
+		thd_arg->queue = queue_create(EPOLL_MAX_EVENTS, &thd_arg->cond);
 		if (thd_arg->queue == NULL)
 			pr_crt("failed to queue_create(%d)", QUEUE_MAX_SIZE);
-
+		
 		thd_arg->listener_fd = serv_data[i].fd;
 		thd_arg->tid = i + 1;
 
 		if ((ret = pthread_create(&tid[i], NULL, start_epoll_server, thd_arg)) != 0)
 			pr_crt("failed to pthread_create(): %s", strerror(ret));
-	}
 
+		if (i == HTTP) {
+			struct thread_args *thd_new_arg = malloc(sizeof(struct thread_args));
+			if (thd_new_arg == NULL)
+				pr_crt("failed to malloc(): %s", strerror(errno));
+
+			thd_new_arg = 
+
+			for (int i = 0; i < PRODUCER_THREADS; i++)
+				if ((ret = pthread_create(&tid[i], NULL, producer_thread, thd_arg)) != 0)
+					pr_crt("failed to pthread_create(): %s", strerror(ret));
+		}
+	}
+	
 	for (int i = 0; i < 2; i++)
 		if ((ret = pthread_join(tid[i], NULL)) != 0)
 			pr_crt("failed to pthread_join: %s", strerror(ret));
@@ -139,100 +157,129 @@ int main(int argc, char *argv[])
 	return 0;
 }
 
+int accept_client(int serv_sock, struct epoll_handler *handler)
+{
+	struct client_data *clnt_data;
+	int ret;
+	int nclient = 0;
+
+	while (true)
+	{
+		int clnt_sock = accept(serv_sock, NULL, NULL);
+		if (clnt_sock == -1) {
+			if (errno == EAGAIN)
+				break;
+
+			pr_err("failed to accept(): %s", strerror(errno));
+			return -1;
+		} else change_nonblocking(clnt_sock);
+
+		if ((clnt_data = make_client_data(clnt_sock, BUFFER_SIZE)) == NULL) {
+			pr_err("failed to make_client_data(): %d", clnt_sock);
+			close(clnt_sock);
+
+			return -2;
+		}
+
+		if ((ret = epoll_handler_register(handler, clnt_sock, clnt_data, EPOLLIN)) < 0) {
+			pr_err("failed to epoll_handler_register(): %d", ret);
+			close(clnt_sock);
+			destroy_client_data(clnt_data);
+
+			return -3;
+		}
+
+		nclient++;
+	}
+
+	return nclient;
+}
+
+int receive_request_from_client(struct client_data *clnt_data, struct epoll_handler *handler)
+{
+	int ret_recv, ret;
+	int remain_space;
+
+	remain_space = clnt_data->bsize - clnt_data->busage;
+	if (remain_space <= 0) {
+		pr_err("there's no space to receive data from the client: %d", clnt_data->fd);
+		return -1;
+	}
+
+	if ((ret_recv = recv(clnt_data->fd,
+						 clnt_data->buffer + clnt_data->busage,
+						 remain_space, 0)) == -1) 
+	{
+		pr_err("failed to recv(): %s", strerror(errno));
+		if ((ret = epoll_handler_unregister(handler, clnt_data->fd)) < 0)
+			pr_err("failed to delete_to_epoll(): %d", ret);
+
+		return -2;
+	} else clnt_data->busage += ret_recv;
+
+	if (ret_recv == 0) { // disconnect client
+		pr_out("closed by foreign host (sfd = %d)", clnt_data->fd);
+
+		if (epoll_handler_unregister(handler, clnt_data->fd) < 0)
+			pr_err("failed to delete_to_epoll(): %s",
+				   "force socket disconnection");
+
+		return -3;
+	}
+
+	return 0;
+}
+
 void *start_epoll_server(void *args)
 {
 	struct thread_args targs = *(struct thread_args *)args;
+	struct client_data *clnt_data;
 	int ret;
 
 	free(args);
 
 	if (targs.tid == 2)
 		return NULL;
-	
-	while (true)
-	{
-		struct client_data *clnt_data;
-		int nclient;
 
-		if ((nclient = epoll_handler_wait(targs.handler, -1)) == -1) {
-			pr_err("[%d] failed to epoll_handler_wait(): %d", targs.tid, nclient);
+	while (true) 
+	{
+		int nclient = epoll_handler_wait(targs.handler, -1);
+		if (nclient < 0) {
+			pr_err("failed to epoll_handler_wait(): %d", nclient);
 			continue;
 		}
 
-		for (int i = 0; i < nclient; i++)
+		for (; nclient-- > 0;
+			   clnt_data = epoll_handler_pop(targs.handler)->data.ptr)
 		{
-			clnt_data = epoll_handler_pop(targs.handler)->data.ptr;
+			if (clnt_data->fd == targs.listener_fd) {
+				if ((ret = accept_client(targs.listener_fd, targs.handler)) < 0)
+					pr_err("[%d] failed to accept_client(): %d", targs.tid, ret);
 
-			if (clnt_data->fd == targs.listener_fd) { // accept new socket
-				while (true)
-				{
-					int clnt_sock = accept(targs.listener_fd, NULL, NULL);
-					if(clnt_sock == -1) {
-						if (errno == EAGAIN)
-							break;
-
-						pr_err("[%d] failed to accept(): %s", targs.tid, strerror(errno));
-						break;
-					} else change_nonblocking(clnt_sock);
-
-					if ((clnt_data = make_client_data(clnt_sock, BUFFER_SIZE)) == NULL) {
-						pr_err("[%d] failed to make_client_data(): %d", targs.tid, clnt_sock);
-						close(clnt_sock);
-						continue;
-					}
-
-					if ((ret = epoll_handler_register(targs.handler, clnt_sock, clnt_data, EPOLLIN)) < 0) {
-						pr_err("[%d] failed to epoll_handler_register(): %d", targs.tid, ret);
-						close(clnt_sock); 
-						destroy_client_data(clnt_data);
-						continue;
-					}
-
-					pr_out("[%d] accept: add new socket: %d", targs.tid, clnt_sock);
-				} 
+				pr_out("accept new %d client(s)", ret);
 			} else { // client handling
-				int ret_recv;
-				int remain_space;
-
-				remain_space = clnt_data->bsize - clnt_data->busage;
-				if (remain_space <= 0) {
-					pr_err("[%d] there's no space to receive data from the client: %d", targs.tid, clnt_data->fd);
-					goto CLEANUP;
-				}
-
-				if ((ret_recv = recv(clnt_data->fd,
-									 clnt_data->buffer + clnt_data->busage,
-									 remain_space, 0)) == -1) {
-					pr_err("[%d] failed to recv(): %s", targs.tid, strerror(errno));
-					if ((ret = epoll_handler_unregister(targs.handler, clnt_data->fd)) < 0)
-						pr_err("[%d] failed to delete_to_epoll(): %d", targs.tid, ret);
-
-					goto CLEANUP;
-				} else clnt_data->busage += ret_recv;
-
-				if (ret_recv == 0) { // disconnect client
-					pr_out("[%d] closed by foreign host (sfd = %d)", targs.tid, clnt_data->fd);
-					if (epoll_handler_unregister(targs.handler, clnt_data->fd) < 0)
-						pr_err("[%d] failed to delete_to_epoll(): %s",
-								targs.tid, "force socket disconnection");
-
-					goto CLEANUP;
+				if ((ret = receive_request_from_client(clnt_data, targs.handler)) < 0) {
+					pr_err("[%d] failed to receive_request_from_client(): %d", targs.tid, ret);
+					close(clnt_data->fd);
+					destroy_client_data(clnt_data);
 				}
 
 				if ((ret = handle_client_data(clnt_data, targs.tid)) < 0) {
 					pr_err("[%d] failed to handle_client_data(): %d", targs.tid, ret);
-					goto CLEANUP;
 				} else if (ret == 1) {
 					pr_out("[%d] receive all the data from the client: %d", targs.tid, clnt_data->fd);
-				}
+					epoll_handler_unregister(targs.handler, clnt_data->fd);
 
-				continue;
-       CLEANUP: pr_err("[%d] forced to close the client by the server: %d", targs.tid, clnt_data->fd);
-				close(clnt_data->fd);
-				destroy_client_data(clnt_data);
-			} // end of if - else (ep_events[i].data.fd == serv_sock)
-		} // end of for (int i = 0; i < nclient; i++)
-	} // end of while (true)
+					queue_enqueue(targs.queue, (struct queue_data) {
+							.type = QUEUE_DATA_PTR,
+							.ptr = clnt_data
+					});
+				}
+			}
+		}
+
+		pthread_cond_broadcast(&targs.cond);
+	}
 
 	return (void *) 0;
 }
@@ -266,7 +313,7 @@ int handle_client_data(struct client_data *clnt_data, int tid)
 			}
 
 			if (body_len > HTTP_MAX_BODY_SIZE || body_len == 0) {
-				pr_err("[%d] request body size is too big/small to receive: %zu / %zu", 
+				pr_err("[%d] request body size is too big/small to receive: %zu / %zu",
 						tid, body_len, HTTP_MAX_BODY_SIZE);
 				return -4;
 			}
@@ -348,8 +395,35 @@ void destroy_client_data(struct client_data *clnt_data)
 	}
 }
 
-void *producer_thread(void *arg)
+void *producer_thread(void *args)
 {
+	struct thread_args targs = *(struct thread_args *)args;
+	struct queue_data data;
+	struct client_data *clnt_data;
+	int ret;
+
+	while (true)
+	{
+		data = queue_dequeue(targs.queue);
+		if (data.type == QUEUE_DATA_ERROR) {
+			pr_err("[%d] failed to queue_dequeue(): %s", 
+					targs.tid, "QUEUE_DATA_ERROR");
+			continue;
+		}
+
+		if (data.type == QUEUE_DATA_UNDEF) {
+			pr_err("[%d] failed to queue_dequeue(): %s",
+					targs.tid, "QUEUE_DATA_UNDEF");
+			continue;
+		}
+
+		clnt_data = data.ptr;
+
+		pr_out("clnt_data: %zu / %zu", clnt_data->bsize, clnt_data->busage);
+
+		destroy_client_data(clnt_data);
+	}
+
 	return NULL;
 }
 
