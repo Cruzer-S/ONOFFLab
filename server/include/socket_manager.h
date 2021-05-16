@@ -1,11 +1,12 @@
 #ifndef SOCKET_MANAGER_H__
 #define SOCKET_MANAGER_H__
 
+#define _POSIX_C_SOURCE 200112L
+
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/types.h>
 #include <sys/socket.h>
-#define __USE_XOPEN2K	// to use `struct addrinfo`
 #include <netdb.h>
 #include <string.h>
 #include <errno.h>

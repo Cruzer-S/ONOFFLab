@@ -124,9 +124,10 @@ int epoll_handler_unregister(struct epoll_handler *handler, int tgfd)
 
 int epoll_handler_wait(struct epoll_handler *handler, int timeout)
 {
-	if ((handler->cnt = epoll_wait(handler->fd, 
-				                   handler->events, handler->max_events, 
-								   timeout)) < 0) {
+	if ((handler->cnt = epoll_wait(handler->fd,
+				                   handler->events, handler->max_events,
+								   timeout)) < 0)
+	{
 		pr_err("failed to epoll_wait(): %s", strerror(errno));
 		return -1;
 	}
