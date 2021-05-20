@@ -139,31 +139,11 @@ void *client_producer(void *args)
 
 				pr_out("[%s] accept new %d client(s)", "HTTP", ret);
 			} else { // client handling
-				
-				/*
-				if ((ret = receive_request_from_client(clnt_data, targs.handler)) < 0) {
-					pr_err("[%s] failed to receive_request_from_client(): %d", "HTTP", ret);
-					close(clnt_data->fd);
-					destroy_client_data(clnt_data);
-				}
-
-				if ((ret = handle_client_data(clnt_data, targs.tid)) < 0) {
-					pr_err("[%s] failed to handle_client_data(): %d", "HTTP", ret);
-				} else if (ret == 1) {
-					pr_out("[%s] receive all the data from the client: %d", "HTTP", clnt_data->fd);
-					epoll_handler_unregister(targs.handler, clnt_data->fd);
-
-					queue_enqueue(targs.queue, (struct queue_data) {
-						.type = QUEUE_DATA_PTR, .ptr = clnt_data
-					});
-				}
 			}
 		} while (--nclient > 0);
 
 		pthread_cond_broadcast(&targs.cond);
 	}
-
-	return (void *) 0;
 
 	return NULL;
 }
@@ -200,13 +180,6 @@ int accept_client(int serv_sock, struct epoll_handler *handler,
 			pr_err("failed to accept(): %s", strerror(errno));
 			return -1;
 		} else change_nonblocking(clnt_sock);
-
-		if ((clnt_data = make_client_data(clnt_sock, bodysize, bufsize, true)) == NULL) {
-			pr_err("failed to make_client_data(): %d", clnt_sock);
-			close(clnt_sock);
-
-			return -2;
-		}
 
 		if ((ret = epoll_handler_register(
 				handler, clnt_sock, clnt_data,
