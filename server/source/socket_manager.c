@@ -1,3 +1,5 @@
+#define _POSIX_C_SOURCE 200112L
+
 #include "socket_manager.h"
 
 #include "logger.h"
@@ -185,3 +187,21 @@ int epoll_handler_get_fd(struct epoll_handler *handler)
 	return handler->fd;
 }
 
+int get_addr_from_ai(struct addrinfo *ai, char *hoststr, char *portstr)
+{
+	int ret;
+	
+	if ((ret = getnameinfo(
+					ai->ai_addr, ai->ai_addrlen,			// address
+						hoststr, sizeof(hoststr),				// host name
+						portstr, sizeof(portstr),				// service name (port number)
+						NI_NUMERICHOST | NI_NUMERICSERV)) != 0)	// flags
+	{
+		pr_err("failed to getnameinfo(): %s", gai_strerror(ret));
+		return -1;
+	}
+
+	freeaddrinfo(ai);
+
+	return 0;
+}

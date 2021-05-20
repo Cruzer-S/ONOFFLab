@@ -1,12 +1,18 @@
 #ifndef SOCKET_MANAGER_H__
 #define SOCKET_MANAGER_H__
 
-#define _POSIX_C_SOURCE 200112L
+#ifndef _POSIX_C_SOURCE
+	#define _POSIX_C_SOURCE 200112L
+#elif _POSIX_C_SOURCE < 200112L
+	#undef _POSIX_C_SOURCE
+	#define _POSIX_C_SOURCE 200112L
+#endif
 
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/types.h>
 #include <sys/socket.h>
+
 #include <netdb.h>
 #include <string.h>
 #include <errno.h>
@@ -36,5 +42,7 @@ int epoll_handler_wait(struct epoll_handler *handler, int timeout);
 struct epoll_event *epoll_handler_pop(struct epoll_handler *handler);
 void epoll_handler_destroy(struct epoll_handler *handler);
 struct epoll_handler *epoll_handler_create(size_t max_events);
+
+int get_addr_from_ai(struct addrinfo *ai, char *hoststr, char *portstr);
 
 #endif

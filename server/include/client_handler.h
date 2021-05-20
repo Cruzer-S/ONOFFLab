@@ -4,6 +4,7 @@
 #include <inttypes.h>
 #include <stdio.h>
 #include <pthread.h>
+#include <stdbool.h>
 
 struct client_data {
 	int fd;
@@ -21,7 +22,7 @@ struct client_data {
 	} *handler;
 };
 
-struct client_data *make_client_data(int fd, int buffer_size, size_t max_body_size);
+struct client_data *make_client_data(int fd, size_t bodysize, size_t bufsize, bool is_mutex);
 int handle_client_data(struct client_data *clnt_data, int tid);
 void destroy_client_data(struct client_data *clnt_data);
 

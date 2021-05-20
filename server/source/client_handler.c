@@ -6,7 +6,7 @@
 #include <string.h>
 #include <errno.h>
 
-struct client_data *make_client_data(int fd, int buffer_size, size_t max_body_size)
+struct client_data *make_client_data(int fd, size_t bodysize, size_t bufsize, bool is_mutex)
 {
 	struct client_data *clnt_data;
 
@@ -16,24 +16,28 @@ struct client_data *make_client_data(int fd, int buffer_size, size_t max_body_si
 		return NULL;
 	}
 
-	clnt_data->buffer = malloc(buffer_size);
-	if (clnt_data->buffer == NULL) {
-		free(clnt_data);
-		pr_err("failed to malloc(): %s", strerror(errno));
-		return NULL;
+	if (bufsize > 0) {
+		clnt_data->buffer = malloc(bufsize);
+		if (clnt_data->buffer == NULL) {
+			free(clnt_data);
+			pr_err("failed to malloc(): %s", strerror(errno));
+			return NULL;
+		}
 	}
 
 	clnt_data->fd = fd;
 	clnt_data->busage = 0;
-	clnt_data->bsize = buffer_size;
-	clnt_data->max_body_size = max_body_size;
+	clnt_data->bsize = bufsize;
+	clnt_data->max_body_size = bodysize;
 
-	if (pthread_mutex_init(&clnt_data->mutex, NULL) == -1) {
-		free(clnt_data->buffer);
-		free(clnt_data);
-		pr_err("failed_to pthread_mutex_init(): %s", strerror(errno));
-		
-		return NULL;
+	if (is_mutex) {
+		if (pthread_mutex_init(&clnt_data->mutex, NULL) == -1) {
+			free(clnt_data->buffer);
+			free(clnt_data);
+			pr_err("failed_to pthread_mutex_init(): %s", strerror(errno));
+			
+			return NULL;
+		}
 	}
 
 	clnt_data->handler = NULL;

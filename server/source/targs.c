@@ -1,3 +1,5 @@
+#define _POSIX_C_SOURCE 200112L
+
 #include "targs.h"
 
 #include "socket_manager.h"
@@ -9,7 +11,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-struct thread_args *make_thread_argument(int type, int fd, bool is_producer)
+struct thread_args *make_thread_argument(int tid, int fd,
+		                                 enum argument_type type, size_t wait_size)
 {
 	int ret;
 
@@ -39,7 +42,7 @@ struct thread_args *make_thread_argument(int type, int fd, bool is_producer)
 		goto FAILED_TO_REGISTER_EPOLL_HANDLER;
 	}
 
-	if (!is_producer) {
+	if (type == TARGS_PRODUCER_THREAD) {
 		if ((ret = pthread_cond_init(&serv_arg->cond, NULL)) != 0) {
 			pr_err("failed to pthread_cond_init(): %s", strerror(ret));
 			goto FAILED_TO_INIT_COND_VAR;
@@ -54,6 +57,8 @@ struct thread_args *make_thread_argument(int type, int fd, bool is_producer)
 
 	serv_arg->listener_fd = fd;
 	serv_arg->tid = type;
+	serv_arg->wait_size = wait_size;
+	serv_arg->type = type;
 	
 	return serv_arg;
 
