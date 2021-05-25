@@ -57,6 +57,19 @@ struct thread_argument {
 	size_t packet_size;
 };
 
+struct client_packet {
+	uint32_t id;
+	uint8_t passwd[32];
+
+	uint8_t request;
+
+	uint8_t quality;
+
+	uint64_t filesize;
+
+	uint32_t checksum;
+};
+
 int accept_client(int serv_sock, struct epoll_handler *handler, int timeout);
 int delete_client(int clnt_sock, struct epoll_handler *handler);
 
