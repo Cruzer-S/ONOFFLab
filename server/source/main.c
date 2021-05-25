@@ -24,8 +24,13 @@
 #define CLIENT_CONSUMER_THREADS 3
 #define DEVICE_CONSUMER_THREADS 3
 
-#define CLIENT_FOREIGNER_TIMEOUT 3
-#define DEVICE_FOREIGNER_TIMEOUT 3
+#define CLIENT_FOREIGNER_PACKET_TIMEOUT 3
+#define DEVICE_FOREIGNER_PACKET_TIMEOUT 3
+
+#define MAX_FILE_SIZE (1024 * 1024 * 10) // 10 MiB
+
+#define CLIENT_FOREIGNER_DATA_TIMEOUT ((MAX_FILE_SIZE) / (1024 * 1024))
+#define DEVICE_FOREIGNER_DATA_TIMEOUT ((MAX_FILE_SIZE) / (1024 * 1024))
 
 #define CLIENT 0
 #define DEVICE 1
@@ -40,6 +45,9 @@ struct event_data {
 	int type;
 	int timer_fd;
 	int event_fd;
+
+	char *header;
+	char *body;
 };
 
 struct thread_argument {
@@ -57,7 +65,7 @@ struct thread_argument {
 	size_t packet_size;
 };
 
-struct client_packet {
+struct __attribute__((packed)) client_packet {
 	uint32_t id;
 	uint8_t passwd[32];
 
@@ -68,10 +76,12 @@ struct client_packet {
 	uint64_t filesize;
 
 	uint32_t checksum;
+
+	uint8_t dummy[1024 - 50];
 };
 
 int accept_client(int serv_sock, struct epoll_handler *handler, int timeout);
-int delete_client(int clnt_sock, struct epoll_handler *handler);
+int delete_client(struct epoll_handler *handler, int clnt_sock);
 
 void *device_producer(void *args);
 void *client_producer(void *args);
@@ -94,6 +104,8 @@ int main(int argc, char *argv[])
 	struct thread_argument clnt_cons_args[CLIENT_CONSUMER_THREADS];
 	struct thread_argument dev_cons_args[DEVICE_CONSUMER_THREADS];
 	int ret;
+
+	pr_out("sizeof(struct client_packet): %zu", sizeof(struct client_packet));
 
 	for (int i = 0; i < 2; i++, argc -= 2, argv += 2)
 		if ((ret = initialize_server_data(&producer[i].sock_data, argc, argv, i)) < 0)
@@ -219,15 +231,17 @@ void *client_producer(void *argument)
 				pr_out("receive data from client: %d", clnt_sock);
 				if ((ret = process_request(
 						clnt_sock, arg.packet_size,
-						arg.handler, arg.queue)))
-					pr_err("failed to process_request(): %d", ret);
+						arg.handler, arg.queue)) <= 0) {
+					if (ret != 0)
+						pr_err("failed to process_request(): %d", ret);
+
+					delete_client(arg.handler, data[0].event_fd);
+					delete_client(arg.handler, data[1].event_fd);
+				}
 			} else if (data->type == ETYPE_TIMER) {
 				pr_out("timeout, close foreigner session: %d", data[-1].event_fd);
-
-				epoll_handler_unregister(arg.handler, data[-1].event_fd);
-				epoll_handler_unregister(arg.handler, data[0].event_fd);
-				close(data[-1].event_fd);
-				close(data[0].event_fd);
+				delete_client(arg.handler, data[-1].event_fd);
+				delete_client(arg.handler, data[0].event_fd);
 			}
 		} while (--nclient > 0);
 
@@ -235,45 +249,6 @@ void *client_producer(void *argument)
 	}
 
 	return NULL;
-}
-
-int process_request(int sock, size_t header_size,
-	struct epoll_handler *handler, struct queue *queue)
-{
-	char header[header_size];
-	ssize_t read_bytes;
-
-	read_bytes = recv(sock, header, header_size, MSG_PEEK);
-	switch (read_bytes) {
-	case -1: pr_err("failed to recv(): %s", strerror(errno));
-	case  0: pr_out("session closed: %d", sock);
-		if (delete_client(sock, handler) < 0) {
-			pr_err("%s", "failed to delete_client()");
-			return -1;
-		}
-		break;
-
-	default:
-		pr_out("read_bytes / header_size = %zd / %zu", read_bytes, header_size);
-		if (read_bytes == header_size) {
-			struct queue_data data;
-
-			data.type = QUEUE_DATA_PTR;
-			data.ptr = header;
-			if (epoll_handler_unregister(handler, sock) < 0) {
-				pr_err("%s", "failed to epoll_handler_unregister()");
-				close(sock);
-				return -2;
-			}
-
-			queue_enqueue(queue, data);
-
-			pr_out("enqueuing packet: %d", sock);
-		}
-		break;
-	}
-
-	return 0;
 }
 
 void *client_consumer(void *args)
@@ -312,6 +287,33 @@ void *device_producer(void *args)
 	return NULL;
 }
 
+int process_request(int sock, size_t header_size,
+	struct epoll_handler *handler, struct queue *queue)
+{
+	char header[header_size];
+	ssize_t read_bytes;
+
+	read_bytes = recv(sock, header, header_size, MSG_PEEK);
+	switch (read_bytes) {
+	case -1: pr_err("failed to recv(): %s", strerror(errno));
+	case  0: pr_out("session closed: %d", sock);
+			 break;
+	default:
+		pr_out("read_bytes / header_size = %zd / %zu", read_bytes, header_size);
+		if (read_bytes == header_size) {
+			struct queue_data data;
+
+			data.type = QUEUE_DATA_PTR;
+			data.ptr = header;
+
+			pr_out("enqueuing packet: %d", sock);
+		}
+		break;
+	}
+
+	return read_bytes;
+}
+
 struct event_data *event_data_create(int type, int fd, int timeout)
 {
 	struct event_data *data;
@@ -326,6 +328,7 @@ struct event_data *event_data_create(int type, int fd, int timeout)
 
 	data[0].type = type;
 	data[0].event_fd = fd;
+	data[0].header = data[0].body = NULL;
 	
 	if (timeout > 0) {
 		struct itimerspec rt_tspec = { .it_value.tv_sec = timeout };
@@ -398,7 +401,7 @@ int accept_client(int serv_sock, struct epoll_handler *handler, int timeout)
 	return nclient;
 }
 
-int delete_client(int clnt_sock, struct epoll_handler *handler)
+int delete_client(struct epoll_handler *handler, int clnt_sock)
 {
 	int ret = epoll_handler_unregister(handler, clnt_sock);
 	if (ret < 0) {
@@ -480,10 +483,10 @@ int makeup_thread_argument(struct thread_argument *arg, int type)
 
 	if (type == DEVICE) {
 		arg->packet_size = DEVICE_PACKET_SIZE;
-		arg->timeout = DEVICE_FOREIGNER_TIMEOUT;
+		arg->timeout = DEVICE_FOREIGNER_PACKET_TIMEOUT;
 	} else if (type == CLIENT) {
 		arg->packet_size = CLIENT_PACKET_SIZE;
-		arg->timeout = CLIENT_FOREIGNER_TIMEOUT;
+		arg->timeout = CLIENT_FOREIGNER_PACKET_TIMEOUT;
 	} else {
 		ret = -6;
 		goto INVALID_TYPE_NUMBER;
