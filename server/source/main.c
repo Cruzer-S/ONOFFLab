@@ -110,12 +110,10 @@ int main(int argc, char *argv[])
 			consumer = clnt_cons_args;
 			cnt      = CLIENT_CONSUMER_THREADS;
 			func     = client_consumer;
-			timeout  = CLIENT_FOREIGNER_TIMEOUT;
 		} else if (i == DEVICE) {
 			consumer = dev_cons_args;
 			cnt      = DEVICE_CONSUMER_THREADS;
 			func     = device_consumer;
-			timeout  = DEVICE_FOREIGNER_TIMEOUT;
 		} else pr_crt("invalid type: %d", i);
 		
 		for (int j = 0; j < cnt; j++) {
@@ -210,6 +208,13 @@ void *client_producer(void *argument)
 						clnt_sock, arg.packet_size,
 						arg.handler, arg.queue)))
 					pr_err("failed to process_request(): %d", ret);
+			} else if (data->type == ETYPE_TIMER) {
+				pr_out("timeout, close foreigner session: %d", data[-1].event_fd);
+
+				epoll_handler_unregister(arg.handler, data[-1].event_fd);
+				epoll_handler_unregister(arg.handler, data[0].event_fd);
+				close(data[-1].event_fd);
+				close(data[0].event_fd);
 			}
 		} while (--nclient > 0);
 
@@ -354,12 +359,24 @@ int accept_client(int serv_sock, struct epoll_handler *handler, int timeout)
 		if (!data) {
 			pr_err("failed to malloc(): %s", strerror(errno));
 			close(clnt_sock);
+			return -2;
 		}
 
-		for (int i = 0; i < 2; i++) {
-			ret = epoll_handler_register(handler, data[i].event_fd, &data[i], EPOLLIN | EPOLLET);
-			if (ret < 0)
-				pr_err("failed to epoll_handler_register(): %d", ret);
+		ret = epoll_handler_register(handler, data[0].event_fd, &data[0], EPOLLIN | EPOLLET);
+		if (ret < 0) {
+			close(clnt_sock);
+			free(data);
+			pr_err("failed to epoll_handler_register(): %d", ret);
+			return -3;
+		}
+
+		ret = epoll_handler_register(handler, data[1].event_fd, &data[1], EPOLLIN);
+		if (ret < 0) {
+			epoll_handler_unregister(handler, data[0].event_fd);
+			close(clnt_sock);
+			free(data);
+			pr_err("failed to epoll_handler_register(): %s", strerror(errno));
+			return -4;
 		}
 
 		nclient++;
@@ -450,8 +467,10 @@ int makeup_thread_argument(struct thread_argument *arg, int type)
 
 	if (type == DEVICE) {
 		arg->packet_size = DEVICE_PACKET_SIZE;
+		arg->timeout = DEVICE_FOREIGNER_TIMEOUT;
 	} else if (type == CLIENT) {
 		arg->packet_size = CLIENT_PACKET_SIZE;
+		arg->timeout = CLIENT_FOREIGNER_TIMEOUT;
 	} else {
 		ret = -6;
 		goto INVALID_TYPE_NUMBER;
