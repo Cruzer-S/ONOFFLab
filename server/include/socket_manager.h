@@ -28,13 +28,19 @@ enum make_listener_option {
 	MAKE_LISTENER_DGRAM = 0x08,
 };
 
+struct socket_data {
+	int fd;
+	uint16_t port;
+	int backlog;
+	struct addrinfo *ai;
+};
+
 struct epoll_handler;
 
 int socket_reuseaddr(int sock);
 int change_nonblocking(int fd);
-int make_listener(uint16_t port, int backlog,
-                  struct addrinfo **ai_ret_arg,
-                  enum make_listener_option option);
+int make_listener(struct socket_data *data,
+		          enum make_listener_option option);
 
 int epoll_handler_register(struct epoll_handler *handler, int tgfd, void *ptr, int events);
 int epoll_handler_unregister(struct epoll_handler *handler, int tgfd);

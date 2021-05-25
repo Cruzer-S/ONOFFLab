@@ -4,15 +4,16 @@
 
 #include "socket_manager.h"
 #include "logger.h"
-#include "client_handler.h"
 #include "queue.h"
 
 #include <errno.h>
 #include <stdlib.h>
 #include <string.h>
 
-struct thread_args *make_thread_argument(int tid, int fd,
-		                                 enum argument_type type, size_t wait_size)
+/*
+struct thread_args *make_thread_argument(
+	int tid, int fd, char *name,
+	enum argument_type type, size_t wait_size)
 {
 	int ret;
 
@@ -28,21 +29,19 @@ struct thread_args *make_thread_argument(int tid, int fd,
 		goto FAILED_TO_CREATE_EPOLL_HANDLER;
 	}
 
-	serv_arg->serv_data = malloc(sizeof(struct client_data));
-	if (serv_arg->serv_data == NULL) {
-		pr_err("failed to malloc(): %s", strerror(errno));
-		goto FAILED_TO_MALLOC_SERV_DATA;
-	} else serv_arg->serv_data->fd = fd;
+	ret = epoll_handler_register(
+		serv_arg->handler, fd,
+		NULL, EPOLLIN
+	);
 
-	if ((ret = epoll_handler_register(serv_arg->handler,
-					                  serv_arg->serv_data->fd, serv_arg->serv_data,
-									  EPOLLIN)) < 0)
-	{
+	if (ret < 0) {
 		pr_err("failed to epoll_handler_register(): %d", ret);
 		goto FAILED_TO_REGISTER_EPOLL_HANDLER;
 	}
 
-	if (type == TARGS_PRODUCER_THREAD) {
+	if (type == TARGS_DEVICE_PRODUCER
+	 || type == TARGS_CLIENT_PRODUCER)
+	{
 		if ((ret = pthread_cond_init(&serv_arg->cond, NULL)) != 0) {
 			pr_err("failed to pthread_cond_init(): %s", strerror(ret));
 			goto FAILED_TO_INIT_COND_VAR;
@@ -59,6 +58,7 @@ struct thread_args *make_thread_argument(int tid, int fd,
 	serv_arg->tid = type;
 	serv_arg->wait_size = wait_size;
 	serv_arg->type = type;
+	serv_arg->name = name;
 	
 	return serv_arg;
 
@@ -70,7 +70,7 @@ FAILED_TO_CREATE_QUEUE:
 	pthread_cond_destroy(&serv_arg->cond);
 
 FAILED_TO_INIT_COND_VAR:
-	/* empty statement */ ;
+	;
 
 FAILED_TO_REGISTER_EPOLL_HANDLER:
 	free(serv_arg->serv_data);
@@ -94,3 +94,4 @@ void destroy_thread_argument(struct thread_args *serv_arg)
 	free(serv_arg);
 }
 
+*/

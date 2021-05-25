@@ -8,15 +8,18 @@
 struct epoll_handler {
 	int fd;
 	int cnt;
-	struct epoll_event *events;
 	int max_events;
+
+	struct epoll_event *events;
 };
 
 int socket_reuseaddr(int sock)
 {
 	int sockopt = 1;
 
-	if (setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &sockopt, sizeof(sockopt)) == -1)
+	if (setsockopt(
+			sock, SOL_SOCKET, SO_REUSEADDR, 
+			&sockopt, sizeof(sockopt)) == -1)
 		return -1;
 
 	return 0;
@@ -36,15 +39,14 @@ int change_nonblocking(int fd)
 	return 0;
 }
 
-int make_listener(uint16_t port, int backlog,
-                  struct addrinfo **ai_ret_arg,
-                  enum make_listener_option option)
+int make_listener(struct socket_data *data,
+		          enum make_listener_option option)
 {
-	int sock, ret = 0;
-	struct addrinfo ai, *ai_ret;
+	int ret = 0;
 	char portstr[10];
+	struct addrinfo ai, *ai_ret;
 
-	sprintf(portstr, "%.9d", port);
+	sprintf(portstr, "%.9d", data->port);
 	
 	memset(&ai, 0x00, sizeof(struct addrinfo));
 	ai.ai_family = (option & MAKE_LISTENER_IPV6) ? AF_INET6 : AF_INET;
@@ -56,40 +58,42 @@ int make_listener(uint16_t port, int backlog,
 		return -1;
 	}
 
-	if ((sock = socket(ai_ret->ai_family, ai_ret->ai_socktype, ai_ret->ai_protocol)) == -1) {
+	if ((data->fd = socket(
+			ai_ret->ai_family, 
+			ai_ret->ai_socktype,
+			ai_ret->ai_protocol)) == -1) {
 		pr_err("failed to socket(): %s", strerror(errno));
 		ret = -2; goto CLEANUP_AI;
 	}
 
 	if (!(option & MAKE_LISTENER_DONTREUSE))
-		if ((ret = socket_reuseaddr(sock)) == -1) {
+		if ((ret = socket_reuseaddr(data->fd)) == -1) {
 			pr_err("failed to socket_reuseaddr(): %s (%d)", strerror(errno), ret);
 			ret = -3; goto CLEANUP_SOCKET;
 		}
 
 	if (!(option & MAKE_LISTENER_BLOCKING))
-		if ((ret = change_nonblocking(sock)) < 0) {
+		if ((ret = change_nonblocking(data->fd)) < 0) {
 			pr_err("failed to change_nonblocking(): %s (%d)", strerror(errno), ret);
 			ret = -4; goto CLEANUP_SOCKET;
 		}
 
-	if (bind(sock, ai_ret->ai_addr, ai_ret->ai_addrlen) == -1) {
+	if (bind(data->fd, ai_ret->ai_addr, ai_ret->ai_addrlen) == -1) {
 		pr_err("failed to bind(): %s", strerror(errno));
 		ret = -5; goto CLEANUP_SOCKET;
 	}
 
-	if (listen(sock, backlog) == -1) {
+	if (listen(data->fd, data->backlog) == -1) {
 		pr_err("failed to listen(): %s", strerror(errno));
 		ret = -6; goto CLEANUP_SOCKET;
 	}
 
-	if (ai_ret_arg != NULL)
-		*ai_ret_arg = ai_ret;
+	data->ai = ai_ret;
 
-	return sock;
+	return 0;
 
 CLEANUP_SOCKET:
-	close(sock);
+	close(data->fd);
 
 CLEANUP_AI:
 	freeaddrinfo(ai_ret);
@@ -192,11 +196,10 @@ int get_addr_from_ai(struct addrinfo *ai, char *hoststr, char *portstr)
 	int ret;
 	
 	if ((ret = getnameinfo(
-					ai->ai_addr, ai->ai_addrlen,			// address
-						hoststr, sizeof(hoststr),				// host name
-						portstr, sizeof(portstr),				// service name (port number)
-						NI_NUMERICHOST | NI_NUMERICSERV)) != 0)	// flags
-	{
+			ai->ai_addr, ai->ai_addrlen,			  // address
+			hoststr, sizeof(hoststr),				  // host name
+			portstr, sizeof(portstr),				  // service name (port number)
+			NI_NUMERICHOST | NI_NUMERICSERV)) != 0)	{ // flags
 		pr_err("failed to getnameinfo(): %s", gai_strerror(ret));
 		return -1;
 	}
