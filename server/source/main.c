@@ -11,6 +11,8 @@
 #include "socket_manager.h"
 #include "queue.h"
 #include "utility.h"
+
+#define REDIRECTION logger
 #include "logger.h"
 
 #define DEFAULT_CLIENT_PORT	1584
@@ -106,12 +108,22 @@ void event_data_destroy(struct event_data *data, bool timer_exist);
 
 int makeup_thread_argument(struct thread_argument *arg, int type);
 
+FILE *logger;
+
 int main(int argc, char *argv[])
 {
 	struct thread_argument producer[2];
 	struct thread_argument clnt_cons_args[CLIENT_CONSUMER_THREADS];
 	struct thread_argument dev_cons_args[DEVICE_CONSUMER_THREADS];
 	int ret;
+
+	logger = fopen("log.txt", "w+");
+	if (logger == NULL) {
+		fprintf(stderr, "failed to fopen(): %s", strerror(errno));
+		exit(EXIT_FAILURE);
+	}
+
+	setvbuf(logger, NULL, _IONBF, 1);
 
 	pr_out("sizeof(struct client_packet): %zu", sizeof(struct client_packet));
 
@@ -197,6 +209,8 @@ int main(int argc, char *argv[])
 			if ((ret = pthread_join(consumer[j].real_tid, NULL)) != 0)
 				pr_crt("failed to pthread_join(): %s", strerror(ret));
 	}
+
+	fclose(logger);
 	
 	return 0;
 }
