@@ -1,9 +1,15 @@
+#include <netinet/in.h>
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include <inttypes.h>
+
+#include <unistd.h>
+
+#include <sys/socket.h>
+#include <arpa/inet.h>
 
 struct __attribute__((packed)) client_packet {
 	uint32_t id;
@@ -27,55 +33,117 @@ int main(int argc, char *argv[])
 	uint32_t u32;
 	uint8_t u8;
 	uint64_t u64;
+	int what;
 
 	if (argc != 2) {
 		fprintf(stderr, "usage: %s <filename>\n", argv[0]);
 		exit(EXIT_FAILURE);
 	}
 
-	printf("id: ");
-	scanf("%" PRIu32, &u32);
-	packet.id = u32;
+	printf("what? ");
+	printf("0. make packet, 1. read packet, 2. send packet\n");
+	scanf("%d", &what);
 
-	uint8_t u8_32[32];
-	printf("passwd: ");
-	scanf("%s", (char *) u8_32);
-	memcpy(packet.passwd, u8_32, 32);
+	switch (what) {
+	case 0: // make packet
+		printf("id: ");
+		scanf("%" PRIu32, &u32);
+		packet.id = u32;
 
-	printf("request: ");
-	scanf("%" PRIu8, &u8);
-	packet.request = u8;
+		uint8_t u8_32[32];
+		printf("passwd: ");
+		scanf("%s", (char *) u8_32);
+		memcpy(packet.passwd, u8_32, 32);
 
-	printf("quality: ");
-	scanf("%" PRIu8, &u8);
-	packet.quality = u8;
+		printf("request: ");
+		scanf("%" PRIu8, &u8);
+		packet.request = u8;
 
-	printf("filesize: ");
-	scanf("%" PRIu64, &u64);
-	packet.filesize = u64;
+		printf("quality: ");
+		scanf("%" PRIu8, &u8);
+		packet.quality = u8;
 
-	printf("checksum: ");
-	scanf("%" PRIu32, &u32);
-	packet.checksum = u32;
+		printf("filesize: ");
+		scanf("%" PRIu64, &u64);
+		packet.filesize = u64;
 
-	fp = fopen(argv[1], "wb");
-	if (fp == NULL)
-		fprintf(stderr, "failed to open file: %s\n", strerror(errno));
+		printf("checksum: ");
+		scanf("%" PRIu32, &u32);
+		packet.checksum = u32;
 
-	if (fwrite(&packet, sizeof(struct client_packet), 1, fp) != 1) {
-		fprintf(stderr, "failed to write file from data\n");
-		exit(EXIT_FAILURE);
-	}
-
-	do {
-		uint8_t body[packet.filesize];
-		if (fwrite(&body, sizeof(body), 1, fp) != 1) {
-			fprintf(stderr, "failed to write file from data\n");
+		fp = fopen(argv[1], "wb");
+		if (fp == NULL) {
+			fprintf(stderr, "failed to open file: %s\n", strerror(errno));
 			exit(EXIT_FAILURE);
 		}
-	} while (false);
 
-	fclose(fp);
+		if (fwrite(&packet, sizeof(struct client_packet), 1, fp) != 1) {
+			fprintf(stderr, "failed to write data to file\n");
+			exit(EXIT_FAILURE);
+		}
+
+		/*
+		do {
+			uint8_t body[packet.filesize];
+			if (fwrite(&body, sizeof(body), 1, fp) != 1) {
+				fprintf(stderr, "failed to write file from data\n");
+				exit(EXIT_FAILURE);
+			}
+		} while (false);
+		*/
+
+		fclose(fp);
+		break;
+
+	case 1: // read packet 
+		fp = fopen(argv[1], "rb");
+		if (fp == NULL)
+			fprintf(stderr, "failed to open file: %s\n", strerror(errno));
+
+		if (fread(&packet, sizeof(struct client_packet), 1, fp) != 1) {
+			fprintf(stderr, "failed to read data from file\n");
+			exit(EXIT_FAILURE);
+		}
+		
+		printf("id: %d\n", packet.id);
+		printf("passwd: %s\n", packet.passwd);
+		printf("request: %d\n", packet.request);
+		printf("quality: %d\n", packet.quality);
+		printf("filesize: %zu\n", packet.filesize);
+		printf("checksum: %d\n", packet.checksum);
+
+		fclose(fp);
+		break;
+
+	case 2: // send packet
+		fp = fopen(argv[1], "rb");
+		if (fp == NULL)
+			fprintf(stderr, "failed to open file: %s\n", strerror(errno));
+
+		if (fread(&packet, sizeof(struct client_packet), 1, fp) != 1) {
+			fprintf(stderr, "failed to read data from file\n");
+			exit(EXIT_FAILURE);
+		}
+
+		int sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+		if (sock == -1)
+			fprintf(stderr, "failed to socket(): %s", strerror(errno));
+
+		struct sockaddr_in sock_adr;
+		sock_adr.sin_family = AF_INET;
+		sock_adr.sin_port = htons(1584);
+		sock_adr.sin_addr.s_addr = inet_addr("127.0.0.1");
+		if (connect(sock, (struct sockaddr *) &sock_adr, sizeof(sock_adr)) == -1)
+			fprintf(stderr, "failed to connect(): %s", strerror(errno));
+
+		if (write(sock, &packet, sizeof(packet)) == -1)
+			fprintf(stderr, "failed to write(): %s", strerror(errno));
+
+		close(sock);
+		fclose(fp);
+
+		break;
+	}
 
 	return 0;
 }

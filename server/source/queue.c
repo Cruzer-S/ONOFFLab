@@ -16,9 +16,11 @@ struct queue {
 
 	size_t size;
 	size_t usage;
+
+	bool is_sync;
 };
 
-struct queue *queue_create(size_t size, pthread_cond_t *use_cond)
+struct queue *queue_create(size_t size, bool is_sync)
 {
 	struct queue *queue;
 
@@ -34,13 +36,15 @@ struct queue *queue_create(size_t size, pthread_cond_t *use_cond)
 	queue->size = size;
 	queue->usage = 0;
 
+	queue->is_sync = is_sync;
+
 	if (pthread_mutex_init(&queue->mutex, NULL) != 0) {
 		free(queue);
 		return NULL;
 	}
 
-	if (use_cond != NULL) {
-		if (pthread_cond_init(use_cond, NULL) != 0) {
+	if (queue->is_sync) {
+		if (pthread_cond_init(&queue->cond, NULL) != 0) {
 			if (pthread_mutex_destroy(&queue->mutex) != 0)
 				/* do nothing */ ;
 			
@@ -64,18 +68,23 @@ int queue_enqueue(struct queue *queue, struct queue_data data)
 	new_node->data = data;
 	new_node->next = queue->tail;
 
-	pthread_mutex_lock(&queue->mutex);
-	// -------------------------------------
-	// Critical Section Start
-	// -------------------------------------
-	queue->tail = new_node;
-	queue->usage++;
-	// -------------------------------------
-	// Critical Section End
-	// -------------------------------------
-	pthread_mutex_unlock(&queue->mutex);
+	if (queue->is_sync) {
+		pthread_mutex_lock(&queue->mutex);
+		// -------------------------------------
+		// Critical Section Start
+		// -------------------------------------
+		queue->tail = new_node;
+		queue->usage++;
+		// -------------------------------------
+		// Critical Section End
+		// -------------------------------------
+		pthread_mutex_unlock(&queue->mutex);
 
-	pthread_cond_broadcast(&queue->cond);
+		pthread_cond_broadcast(&queue->cond);
+	} else {
+		queue->tail = new_node;
+		queue->usage++;
+	}
 
 	return 0;
 }
@@ -85,29 +94,40 @@ struct queue_data queue_dequeue(struct queue *queue)
 	struct queue_data ret = { .type = QUEUE_DATA_UNDEF };
 	struct node *prev;
 
-	pthread_mutex_lock(&queue->mutex);
-	// -------------------------------------
-	// Critical Section Start
-	// -------------------------------------
-	if (pthread_cond_wait(&queue->cond, &queue->mutex) != 0) {
+	if (queue->is_sync) {
+		pthread_mutex_lock(&queue->mutex);
+		// -------------------------------------
+		// Critical Section Start
+		// -------------------------------------
+		if (pthread_cond_wait(&queue->cond, &queue->mutex) != 0) {
+			pthread_mutex_unlock(&queue->mutex);
+			return (struct queue_data) { .type = QUEUE_DATA_ERROR };
+		}
+
+		if (queue->usage == 0) {
+			pthread_mutex_unlock(&queue->mutex);
+			return (struct queue_data) { .type = QUEUE_DATA_UNDEF };
+		}
+
+		ret = queue->tail->data;
+		prev = queue->tail;
+		queue->tail = queue->tail->next;
+
+		queue->usage--;
+		// -------------------------------------
+		// Critical Section End
+		// -------------------------------------
 		pthread_mutex_unlock(&queue->mutex);
-		return (struct queue_data) { .type = QUEUE_DATA_ERROR };
+	} else {
+		if (queue->usage == 0)
+			return (struct queue_data) { .type = QUEUE_DATA_UNDEF };
+
+		ret = queue->tail->data;
+		prev = queue->tail;
+		queue->tail = queue->tail->next;
+
+		queue->usage--;
 	}
-
-	if (queue->usage == 0) {
-		pthread_mutex_unlock(&queue->mutex);
-		return (struct queue_data) { .type = QUEUE_DATA_UNDEF };
-	}
-
-	ret = queue->tail->data;
-	prev = queue->tail;
-	queue->tail = queue->tail->next;
-
-	queue->usage--;
-	// -------------------------------------
-	// Critical Section End
-	// -------------------------------------
-	pthread_mutex_unlock(&queue->mutex);
 
 	free(prev);
 

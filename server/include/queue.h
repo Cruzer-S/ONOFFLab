@@ -54,7 +54,7 @@ struct queue_data {
 
 struct queue;
 
-struct queue *queue_create(size_t size, pthread_cond_t *use_cond);
+struct queue *queue_create(size_t size, bool is_sync);
 int queue_enqueue(struct queue *queue, struct queue_data data);
 struct queue_data queue_dequeue(struct queue *queue);
 struct queue_data queue_peek(struct queue *queue);
