@@ -126,7 +126,7 @@ int main(int argc, char *argv[])
 
 		// queue, epoll_handler_create, event_data_create, epoll_handler_register
 		if ((ret = makeup_thread_argument(&producer[i], i)) < 0)
-			pr_crt("failed to makeup_thread_argument(): %d", ret);			
+			pr_crt("failed to makeup_thread_argument(): %d", ret);
 		
 		ret = pthread_create(
 			&producer[i].real_tid,
@@ -276,7 +276,7 @@ void *client_consumer(void *args)
 		}
 
 		struct event_data *edata = qdata.ptr;
-		struct client_packet *packet = (struct client_packet *) &edata->header;
+		struct client_packet *packet = (struct client_packet *) edata->header;
 
 		pr_out("[%d] dequeuing packet: %d", arg.tid, edata->event_fd);
 
@@ -351,8 +351,15 @@ int process_event_data(struct event_data *data, struct queue *queue)
 			qdata.type = QUEUE_DATA_PTR;
 			qdata.ptr = data;
 
+			if (queue_enqueue(queue, qdata) < 0) {
+				pr_err("failed to queue_enqueue(): %s", strerror(errno));
+				return -1;
+			}
+
+			/*
 			size_t filesize = 
 				(((struct client_packet *) data)->filesize);
+
 
 			if ( filesize == 0 ) {
 				queue_enqueue(queue, qdata);
@@ -362,6 +369,7 @@ int process_event_data(struct event_data *data, struct queue *queue)
 				if (data->body == NULL)
 					pr_err("failed to malloc(): %s", strerror(errno));
 			}
+			*/
 		}
 		break;
 	}
