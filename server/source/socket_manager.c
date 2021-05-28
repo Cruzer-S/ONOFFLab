@@ -4,6 +4,7 @@
 
 #include "logger.h"
 #include <sys/epoll.h>
+#include <inttypes.h>
 
 struct epoll_handler {
 	int fd;
@@ -39,7 +40,7 @@ int change_nonblocking(int fd)
 	return 0;
 }
 
-struct socket_data *socket_data_create(enum make_listener_option option)
+struct socket_data *socket_data_create(uint16_t port, int backlog, enum make_listener_option option)
 {
 	struct socket_data *data;
 	char portstr[10];
@@ -51,6 +52,8 @@ struct socket_data *socket_data_create(enum make_listener_option option)
 		pr_err("failed to malloc(): %s", strerror(errno));
 		goto FAILED_TO_MALLOC;
 	}
+
+	sprintf(portstr, "%" PRIu16, port);
 	
 	memset(&ai, 0x00, sizeof(struct addrinfo));
 	ai.ai_family = (option & MAKE_LISTENER_IPV6) ? AF_INET6 : AF_INET;
@@ -89,7 +92,8 @@ struct socket_data *socket_data_create(enum make_listener_option option)
 		goto FAILED_TO_BIND;
 	}
 
-	if (listen(data->fd, data->backlog) == -1) {
+	data->backlog = backlog;
+	if (listen(data->fd, backlog) == -1) {
 		pr_err("failed to listen(): %s", strerror(errno));
 		goto FAILED_TO_LISTEN;
 	}

@@ -67,18 +67,24 @@ struct event_data {
 			size_t recv_header;
 			size_t recv_body;
 
-			struct event_data_timer *timer;
+			struct event_data *timer;
 		} foreigner;
 
 		struct event_data_timer {
 			int fd;
-			struct event_data_foreigner *target;
+			struct event_data *target;
 		} timer;
 	};
 };
 
+struct parameter_data {
+	uint16_t port;
+	int backlog;
+};
+
 struct producer_argument {
 	struct socket_data *sock_data;
+	struct parameter_data param;
 
 	struct epoll_handler *handler;
 	struct queue *queue;
@@ -112,10 +118,17 @@ struct __attribute__((packed)) client_packet {
 	uint8_t dummy[1024 - 50];
 };
 
-int accept_foreigner(struct event_data_listener *listener, struct epoll_handler *handler,
-		             int timeout, size_t header_size);
-int handle_foreigner(struct event_data_foreigner *data, struct queue *queue);
-int sever_foreigner(struct event_data_foreigner *data, struct epoll_handler *handler);
+int accept_foreigner(
+		int fd,
+		struct epoll_handler *handler,
+		size_t header_size,
+		size_t timeout);
+int handle_foreigner(
+		struct event_data *data,
+		struct queue *queue);
+int sever_foreigner(
+		struct event_data *foreigner,
+		struct epoll_handler *handler);
 
 void *device_producer(void *args);
 void *client_producer(void *args);
@@ -125,8 +138,8 @@ void *client_consumer(void *args);
 
 int process_event(struct epoll_event *data, struct producer_argument *argument);
 
-int initialize_server_data(struct socket_data *serv_data,
-		                   int argc, char **argv, int type);
+
+int initialize_server_data(struct parameter_data *data, int argc, char **argv, int type);
 
 struct event_data *event_data_create(int type, ...);
 void event_data_destroy(struct event_data *data);
@@ -147,6 +160,29 @@ void use_logger(void) {
 }
 #endif
 
+int create_timer(void)
+{
+	int fd = timerfd_create(CLOCK_REALTIME, TFD_NONBLOCK | TFD_CLOEXEC);
+	if (fd == -1) {
+		return -1;
+	}
+
+	return fd;
+}
+
+int set_timer(int fd, int timeout)
+{
+	struct itimerspec rt_tspec = {
+		.it_value.tv_sec = timeout
+	};
+
+	if (timerfd_settime(fd, 0, &rt_tspec, NULL) == -1) {
+		return -1;
+	}
+
+	return 0;
+}
+
 int main(int argc, char *argv[])
 {
 	struct producer_argument prod_args[2];
@@ -154,16 +190,15 @@ int main(int argc, char *argv[])
 	struct consumer_argument dev_cons_args[DEVICE_CONSUMER_THREADS];
 	int ret;
 
-#if defined(REDIRECTION)
-	use_logger();
-#endif
-
 	for (int i = 0; i < 2; i++, argc -= 2, argv += 2)
-		if ((ret = initialize_server_data(prod_args[i].sock_data, argc, argv, i)) < 0)
+		if ((ret = initialize_server_data(&prod_args[i].param, argc, argv, i)) < 0)
 			pr_crt("failed to initialize_server_data(): %d", ret);
 
 	for (int i = 0; i < 2; i++) {
-		if ( !(prod_args[i].sock_data = socket_data_create(MAKE_LISTENER_DEFAULT)) )
+		if ( !(prod_args[i].sock_data = socket_data_create(
+						prod_args[i].param.port,
+						prod_args[i].param.backlog,
+						MAKE_LISTENER_DEFAULT)) )
 			pr_crt("make_listener() error: %d", prod_args[i].sock_data->fd);
 
 		if ((ret = makeup_server(&prod_args[i], i)) < 0)
@@ -319,16 +354,6 @@ ERROR_DEQUEUE:
 	return NULL;
 }
 
-void *device_producer(void *args)
-{
-	return NULL;
-}
-
-void *device_consumer(void *args)
-{
-	return NULL;
-}
-
 int process_event(struct epoll_event *event, struct producer_argument *argument)
 {
 	struct event_data *data = event->data.ptr;
@@ -336,22 +361,21 @@ int process_event(struct epoll_event *event, struct producer_argument *argument)
 
 	switch (data->type) {
 	case ETYPE_LISTENER:
-		ret = accept_foreigner(
-			&data->listener,
-			argument->handler,
-			argument->timeout,
-			argument->header_size);
-		if (ret < 0) {
-			pr_err("failed to accept_client(): %d", ret);
+		if ((ret = accept_foreigner(
+				data->listener.fd,
+				argument->handler,
+				argument->header_size,
+				argument->timeout)) < 0) {
+			pr_err("failed to accept_foreigner(): %d", ret);
 			return -1;
 		}
-		
-		pr_out("accept new %d client(s)", ret);
+
+		pr_out("accept %d foreigner(s)", ret);
 		break;
 
 	case ETYPE_FOREIGNER:
 		pr_out("receive data from client: %d", data->foreigner.fd);
-		if ((ret = handle_foreigner(&data->foreigner, argument->queue)) <= 0) {
+		if ((ret = handle_foreigner(data, argument->queue)) <= 0) {
 			if (ret != 0)
 				pr_err("failed to process_request(): %d", ret);
 		}
@@ -359,7 +383,7 @@ int process_event(struct epoll_event *event, struct producer_argument *argument)
 
 	case ETYPE_TIMER:
 		pr_out("timeout, close foreigner session: %d", data->timer.fd);
-		sever_foreigner(&data->foreigner, argument->handler);
+		sever_foreigner(data->timer.target, argument->handler);
 		break;
 	}
 
@@ -373,17 +397,18 @@ struct event_data *event_data_create(int type, ...)
 
 	va_start(ap, type);
 
-	if (!(data = malloc(sizeof(struct event_data))) )
+	if (!(data = malloc(sizeof(struct event_data))) ) {
+		pr_err("failed to malloc(): %s", strerror(errno));
 		return NULL;
+	}
 
 	data->type = type;
 	switch (data->type) {
 	DECLARATION:;
-		struct itimerspec rt_tspec;
-		struct event_data *target;
 		size_t header_size;
 		size_t timeout;
 		int fd;
+		int ret;
 
 	case ETYPE_LISTENER:
 		fd = va_arg(ap, int);
@@ -393,45 +418,36 @@ struct event_data *event_data_create(int type, ...)
 	case ETYPE_FOREIGNER:
 		fd = va_arg(ap, int);
 		header_size = va_arg(ap, size_t);
-		timeout = va_arg(ap, size_t);
 		
 		data->foreigner.fd = fd;
 		data->foreigner.header_size = header_size;
-		data->foreigner.body_size = 0;
 
 		data->foreigner.body = NULL;
 		data->foreigner.header = NULL;
-
-		if (timeout > 0) {
-			data->foreigner.timer = event_data_create(ETYPE_TIMER, timeout, data);
-			if (data->foreigner.timer == NULL) {
-				pr_err("failed to event_data_create(): %s", "timer");
-				free(data->foreigner.header);
-				free(data);
-				return NULL;
-			}
-		} else data->foreigner.timer = NULL;
 		break;
 
 	case ETYPE_TIMER:
 		timeout = va_arg(ap, size_t);
-		target = va_arg(ap, struct event_data *);
 
-		rt_tspec.it_value.tv_sec = timeout;
-		fd = timerfd_create(CLOCK_REALTIME, TFD_NONBLOCK | TFD_CLOEXEC);
-		if (fd == -1) {
+		fd = create_timer();
+		if (fd < 0) {
+			pr_err("failed to create_timer(): %d", fd);
 			free(data);
 			return NULL;
 		}
 
-		if (timerfd_settime(fd, 0, &rt_tspec, NULL) == -1) {
-			close(fd);
-			free(data);
-			return NULL;
+		if (timeout > 0) {
+			ret = set_timer(fd, timeout);
+			if (ret < 0) {
+				pr_err("failed to set_timer(%d): %d", fd, ret);
+				close(fd);
+				free(data);
+
+				return NULL;
+			}
 		}
 
 		data->timer.fd = fd;
-		data->timer.target = target;
 		break;
 	}
 	
@@ -448,21 +464,10 @@ void event_data_destroy(struct event_data *data)
 	case ETYPE_FOREIGNER:
 		free(data->foreigner.header);
 		free(data->foreigner.body);
-
-		if (data->foreigner.timer) {
-			data->foreigner.timer->timer.target = NULL;
-			event_data_destroy(data->foreigner.timer);
-		}
-
 		break;
 
 	case ETYPE_TIMER:
 		close(data->timer.fd);
-
-		if (data->timer.target) {
-			data->timer.target->foreigner.timer = NULL;
-			event_data_destroy(data->timer.target);
-		}
 		break;
 	}
 
@@ -470,64 +475,76 @@ void event_data_destroy(struct event_data *data)
 }
 
 int accept_foreigner(
-		int serv_sock,
+		int fd,
 		struct epoll_handler *handler,
-		int timeout,
-		size_t header_size)
+		size_t header_size,
+		size_t timeout)
 {
-	int nclient = 0;
-	int ret;
-	struct event_data *data;
-	
 	while (true) {
-		int clnt_sock = accept(serv_sock, NULL, NULL);
-		if (clnt_sock == -1) {
+		int frgn_fd = accept(fd, NULL, NULL);
+		if (frgn_fd == -1) {
 			if (errno == EAGAIN)
-				break;
+				return 0;
 
 			pr_err("failed to accept(): %s", strerror(errno));
-			goto FAILED_TO_ACCEPT;
-		} else change_nonblocking(clnt_sock);
-
-		data = event_data_create(ETYPE_FOREIGNER, clnt_sock, header_size, timeout);
-		if (!data) {
-			pr_err("failed to malloc(): %s", strerror(errno));
-			goto FAILED_TO_EVENT_DATA_CREATE;
+			goto ACCEPT_ERROR;
 		}
 
-		ret = epoll_handler_register(
-			handler,
-			data->foreigner.fd,
-			data, 
-			EPOLLIN | EPOLLET);
+		struct event_data *frgn_data;
+		frgn_data = event_data_create(ETYPE_FOREIGNER, frgn_fd, header_size);
+		if (frgn_data == NULL) {
+			pr_err("failed to event_data_create(%s)",
+				   "ETYPE_FOREIGNER");
+			goto EDATA_CREATE_FOREIGNER;
+		}
+
+		int ret = epoll_handler_register(
+				handler,
+				frgn_fd,
+				frgn_data,
+				EPOLLIN | EPOLLET);
 		if (ret < 0) {
-			pr_err("failed to epoll_handler_register(%s): %d", "clnt_data", ret);
-			goto FAILED_TO_EPOLL_HANDLER_REGISTER_WITH_CLNT;
+			pr_err("failed to epoll_handler_register(): %d", ret);
+			goto EDATA_REGISTER_FOREGINER;
 		}
 
-		ret = epoll_handler_register(
-			handler,
-			data->foreigner.timer->timer.fd,
-			data->foreigner.timer,
-			EPOLLIN | EPOLLET);
-		if (ret < 0) {
-			pr_err("failed to epoll_handler_register(%s): %d", "timer_data", ret);
-			goto FAILED_TO_EPOLL_HANDLER_REGISTER_WITH_TIMER;
-		}
+		struct event_data *timer;
+		if (timeout > 0) {
 
-		nclient++; continue;
-FAILED_TO_EPOLL_HANDLER_REGISTER_WITH_TIMER:
-		epoll_handler_unregister(
-			handler,
-			data->foreigner.fd);
-FAILED_TO_EPOLL_HANDLER_REGISTER_WITH_CLNT:
-		event_data_destroy(data);
-FAILED_TO_EVENT_DATA_CREATE:
-		close(clnt_sock);
-FAILED_TO_ACCEPT: continue;
+			timer = event_data_create(ETYPE_TIMER, timeout);
+			if (timer == NULL) {
+				pr_err("failed to event_data_create(%s)",
+					   "ETYPE_TIMER");
+				goto EDATA_CREATE_TIMER;
+			}
+
+			ret = epoll_handler_register(
+					handler,
+					timer->timer.fd,
+					timer,
+					EPOLLIN | EPOLLET);
+			if (ret < 0) {
+				pr_err("failed to epoll_handler_register(): %d", ret);
+				goto EDATA_REGISTER_TIMER;
+			}
+
+			timer->timer.target = frgn_data;
+			frgn_data->foreigner.timer = timer;
+		} else frgn_data->foreigner.timer = NULL;
+
+		continue;
+EDATA_REGISTER_TIMER:
+		epoll_handler_unregister(handler, frgn_fd);
+EDATA_CREATE_TIMER:
+		event_data_destroy(frgn_data);
+EDATA_REGISTER_FOREGINER:
+		event_data_destroy(timer);
+EDATA_CREATE_FOREIGNER:
+		close(frgn_fd);
+ACCEPT_ERROR:
+		continue;
 	}
-
-	return nclient;
+	return 0;
 }
 
 int handle_foreigner(struct event_data *data, struct queue *queue)
@@ -539,7 +556,6 @@ int handle_foreigner(struct event_data *data, struct queue *queue)
 
 	struct event_data_foreigner *frgn;
 	struct event_data_timer *timer;
-
 
 	frgn = &data->foreigner;
 	if (frgn->timer)
@@ -637,27 +653,28 @@ int handle_foreigner(struct event_data *data, struct queue *queue)
 }
 
 int sever_foreigner(
-		struct epoll_handler *handler,
-		struct event_data_foreigner *data)
+		struct event_data *foreigner,
+		struct epoll_handler *handler)
 {
-	int clnt_sock = data->fd;
+	struct event_data *timer;
 
-	if (data->timer) {
+	timer = foreigner->foreigner.timer;
+	if (timer) {
 		epoll_handler_unregister(
-			handler,
-			data->timer->timer.fd);
+				handler, 
+				timer->timer.fd);
+		event_data_destroy(timer);
 	}
 
 	epoll_handler_unregister(
 		handler,
-		data->.fd);
-	event_data_destroy(data);
-	close(clnt_sock);
+		foreigner->foreigner.fd);
+	event_data_destroy(foreigner);
 
 	return 0;
 }
 
-int initialize_server_data(struct socket_data *data, int argc, char **argv, int type)
+int initialize_server_data(struct parameter_data *data, int argc, char **argv, int type)
 {
 	int ret;
 
@@ -684,7 +701,7 @@ int initialize_server_data(struct socket_data *data, int argc, char **argv, int 
 	return 0;
 }
 
-int makeup_server(struct thread_argument *arg, int type)
+int makeup_server(struct producer_argument *arg, int type)
 {
 	int ret;
 
@@ -704,7 +721,7 @@ int makeup_server(struct thread_argument *arg, int type)
 
 	arg->event = event_data_create(
 		ETYPE_LISTENER,		// type
-		arg->sock_data.fd,	// event file descriptor
+		arg->sock_data->fd,	// event file descriptor
 		-1,					// timeout
 		0
 	);
@@ -716,7 +733,7 @@ int makeup_server(struct thread_argument *arg, int type)
 
 	if ((ret = epoll_handler_register(
 			arg->handler,
-			arg->sock_data.fd,
+			arg->sock_data->fd,
 			arg->event,
 			EPOLLIN | EPOLLET)) < 0) {
 		pr_err("failed to epoll_handler_register(): %d", ret);
@@ -725,10 +742,10 @@ int makeup_server(struct thread_argument *arg, int type)
 	}
 
 	if (type == DEVICE) {
-		arg->packet_size = DEVICE_PACKET_SIZE;
+		arg->header_size = DEVICE_PACKET_SIZE;
 		arg->timeout = DEVICE_FOREIGNER_PACKET_TIMEOUT;
 	} else if (type == CLIENT) {
-		arg->packet_size = CLIENT_PACKET_SIZE;
+		arg->header_size = CLIENT_PACKET_SIZE;
 		arg->timeout = CLIENT_FOREIGNER_PACKET_TIMEOUT;
 	} else {
 		ret = -6;
@@ -738,10 +755,10 @@ int makeup_server(struct thread_argument *arg, int type)
 	return 0;
 
 INVALID_TYPE_NUMBER:
-	epoll_handler_unregister(arg->handler, arg->sock_data.fd);
+	epoll_handler_unregister(arg->handler, arg->sock_data->fd);
 
 FAILED_TO_EPOLL_HANDLER_REGISTER:
-	event_data_destroy(data);
+	event_data_destroy(arg->event);
 
 FAILED_TO_EVENT_DATA_CREATE:
 	epoll_handler_destroy(arg->handler);
@@ -753,3 +770,12 @@ FAILED_TO_QUEUE_CREATE:
 	return ret;
 }
 
+void *device_producer(void *args)
+{
+	return NULL;
+}
+
+void *device_consumer(void *args)
+{
+	return NULL;
+}

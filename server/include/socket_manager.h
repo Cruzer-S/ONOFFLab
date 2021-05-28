@@ -40,7 +40,8 @@ struct socket_data {
 int socket_reuseaddr(int sock);
 int change_nonblocking(int fd);
 
-struct socket_data *socket_data_create(enum make_listener_option option);
+
+struct socket_data *socket_data_create(uint16_t port, int backlog, enum make_listener_option option);
 void socket_data_destroy(struct socket_data *data);
 
 int epoll_handler_register(struct epoll_handler *handler, int tgfd, void *ptr, int events);
