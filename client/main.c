@@ -82,7 +82,6 @@ int main(int argc, char *argv[])
 			exit(EXIT_FAILURE);
 		}
 
-		/*
 		do {
 			uint8_t body[packet.filesize];
 			if (fwrite(&body, sizeof(body), 1, fp) != 1) {
@@ -90,7 +89,6 @@ int main(int argc, char *argv[])
 				exit(EXIT_FAILURE);
 			}
 		} while (false);
-		*/
 
 		fclose(fp);
 		break;
@@ -120,11 +118,6 @@ int main(int argc, char *argv[])
 		if (fp == NULL)
 			fprintf(stderr, "failed to open file: %s\n", strerror(errno));
 
-		if (fread(&packet, sizeof(struct client_packet), 1, fp) != 1) {
-			fprintf(stderr, "failed to read data from file\n");
-			exit(EXIT_FAILURE);
-		}
-
 		int sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 		if (sock == -1)
 			fprintf(stderr, "failed to socket(): %s", strerror(errno));
@@ -136,9 +129,13 @@ int main(int argc, char *argv[])
 		if (connect(sock, (struct sockaddr *) &sock_adr, sizeof(sock_adr)) == -1)
 			fprintf(stderr, "failed to connect(): %s", strerror(errno));
 
-		if (write(sock, &packet, sizeof(packet)) == -1)
-			fprintf(stderr, "failed to write(): %s", strerror(errno));
-
+		uint8_t buffer[BUFSIZ];
+		size_t read;
+		while ((read = fread(&buffer, 1, BUFSIZ, fp)) >  0) {
+			write(sock, &buffer, read);
+			sleep(1);
+		}
+		
 		close(sock);
 		fclose(fp);
 

@@ -67,12 +67,12 @@ struct event_data {
 			size_t recv_header;
 			size_t recv_body;
 
-			struct event_data_timer *timer;
+			struct event_data *timer;
 		} foreigner;
 
 		struct event_data_timer {
 			int fd;
-			struct event_data_foreigner *target;
+			struct event_data *target;
 		} timer;
 	};
 };
@@ -112,10 +112,10 @@ struct __attribute__((packed)) client_packet {
 	uint8_t dummy[1024 - 50];
 };
 
-int accept_foreigner(struct event_data_listener *listener, struct epoll_handler *handler,
+int accept_foreigner(int serv_sock, struct epoll_handler *handler,
 		             int timeout, size_t header_size);
-int handle_foreigner(struct event_data_foreigner *data, struct queue *queue);
-int sever_foreigner(struct event_data_foreigner *data, struct epoll_handler *handler);
+int handle_foreigner(struct event_data *data, struct queue *queue);
+int sever_foreigner(struct epoll_handler *handler, struct event_data *data);
 
 void *device_producer(void *args);
 void *client_producer(void *args);
@@ -337,7 +337,7 @@ int process_event(struct epoll_event *event, struct producer_argument *argument)
 	switch (data->type) {
 	case ETYPE_LISTENER:
 		ret = accept_foreigner(
-			&data->listener,
+			data->listener.fd,
 			argument->handler,
 			argument->timeout,
 			argument->header_size);
@@ -351,7 +351,7 @@ int process_event(struct epoll_event *event, struct producer_argument *argument)
 
 	case ETYPE_FOREIGNER:
 		pr_out("receive data from client: %d", data->foreigner.fd);
-		if ((ret = handle_foreigner(&data->foreigner, argument->queue)) <= 0) {
+		if ((ret = handle_foreigner(data, argument->queue)) <= 0) {
 			if (ret != 0)
 				pr_err("failed to process_request(): %d", ret);
 		}
@@ -359,7 +359,7 @@ int process_event(struct epoll_event *event, struct producer_argument *argument)
 
 	case ETYPE_TIMER:
 		pr_out("timeout, close foreigner session: %d", data->timer.fd);
-		sever_foreigner(&data->foreigner, argument->handler);
+		sever_foreigner(argument->handler, data);
 		break;
 	}
 
@@ -397,10 +397,14 @@ struct event_data *event_data_create(int type, ...)
 		
 		data->foreigner.fd = fd;
 		data->foreigner.header_size = header_size;
-		data->foreigner.body_size = 0;
+		data->foreigner.header = malloc(header_size);
+		if (data->foreigner.header == NULL) {
+			pr_err("failed to malloc(): %s", "header");
+			free(data);
+			return NULL;
+		}
 
 		data->foreigner.body = NULL;
-		data->foreigner.header = NULL;
 
 		if (timeout > 0) {
 			data->foreigner.timer = event_data_create(ETYPE_TIMER, timeout, data);
@@ -602,15 +606,13 @@ int handle_foreigner(struct event_data *data, struct queue *queue)
 				*readsize = 0;
 				*needsize = filesize;
 
-				if (!timer) break;
-
 				struct itimerspec rt_tspec = { 
 					.it_value.tv_sec = filesize / (1024 * 1024) + 3
 				};
 
-				if (timerfd_settime(timer->fd, 0, &rt_tspec, NULL) == -1) {
-					free(frgn->body);
-					frgn->body = NULL;
+				if (timerfd_settime(timer.fd, 0, &rt_tspec, NULL) == -1) {
+					free(data->body);
+					data->body = NULL;
 
 					return -1;
 				}
@@ -619,9 +621,7 @@ int handle_foreigner(struct event_data *data, struct queue *queue)
 			}
 		}
 
-		timer->target = NULL;
-		event_data_destroy(frgn->timer);
-		frgn->timer = NULL;
+		close(data[1].event_fd);
 
 		struct queue_data qdata = {
 			.type = QUEUE_DATA_PTR,
@@ -629,7 +629,7 @@ int handle_foreigner(struct event_data *data, struct queue *queue)
 		};
 
 		queue_enqueue(queue, qdata);
-		pr_out("enqueuing packet: %d", frgn->fd);
+		pr_out("enqueuing packet: %d", data->event_fd);
 		break;
 	}
 
@@ -640,17 +640,17 @@ int sever_foreigner(
 		struct epoll_handler *handler,
 		struct event_data_foreigner *data)
 {
-	int clnt_sock = data->fd;
+	int clnt_sock = data.fd;
 
-	if (data->timer) {
+	if (data.timer) {
 		epoll_handler_unregister(
 			handler,
-			data->timer->timer.fd);
+			data->.timer->timer.fd);
 	}
 
 	epoll_handler_unregister(
 		handler,
-		data->.fd);
+		data->foreigner.fd);
 	event_data_destroy(data);
 	close(clnt_sock);
 

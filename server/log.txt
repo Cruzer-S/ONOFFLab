@@ -1,9 +1,9 @@
 [INF] [source/main.c/main:128] sizeof(struct client_packet): 1024
-[INF] [source/main.c/main:186] client server running at 0.0.0.0:1584 (backlog 30)
 [INF] [source/main.c/client_producer:232] Waiting event...
-[INF] [source/main.c/client_consumer:282] [2] waiting data from the producer
-[INF] [source/main.c/client_consumer:282] [1] waiting data from the producer
 [INF] [source/main.c/client_consumer:282] [0] waiting data from the producer
+[INF] [source/main.c/client_consumer:282] [1] waiting data from the producer
+[INF] [source/main.c/main:186] client server running at 0.0.0.0:1584 (backlog 30)
+[INF] [source/main.c/client_consumer:282] [2] waiting data from the producer
 [INF] [source/main.c/main:186] device server running at 0.0.0.0:3606 (backlog 30)
 [INF] [source/main.c/client_producer:252] accept new 1 client(s)
 [INF] [source/main.c/client_producer:232] Waiting event...
@@ -11,13 +11,15 @@
 [INF] [source/main.c/process_event_data:360] readsize (recvbyte) / needsize = 1024 (1024) / 1024
 [INF] [source/main.c/client_producer:232] Waiting event...
 [ERR] [source/main.c/client_consumer:306] failed to queue_dequeue(): QEUEUE_DATA_UNDEF
-[ERR] [source/main.c/client_consumer:306] failed to queue_dequeue(): QEUEUE_DATA_UNDEF
 [INF] [source/main.c/client_consumer:282] [1] waiting data from the producer
-[INF] [source/main.c/client_consumer:295] [2] dequeuing packet: 8
+[ERR] [source/main.c/client_consumer:306] failed to queue_dequeue(): QEUEUE_DATA_UNDEF
+[INF] [source/main.c/client_consumer:282] [2] waiting data from the producer
+[INF] [source/main.c/client_consumer:295] [0] dequeuing packet: 8
 [INF] [source/main.c/client_consumer:297] id: 981729
 [INF] [source/main.c/client_consumer:298] passwd: helkjalk
 [INF] [source/main.c/client_consumer:299] request: 15
 [INF] [source/main.c/client_consumer:300] quality: 103
 [INF] [source/main.c/client_consumer:301] filesize: 123987
-[INF] [source/main.c/client_consumer:282] [2] waiting data from the producer
 [INF] [source/main.c/client_consumer:282] [0] waiting data from the producer
+[INF] [source/main.c/client_producer:262] timeout, close foreigner session: 8
+[INF] [source/main.c/client_producer:232] Waiting event...

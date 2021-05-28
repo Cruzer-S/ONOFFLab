@@ -39,14 +39,18 @@ int change_nonblocking(int fd)
 	return 0;
 }
 
-int make_listener(struct socket_data *data,
-		          enum make_listener_option option)
+struct socket_data *socket_data_create(enum make_listener_option option)
 {
-	int ret = 0;
+	struct socket_data *data;
 	char portstr[10];
 	struct addrinfo ai, *ai_ret;
+	int ret;
 
-	sprintf(portstr, "%.9d", data->port);
+	data = malloc(sizeof(struct socket_data));
+	if (data == NULL) {
+		pr_err("failed to malloc(): %s", strerror(errno));
+		goto FAILED_TO_MALLOC;
+	}
 	
 	memset(&ai, 0x00, sizeof(struct addrinfo));
 	ai.ai_family = (option & MAKE_LISTENER_IPV6) ? AF_INET6 : AF_INET;
@@ -55,7 +59,7 @@ int make_listener(struct socket_data *data,
 
 	if ((ret = getaddrinfo(NULL, portstr, &ai, &ai_ret)) != 0) {
 		pr_err("failed to getaddrinfo(): %s", gai_strerror(ret));
-		return -1;
+		goto FAILED_TO_GETADDRINFO;
 	}
 
 	if ((data->fd = socket(
@@ -63,41 +67,58 @@ int make_listener(struct socket_data *data,
 			ai_ret->ai_socktype,
 			ai_ret->ai_protocol)) == -1) {
 		pr_err("failed to socket(): %s", strerror(errno));
-		ret = -2; goto CLEANUP_AI;
+		goto FAILED_TO_SOCKET;
 	}
 
 	if (!(option & MAKE_LISTENER_DONTREUSE))
 		if ((ret = socket_reuseaddr(data->fd)) == -1) {
-			pr_err("failed to socket_reuseaddr(): %s (%d)", strerror(errno), ret);
-			ret = -3; goto CLEANUP_SOCKET;
+			pr_err("failed to socket_reuseaddr(): %s (%d)",
+				    strerror(errno), ret);
+			goto FAILED_TO_REUSEADDR;
 		}
 
 	if (!(option & MAKE_LISTENER_BLOCKING))
 		if ((ret = change_nonblocking(data->fd)) < 0) {
-			pr_err("failed to change_nonblocking(): %s (%d)", strerror(errno), ret);
-			ret = -4; goto CLEANUP_SOCKET;
+			pr_err("failed to change_nonblocking(): %s (%d)",
+				    strerror(errno), ret);
+			goto FAILED_TO_NONBLOCKING;
 		}
 
 	if (bind(data->fd, ai_ret->ai_addr, ai_ret->ai_addrlen) == -1) {
 		pr_err("failed to bind(): %s", strerror(errno));
-		ret = -5; goto CLEANUP_SOCKET;
+		goto FAILED_TO_BIND;
 	}
 
 	if (listen(data->fd, data->backlog) == -1) {
 		pr_err("failed to listen(): %s", strerror(errno));
-		ret = -6; goto CLEANUP_SOCKET;
+		goto FAILED_TO_LISTEN;
 	}
 
 	data->ai = ai_ret;
 
-	return 0;
+	return data;
 
-CLEANUP_SOCKET:
+FAILED_TO_LISTEN:
+FAILED_TO_BIND:
+FAILED_TO_NONBLOCKING:
+FAILED_TO_REUSEADDR:
 	close(data->fd);
 
-CLEANUP_AI:
+FAILED_TO_SOCKET:
 	freeaddrinfo(ai_ret);
-	return ret;
+
+FAILED_TO_GETADDRINFO:
+	free(data);
+
+FAILED_TO_MALLOC:
+	return NULL;
+}
+
+void socket_data_destroy(struct socket_data *data)
+{
+	close(data->fd);
+	freeaddrinfo(data->ai);
+	free(data);
 }
 
 int epoll_handler_register(struct epoll_handler *handler, int tgfd, void *ptr, int events)
@@ -186,12 +207,13 @@ struct epoll_handler *epoll_handler_create(size_t max_events)
 	return handler;
 }
 
+
 int epoll_handler_get_fd(struct epoll_handler *handler)
 {
 	return handler->fd;
 }
 
-int get_addr_from_ai(struct addrinfo *ai, char *hoststr, char *portstr)
+int extract_addrinfo(struct addrinfo *ai, char *hoststr, char *portstr)
 {
 	int ret;
 	

@@ -21,12 +21,14 @@
 #define EPOLL_MAX_EVENTS 1024
 
 enum make_listener_option {
-	MAKE_LISTENER_DEFAULT = 0x00,
-	MAKE_LISTENER_BLOCKING = 0x01,
-	MAKE_LISTENER_IPV6 = 0x02,
-	MAKE_LISTENER_DONTREUSE = 0x04,
-	MAKE_LISTENER_DGRAM = 0x08,
+	MAKE_LISTENER_DEFAULT       = 0x00,
+	MAKE_LISTENER_BLOCKING		= 0x01,
+	MAKE_LISTENER_IPV6			= 0x02,
+	MAKE_LISTENER_DONTREUSE		= 0x04,
+	MAKE_LISTENER_DGRAM			= 0x08,
 };
+
+struct epoll_handler;
 
 struct socket_data {
 	int fd;
@@ -35,12 +37,11 @@ struct socket_data {
 	struct addrinfo *ai;
 };
 
-struct epoll_handler;
-
 int socket_reuseaddr(int sock);
 int change_nonblocking(int fd);
-int make_listener(struct socket_data *data,
-		          enum make_listener_option option);
+
+struct socket_data *socket_data_create(enum make_listener_option option);
+void socket_data_destroy(struct socket_data *data);
 
 int epoll_handler_register(struct epoll_handler *handler, int tgfd, void *ptr, int events);
 int epoll_handler_unregister(struct epoll_handler *handler, int tgfd);
@@ -49,6 +50,6 @@ struct epoll_event *epoll_handler_pop(struct epoll_handler *handler);
 void epoll_handler_destroy(struct epoll_handler *handler);
 struct epoll_handler *epoll_handler_create(size_t max_events);
 
-int get_addr_from_ai(struct addrinfo *ai, char *hoststr, char *portstr);
+int extract_addrinfo(struct addrinfo *ai, char *hoststr, char *portstr);
 
 #endif
