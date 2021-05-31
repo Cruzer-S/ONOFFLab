@@ -671,16 +671,21 @@ int handle_foreigner(struct event_data *data, struct epoll_handler *handler, str
 		return recvbytes;
 	} else recvbytes = 1;
 
-NOBODY:;
-	struct queue_data qdata = {
-		.type = QUEUE_DATA_PTR,
-		.ptr = data
-	};
-
+NOBODY:	
 	if ((ret = epoll_handler_unregister(handler, data->foreigner.fd)) < 0) {
 		pr_err("failed to epoll_handler_unregister(): %d", ret);
 		return -1;
 	}
+
+	if ((ret = set_timer(data->timer.fd, 0)) < 0) {
+		pr_err("failed to set_timer(): %d", ret);
+		return -2;
+	}
+
+	struct queue_data qdata = {
+		.type = QUEUE_DATA_PTR,
+		.ptr = data
+	};
 
 	queue_enqueue(queue, qdata);
 	pr_out("enqueuing packet: %d", data->foreigner.fd);
