@@ -695,15 +695,17 @@ int sever_foreigner(
 
 	timer = foreigner->foreigner.timer;
 	if (timer) {
-		epoll_handler_unregister(
+		if (epoll_handler_unregister(
 				handler, 
-				timer->timer.fd);
+				timer->timer.fd) < 0)
+			pr_err("failed to epoll_handler_unregister(): %d", timer->timer.fd);
 		event_data_destroy(timer);
 	}
 
-	epoll_handler_unregister(
-		handler,
-		foreigner->foreigner.fd);
+	if (epoll_handler_unregister(
+			handler,
+			foreigner->foreigner.fd) < 0)
+		pr_err("failed to epoll_handler_unregister(): %d", foreigner->foreigner.fd);
 	event_data_destroy(foreigner);
 
 	return 0;
