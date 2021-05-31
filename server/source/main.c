@@ -13,9 +13,7 @@
 #include "queue.h"
 #include "utility.h"
 
-#if defined(LOGG_TO_FILE)
-	#define REDIRECTION logger
-#endif
+#define REDIRECTION logger
 
 #include "logger.h"
 
@@ -146,7 +144,6 @@ void event_data_destroy(struct event_data *data);
 
 int makeup_server(struct producer_argument *arg, int type);
 
-#if defined(REDIRECTION)
 FILE *logger;
 
 void use_logger(void) {
@@ -158,7 +155,6 @@ void use_logger(void) {
 
 	setvbuf(logger, NULL, _IONBF, 1);
 }
-#endif
 
 int create_timer(void)
 {
@@ -189,6 +185,8 @@ int main(int argc, char *argv[])
 	struct consumer_argument clnt_cons_args[CLIENT_CONSUMER_THREADS];
 	struct consumer_argument dev_cons_args[DEVICE_CONSUMER_THREADS];
 	int ret;
+
+	use_logger();
 
 	for (int i = 0; i < 2; i++, argc -= 2, argv += 2)
 		if ((ret = initialize_server_data(&prod_args[i].param, argc, argv, i)) < 0)

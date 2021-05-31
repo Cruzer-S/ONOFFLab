@@ -125,7 +125,7 @@ int main(int argc, char *argv[])
 		struct sockaddr_in sock_adr;
 		sock_adr.sin_family = AF_INET;
 		sock_adr.sin_port = htons(1584);
-		sock_adr.sin_addr.s_addr = inet_addr("127.0.0.1");
+		sock_adr.sin_addr.s_addr = inet_addr("3.133.79.98");
 		if (connect(sock, (struct sockaddr *) &sock_adr, sizeof(sock_adr)) == -1)
 			fprintf(stderr, "failed to connect(): %s", strerror(errno));
 
