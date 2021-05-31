@@ -375,7 +375,7 @@ int process_event(struct epoll_event *event, struct producer_argument *argument)
 
 	case ETYPE_FOREIGNER:
 		pr_out("receive data from client: %d", data->foreigner.fd);
-		if ((ret = handle_foreigner(data, argument->queue)) <= 0) {
+		if ((ret = handle_foreigner(data, argument->handler, argument->queue)) <= 0) {
 			if (ret != 0)
 				pr_err("failed to process_request(): %d", ret);
 

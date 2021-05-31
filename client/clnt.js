@@ -13,6 +13,7 @@ for (i = 0; i < passwd.length; i++)
 	passwd[i] = "ONOFFLAB88"[i];
 
 var idView = new Uint32Array(buffer, 0, 1);
-var passwdView = new Uint8Array(buffer, 4, 32);
+var testView = new Uint16Array(buffer, 2, 1);
 
 console.log(idView[0]);
+console.log(testView[0]);
