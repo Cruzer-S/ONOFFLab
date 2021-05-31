@@ -607,8 +607,12 @@ int handle_foreigner(struct event_data *data, struct queue *queue)
 			frgn->body_size = filesize;
 			frgn->recv_body = 0;
 
-			if ( filesize > 0 ) {
-				pr_out("reqeust body-size: %zu", frgn->body_size);
+			if (filesize > 0) {
+				if (filesize > MAX_FILE_SIZE) {
+					pr_out("too big file to handle: %zu", frgn->body_size);
+					return -1;
+				} else pr_out("reqeust body-size: %zu", frgn->body_size);
+
 				frgn->body = malloc(filesize);
 				if (frgn->body == NULL)
 					pr_err("failed to malloc(): %s", strerror(errno));
