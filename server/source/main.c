@@ -377,6 +377,8 @@ int process_event(struct epoll_event *event, struct producer_argument *argument)
 		if ((ret = handle_foreigner(data, argument->queue)) <= 0) {
 			if (ret != 0)
 				pr_err("failed to process_request(): %d", ret);
+
+			sever_foreigner(data, argument->handler);
 		}
 		break;
 
@@ -652,10 +654,13 @@ int read_body(struct event_data *data, struct queue *queue)
 
 int handle_foreigner(struct event_data *data, struct queue *queue)
 {
-	if(data->foreigner.recv_header < data->foreigner.header_size) {
+	int ret = 1;
+
+	if(data->foreigner.recv_header < data->foreigner.header_size)
 		return read_header(data, queue);
-	} else if (data->foreigner.recv_body < data->foreigner.body_size) {
-		int ret = read_body(data, queue);
+
+	if (data->foreigner.recv_body < data->foreigner.body_size) {
+		ret = read_body(data, queue);
 		if (ret == 0)
 			if (data->foreigner.body_size == 0)
 				goto NOBODY;
@@ -672,7 +677,7 @@ NOBODY:;
 	queue_enqueue(queue, qdata);
 	pr_out("enqueuing packet: %d", data->foreigner.fd);
 
-	return 0;
+	return ret;
 }
 
 int sever_foreigner(
