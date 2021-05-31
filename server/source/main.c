@@ -537,7 +537,8 @@ int accept_foreigner(
 
 		continue;
 EDATA_REGISTER_TIMER:
-		epoll_handler_unregister(handler, frgn_fd);
+		if (epoll_handler_unregister(handler, frgn_fd) < 0)
+			pr_err("failed to epoll_handler_unregister(): %d", frgn_fd);
 EDATA_CREATE_TIMER:
 		event_data_destroy(frgn_data);
 EDATA_REGISTER_FOREGINER:
@@ -792,7 +793,8 @@ int makeup_server(struct producer_argument *arg, int type)
 	return 0;
 
 INVALID_TYPE_NUMBER:
-	epoll_handler_unregister(arg->handler, arg->sock_data->fd);
+	if (epoll_handler_unregister(arg->handler, arg->sock_data->fd) < 0)
+		pr_err("failed to epoll_handler_unregister(): %d", arg->sock_data->fd);
 
 FAILED_TO_EPOLL_HANDLER_REGISTER:
 	event_data_destroy(arg->event);
