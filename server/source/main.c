@@ -123,6 +123,7 @@ int accept_foreigner(
 		size_t timeout);
 int handle_foreigner(
 		struct event_data *data,
+		struct epoll_handler *handler,
 		struct queue *queue);
 int sever_foreigner(
 		struct event_data *foreigner,
@@ -652,21 +653,22 @@ int read_body(struct event_data *data, struct queue *queue)
 	return recvbyte;
 }
 
-int handle_foreigner(struct event_data *data, struct queue *queue)
+int handle_foreigner(struct event_data *data, struct epoll_handler *handler, struct queue *queue)
 {
-	int ret = 1;
+	int recvbytes;
+	int ret;
 
 	if(data->foreigner.recv_header < data->foreigner.header_size)
 		return read_header(data, queue);
 
 	if (data->foreigner.recv_body < data->foreigner.body_size) {
-		ret = read_body(data, queue);
-		if (ret == 0)
+		recvbytes = read_body(data, queue);
+		if (recvbytes == 0)
 			if (data->foreigner.body_size == 0)
 				goto NOBODY;
 
-		return ret;
-	}
+		return recvbytes;
+	} else recvbytes = 1;
 
 NOBODY:;
 	struct queue_data qdata = {
@@ -674,10 +676,15 @@ NOBODY:;
 		.ptr = data
 	};
 
+	if ((ret = epoll_handler_unregister(handler, data->foreigner.fd)) < 0) {
+		pr_err("failed to epoll_handler_unregister(): %d", ret);
+		return -1;
+	}
+
 	queue_enqueue(queue, qdata);
 	pr_out("enqueuing packet: %d", data->foreigner.fd);
 
-	return ret;
+	return recvbytes;
 }
 
 int sever_foreigner(
