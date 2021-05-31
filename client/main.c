@@ -133,7 +133,7 @@ int main(int argc, char *argv[])
 		size_t read;
 		while ((read = fread(&buffer, 1, BUFSIZ, fp)) >  0) {
 			write(sock, &buffer, read);
-			sleep(1);
+			usleep(1000);
 		}
 		
 		close(sock);
