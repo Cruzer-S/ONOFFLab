@@ -677,15 +677,11 @@ NOBODY:
 		return -1;
 	}
 
-	struct event_data *timer = data->foreigner.timer;
-
-	if (timer != NULL) {
-		if ((ret = epoll_handler_unregister(
-				handler,
-				timer->timer.fd)) < 0)
-			pr_err("failed to epoll_handler_unregister(): %d", ret);
-
-		event_data_destroy(timer);
+	if (data->foreigner.timer != NULL) {
+		if ((ret = set_timer(data->foreigner.timer->fd, 0)) < 0) {
+			pr_err("failed to set_timer(): %d", ret);
+			return -2;
+		}
 	}
 
 	struct queue_data qdata = {
