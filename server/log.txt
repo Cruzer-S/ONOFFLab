@@ -1,0 +1,6 @@
+[INF] [source/main.c/client_producer:295] Waiting event...
+[INF] [source/main.c/main:248] client server running at 0.0.0.0:1584 (backlog 30)
+[INF] [source/main.c/client_consumer:323] [2] waiting data from the producer
+[INF] [source/main.c/client_consumer:323] [1] waiting data from the producer
+[INF] [source/main.c/client_consumer:323] [0] waiting data from the producer
+[INF] [source/main.c/main:248] device server running at 0.0.0.0:3606 (backlog 30)

@@ -146,7 +146,8 @@ int makeup_server(struct producer_argument *arg, int type);
 
 FILE *logger;
 
-void use_logger(void) {
+void use_logger(void)
+{
 	logger = fopen("log.txt", "w+");
 	if (logger == NULL) {
 		fprintf(stderr, "failed to fopen(): %s", strerror(errno));
@@ -478,15 +479,17 @@ int accept_foreigner(
 		size_t header_size,
 		size_t timeout)
 {
+	int accepted = 0;
+
 	while (true) {
 		int frgn_fd = accept(fd, NULL, NULL);
 		if (frgn_fd == -1) {
 			if (errno == EAGAIN)
-				return 0;
+				break;
 
 			pr_err("failed to accept(): %s", strerror(errno));
 			goto ACCEPT_ERROR;
-		}
+		} else accepted++;
 
 		struct event_data *frgn_data;
 		frgn_data = event_data_create(ETYPE_FOREIGNER, frgn_fd, header_size);
@@ -508,7 +511,6 @@ int accept_foreigner(
 
 		struct event_data *timer;
 		if (timeout > 0) {
-
 			timer = event_data_create(ETYPE_TIMER, timeout);
 			if (timer == NULL) {
 				pr_err("failed to event_data_create(%s)",
@@ -542,116 +544,135 @@ EDATA_CREATE_FOREIGNER:
 ACCEPT_ERROR:
 		continue;
 	}
-	return 0;
+
+	return accepted;
 }
 
-int handle_foreigner(struct event_data *data, struct queue *queue)
+ssize_t recv_request(int fd, uint8_t *buffer, size_t *readsize, size_t *needsize)
 {
 	ssize_t recvbyte;
-	size_t *readsize;
-	size_t *needsize;
-	uint8_t *buffer;
-
-	struct event_data_foreigner *frgn;
-	struct event_data_timer *timer;
-
-	frgn = &data->foreigner;
-	if (frgn->timer)
-		timer = &data->foreigner.timer->timer;
-
-	if (frgn->header == NULL)
-		if ( !(frgn->header = malloc(frgn->header_size)) )
-			pr_err("failed to malloc(): %s", strerror(errno));	
-
-
-	if (frgn->header == NULL) {
-		frgn->header = malloc(frgn->header_size);
-		if (frgn->header == NULL)
-			return 0;
-	}
-
-	if (frgn->body == NULL) {
-		readsize = &frgn->recv_header;
-		needsize = &frgn->header_size;
-
-		buffer = frgn->header;
-	} else {
-		readsize = &frgn->recv_body;
-		needsize = &frgn->body_size;
-
-		buffer = frgn->body;
-	}
-
+	
 	*readsize += (recvbyte = recv(
-		frgn->fd,
+		fd,
 		buffer + *readsize,
 		*needsize - *readsize,
 		0
 	));
 
-	switch (recvbyte) {
-	case -1: pr_err("failed to recv(): %s", strerror(errno));
-	case  0: pr_out("session closed: %d", frgn->fd);
-			 break;
-	default:
-		if (*readsize < *needsize) {
-			pr_out("readsize (recvbyte) / needsize = %zu (%zu) / %zu",
-			   *readsize, recvbyte, *needsize);
-			break;
+	return recvbyte; 
+}
+
+int read_header(struct event_data *data, struct queue *queue)
+{
+	struct event_data_foreigner *frgn;
+
+	ssize_t recvbyte;
+
+	frgn = &data->foreigner;
+	if (frgn->header == NULL) {
+		frgn->header = malloc(frgn->header_size);
+
+		if (frgn->header == NULL) {
+			pr_err("failed to malloc(): %s", strerror(errno));
+			return -1;
 		}
-
-		if (frgn->body == NULL) {
-			size_t filesize;
-			filesize = ((struct client_packet *) frgn->header)->filesize;
-
-			frgn->body_size = filesize;
-			frgn->recv_body = 0;
-
-			if (filesize > 0) {
-				if (filesize > MAX_FILE_SIZE) {
-					pr_out("too big file to handle: %zu", frgn->body_size);
-					return -1;
-				} else pr_out("reqeust body-size: %zu", frgn->body_size);
-
-				frgn->body = malloc(filesize);
-				if (frgn->body == NULL)
-					pr_err("failed to malloc(): %s", strerror(errno));
-
-				*readsize = 0;
-				*needsize = filesize;
-
-				if (!timer) break;
-
-				struct itimerspec rt_tspec = { 
-					.it_value.tv_sec = filesize / (1024 * 1024) + 3
-				};
-
-				if (timerfd_settime(timer->fd, 0, &rt_tspec, NULL) == -1) {
-					free(frgn->body);
-					frgn->body = NULL;
-
-					return -1;
-				}
-
-				break; // pending, do not enqueue data
-			}
-		}
-
-		timer->target = NULL;
-		event_data_destroy(frgn->timer);
-		frgn->timer = NULL;
-
-		struct queue_data qdata = {
-			.type = QUEUE_DATA_PTR,
-			.ptr = data
-		};
-
-		queue_enqueue(queue, qdata);
-		pr_out("enqueuing packet: %d", frgn->fd);
-		break;
 	}
 
+	recvbyte = recv_request(
+		frgn->fd,
+		frgn->header,
+		&frgn->recv_header,
+		&frgn->header_size);
+	
+	if (recvbyte == -1)
+		pr_err("failed to recv(): %s", strerror(errno));
+	else if (recvbyte == 0)
+		pr_out("session closed: %d", frgn->fd);
+
 	return recvbyte;
+}
+
+int read_body(struct event_data *data, struct queue *queue)
+{
+	struct event_data_foreigner *frgn;
+	frgn = &data->foreigner;
+
+	if (frgn->body == NULL) {
+		size_t filesize;
+		filesize = ((struct client_packet *) frgn->header)->filesize;
+
+		frgn->body_size = filesize;
+		frgn->recv_body = 0;
+
+		if (filesize == 0) {
+			pr_out("there's no body: %s", "filesize is zero");
+			return 0;
+		} else if (filesize > MAX_FILE_SIZE) {
+			pr_err("file is too big to allocate: %zu", filesize);
+			return -1;
+		}
+
+		frgn->body = malloc(filesize);
+		if (frgn->body == NULL) {
+			pr_err("failed to malloc(): %s", strerror(errno));
+			return -2;
+		}
+
+		if (frgn->timer) {
+			struct event_data_timer *timer;
+			timer = &frgn->timer->timer;
+
+			timer->fd = create_timer();
+			if (timer->fd < 0) {
+				pr_err("failed to create_timer(): %d", timer->fd);
+				return -3;
+			}
+
+			if (set_timer(timer->fd, filesize / (1024 * 1024) + 3) < 0) {
+				pr_err("failed to timerfd_settime(): %s", strerror(errno));
+				return -4;
+			}
+		}
+	}
+
+	ssize_t recvbyte = recv_request(
+		frgn->fd,
+		frgn->body,
+		&frgn->recv_body,
+		&frgn->body_size
+	);
+
+	if (recvbyte == -1)
+		pr_err("failed to recv(): %s", strerror(errno));
+	else if (recvbyte == 0)
+		pr_out("session closed: %d", frgn->fd);
+
+	return recvbyte;
+}
+
+int handle_foreigner(struct event_data *data, struct queue *queue)
+{
+	if(data->foreigner.recv_header < data->foreigner.header_size) {
+		return read_header(data, queue);
+	} else if (data->foreigner.recv_body < data->foreigner.body_size) {
+		int ret = read_body(data, queue);
+		if (ret == 0)
+			if (data->foreigner.body_size == 0)
+				goto NOBODY;
+
+		return ret;
+	}
+
+NOBODY:;
+	struct queue_data qdata = {
+		.type = QUEUE_DATA_PTR,
+		.ptr = data
+	};
+
+	queue_enqueue(queue, qdata);
+	pr_out("enqueuing packet: %d", data->foreigner.fd);
+
+	return 0;
 }
 
 int sever_foreigner(
