@@ -101,6 +101,8 @@ struct producer_argument {
 struct consumer_argument {
 	struct queue *queue;
 	pthread_t real_tid;
+
+	struct hashtab *hashtab;
 	int tid;
 };
 
@@ -202,7 +204,6 @@ void *client_consumer(void *args)
 
 		if (!verify_checksum(packet)) {
 			send_response(fd, -1, (uint8_t *) "broken packet: wrong checksum", packet);
-			
 			goto DESTROY_CLIENT;
 		}
 		
