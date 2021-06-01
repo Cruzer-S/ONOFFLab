@@ -8,13 +8,13 @@
 #include <stdlib.h>
 #include <errno.h>
 
-#include <sys/timerfd.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 
 #include "socket_manager.h"
 #include "queue.h"
 #include "utility.h"
+#include "event_data.h"
 
 #define REDIRECTION logger
 
@@ -42,42 +42,6 @@
 #define CLIENT 0
 #define DEVICE 1
 
-enum event_type {
-	ETYPE_TIMER,
-	ETYPE_LISTENER,
-	ETYPE_FOREIGNER,
-};
-
-struct event_data {
-	int type; 
-
-	union {
-		struct event_data_listener {
-			int fd;
-		} listener;
-
-		struct event_data_foreigner {
-			int fd;
-
-			uint8_t *header;
-			uint8_t *body;
-
-			size_t header_size;
-			size_t body_size;
-
-			size_t recv_header;
-			size_t recv_body;
-
-			struct event_data *timer;
-		} foreigner;
-
-		struct event_data_timer {
-			int fd;
-			struct event_data *target;
-		} timer;
-	};
-};
-
 struct parameter_data {
 	uint16_t port;
 	int backlog;
@@ -98,11 +62,37 @@ struct producer_argument {
 	size_t header_size;
 };
 
+struct node {
+	void *key;
+	void *value;
+	struct node *next;
+};
+
+struct hashtab {
+	int (*hash_func)(void *key);
+	int (*comp_func)(void *k1, void *k2);
+
+	int bucket_size;
+	int freed_node_count;
+	int used_node_count;
+
+	struct node *bucket;
+
+	struct node *freed_node;
+	struct ndoe *used_node;
+};
+
+struct hashtab *hashtab_create(int bucket_size, int node_size, int (*hash_func)(void *key), int (*comp_func)(void *key1, void *key2));
+void hashtab_destroy(struct hashtab *tab);
+
+void *hashtab_find(struct hashtab *tab, void *key);
+int hashtab_insert(struct hashtab *tab, void *key, void *value);
+
 struct consumer_argument {
 	struct queue *queue;
 	pthread_t real_tid;
 
-	struct hashtab *hashtab;
+	struct hashtab *device_tab;
 	int tid;
 };
 
@@ -137,19 +127,17 @@ int sever_foreigner(
 		struct event_data *foreigner,
 		struct epoll_handler *handler);
 
+int process_event(struct epoll_event *data, struct producer_argument *argument);
+
 void *device_producer(void *args);
 void *client_producer(void *args);
 
 void *device_consumer(void *args);
 void *client_consumer(void *args);
 
-int process_event(struct epoll_event *data, struct producer_argument *argument);
 bool verify_checksum(struct client_packet *packet);
 
 int initialize_server_data(struct parameter_data *data, int argc, char **argv, int type);
-
-struct event_data *event_data_create(int type, ...);
-void event_data_destroy(struct event_data *data);
 
 int makeup_server(struct producer_argument *arg, int type);
 
@@ -157,6 +145,31 @@ int create_timer(void);
 int set_timer(int fd, int timeout);
 
 FILE *logger;
+
+struct hashtab *hashtab_create(
+		int bucket_size,
+		int node_size,
+		int (*hash_func)(void *key),
+		int (*comp_func)(void *key1, void *key2))
+{
+	struct hashtab *hash;
+
+	hash = malloc(sizeof(struct hashtab));
+	if (hash == NULL) {
+		pr_err("failed to malloc(): %s", strerror(errno));
+		return NULL;
+	}
+
+	hash->hash_func = hash_func;
+	hash->comp_func = comp_func;
+	hash->bucket_size = bucket_size;
+	hash->freed_node_count = node_size;
+
+	hash->used_node_count = 0;
+
+	return hash;
+}
+
 
 int send_response(int fd, uint32_t retval, uint8_t *response, struct client_packet *packet)
 {
@@ -480,6 +493,37 @@ ACCEPT_ERROR:
 	return accepted;
 }
 
+
+void *client_producer(void *argument)
+{
+	struct epoll_event *event;
+	struct producer_argument *arg = argument;
+	int nrequest;
+	int ret;
+
+	while (true) {	
+		pr_out("%s", "Waiting event...");
+		nrequest = epoll_handler_wait(arg->handler, -1);
+		if (nrequest < 0) {
+			pr_err("failed to epoll_handler_wait(): %d", nrequest);
+			continue;
+		}
+
+		do {
+			event = epoll_handler_pop(arg->handler);
+			if (!event) {
+				pr_err("%s", "failed to epoll_handler_pop()");
+				break;
+			}
+
+			if ((ret = process_event(event, arg)) < 0)
+				pr_err("failed to process_event(): %d", ret);
+		} while (--nrequest > 0);
+	}
+
+	return NULL;
+}
+
 int process_event(struct epoll_event *event, struct producer_argument *argument)
 {
 	struct event_data *data = event->data.ptr;
@@ -518,119 +562,6 @@ int process_event(struct epoll_event *event, struct producer_argument *argument)
 	return ret;
 }
 
-void *client_producer(void *argument)
-{
-	struct epoll_event *event;
-	struct producer_argument *arg = argument;
-	int nrequest;
-	int ret;
-
-	while (true) {	
-		pr_out("%s", "Waiting event...");
-		nrequest = epoll_handler_wait(arg->handler, -1);
-		if (nrequest < 0) {
-			pr_err("failed to epoll_handler_wait(): %d", nrequest);
-			continue;
-		}
-
-		do {
-			event = epoll_handler_pop(arg->handler);
-			if (!event) {
-				pr_err("%s", "failed to epoll_handler_pop()");
-				break;
-			}
-
-			if ((ret = process_event(event, arg)) < 0)
-				pr_err("failed to process_event(): %d", ret);
-		} while (--nrequest > 0);
-	}
-
-	return NULL;
-}
-
-void event_data_destroy(struct event_data *data)
-{
-	switch (data->type) {
-	case ETYPE_LISTENER:
-		/* do nothing */
-		break;
-
-	case ETYPE_FOREIGNER:
-		free(data->foreigner.header);
-		free(data->foreigner.body);
-		break;
-
-	case ETYPE_TIMER:
-		close(data->timer.fd);
-		break;
-	}
-
-	free(data);
-}
-
-struct event_data *event_data_create(int type, ...)
-{
-	struct event_data *data;
-	va_list ap;
-
-	va_start(ap, type);
-
-	if (!(data = malloc(sizeof(struct event_data))) ) {
-		pr_err("failed to malloc(): %s", strerror(errno));
-		return NULL;
-	}
-
-	data->type = type;
-	switch (data->type) {
-	DECLARATION:;
-		size_t header_size;
-		size_t timeout;
-		int fd;
-		int ret;
-
-	case ETYPE_LISTENER:
-		fd = va_arg(ap, int);
-		data->listener.fd = fd;
-		break;
-
-	case ETYPE_FOREIGNER:
-		fd = va_arg(ap, int);
-		header_size = va_arg(ap, size_t);
-		
-		data->foreigner.fd = fd;
-		data->foreigner.header_size = header_size;
-
-		data->foreigner.body = NULL;
-		data->foreigner.header = NULL;
-		break;
-
-	case ETYPE_TIMER:
-		timeout = va_arg(ap, size_t);
-
-		fd = create_timer();
-		if (fd < 0) {
-			pr_err("failed to create_timer(): %d", fd);
-			free(data);
-			return NULL;
-		}
-
-		if (timeout > 0) {
-			ret = set_timer(fd, timeout);
-			if (ret < 0) {
-				pr_err("failed to set_timer(%d): %d", fd, ret);
-				close(fd);
-				free(data);
-
-				return NULL;
-			}
-		}
-
-		data->timer.fd = fd;
-		break;
-	}
-	
-	return data;
-}
 
 int initialize_server_data(struct parameter_data *data, int argc, char **argv, int type)
 {
@@ -740,16 +671,6 @@ void *device_consumer(void *args)
 	return NULL;
 }
 
-int create_timer(void)
-{
-	int fd = timerfd_create(CLOCK_REALTIME, TFD_NONBLOCK | TFD_CLOEXEC);
-	if (fd == -1) {
-		return -1;
-	}
-
-	return fd;
-}
-
 void use_logger(void)
 {
 	logger = fopen("log.txt", "w+");
@@ -759,19 +680,6 @@ void use_logger(void)
 	}
 
 	setvbuf(logger, NULL, _IONBF, 1);
-}
-
-int set_timer(int fd, int timeout)
-{
-	struct itimerspec rt_tspec = {
-		.it_value.tv_sec = timeout
-	};
-
-	if (timerfd_settime(fd, 0, &rt_tspec, NULL) == -1) {
-		return -1;
-	}
-
-	return 0;
 }
 
 int main(int argc, char *argv[])

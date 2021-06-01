@@ -1,3 +1,5 @@
+#define _POSIX_C_SOURCE 201109L
+
 #include "utility.h"
 #include "logger.h"
 
@@ -7,6 +9,31 @@
 #include <errno.h>
 #include <string.h>
 #include <stdlib.h>
+
+#include <sys/timerfd.h>
+
+int create_timer(void)
+{
+	int fd = timerfd_create(CLOCK_REALTIME, TFD_NONBLOCK | TFD_CLOEXEC);
+	if (fd == -1) {
+		return -1;
+	}
+
+	return fd;
+}
+
+int set_timer(int fd, int timeout)
+{
+	struct itimerspec rt_tspec = {
+		.it_value.tv_sec = timeout
+	};
+
+	if (timerfd_settime(fd, 0, &rt_tspec, NULL) == -1) {
+		return -1;
+	}
+
+	return 0;
+}
 
 int parse_arguments(int argc, char *argv[], ...)
 {
