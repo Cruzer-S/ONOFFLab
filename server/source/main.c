@@ -116,7 +116,10 @@ struct __attribute__((packed)) client_packet {
 
 	uint32_t checksum;
 
-	uint8_t dummy[1024 - 50];
+	uint32_t retval;
+	uint8_t response[128];
+
+	uint8_t dummy[1024 - 182];
 };
 
 int accept_foreigner(
@@ -153,10 +156,23 @@ int set_timer(int fd, int timeout);
 
 FILE *logger;
 
+int send_response(int fd, uint32_t retval, uint8_t *response, struct client_packet *packet)
+{
+	packet->retval = -1;
+	sprintf((char *) packet->response, "broken packet: wrong checksum");
+	pr_out("%s", packet->response);
+
+	if (send(fd, packet, sizeof(struct client_packet), 0) != 1024)
+		return -1;
+
+	return 0;
+}
+
 void *client_consumer(void *args)
 {
 	struct consumer_argument *arg = (struct consumer_argument *) args;
 	char *err_str;
+	int fd;
 
 	while (true) {
 		pr_out("[%d] waiting data from the producer", arg->tid);
@@ -174,6 +190,7 @@ void *client_consumer(void *args)
 
 		edata = qdata.ptr;
 		packet = (struct client_packet *) edata->foreigner.header;
+		fd = edata->foreigner.fd;
 
 		pr_out("[%d] dequeuing packet: %d",
 				arg->tid, edata->foreigner.fd);
@@ -184,7 +201,8 @@ void *client_consumer(void *args)
 		pr_out("filesize: %zu", packet->filesize);
 
 		if (!verify_checksum(packet)) {
-			pr_out("broken packet: %s", "wrong checksum");
+			send_response(fd, -1, (uint8_t *) "broken packet: wrong checksum", packet);
+			
 			goto DESTROY_CLIENT;
 		}
 		
@@ -208,7 +226,6 @@ bool verify_checksum(struct client_packet *packet)
 	result ^= packet->filesize;
 	result ^= packet->quality;
 	result ^= packet->request;
-	result ^= packet->passwd[0];
 
 	return (result == packet->checksum);
 }
