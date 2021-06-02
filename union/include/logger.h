@@ -3,43 +3,19 @@
 
 #include <stdio.h>		// fprintf, stdout, stderr, size_t
 #include <stdlib.h>		// exit(), EXIT_FAILURE
-#include <stdbool.h>
+#include <stdbool.h>	// true, false
 
-#ifdef REDIRECTION
-#define STDOUT REDIRECTION
-#define STDERR REDIRECTION
-#define STDCRT REDIRECTION
-#else
-#define STDOUT stdout
-#define STDERR stderr
-#define STDCRT stderr
-#endif
+void __print_message(FILE *fp, const char *fmt, ...);
+void logger_message_redirect(FILE *fp);
 
-#define print_message(FPTR, TYPE, FMT, ...) do {				\
-	char buf[512];												\
-	get_time0(buf, sizeof(buf) - 1);							\
-	fprintf(FPTR, "[%s] ["#TYPE"] [%s/%s:%03d] " FMT "\n", 		\
-			buf, __FILE__, __FUNCTION__, __LINE__, __VA_ARGS__);\
-} while (false)
+#define print_message(FPTR, TYPE, FMT, ...) 	\
+	__print_message(FPTR,						\
+		"[" #TYPE "] [%s/%s:%03d] " FMT "\n",	\
+			__FILE__, __FUNCTION__, __LINE__, 	\
+			__VA_ARGS__)
 
-/*
-#define print_message(FPTR, TYPE, FMT, ...) do {				\
-	char buf[512];												\
-	get_time0(buf, sizeof(buf) - 1);							\
-	fprintf(FPTR, "[%s] ["#TYPE"] [%s/%s:%03d] " FMT "\n", 		\
-			buf, __FILE__, __FUNCTION__, __LINE__, __VA_ARGS__);\
-} while (false)
-*/
-
-#define pr_out(FMT, ...) print_message(STDOUT, INF, FMT, __VA_ARGS__)
-#define pr_err(FMT, ...) print_message(STDERR, ERR, FMT, __VA_ARGS__)
-#define pr_crt(FMT, ...) do { 						\
-	print_message(STDERR, CRI, FMT, __VA_ARGS__); 	\
-	exit(EXIT_FAILURE); 							\
-} while (false)
-
-#define GET_TIME0(X) (get_time0(X, sizeof(X)) == NULL ? "error" : X)
-
-char *get_time0(char *buf, size_t sz_buf);
+#define pr_out(FMT, ...) print_message(stdout, INF, FMT, __VA_ARGS__)
+#define pr_err(FMT, ...) print_message(stderr, ERR, FMT, __VA_ARGS__)
+#define pr_crt(FMT, ...) print_message(stderr, CRI, FMT, __VA_ARGS__), exit(EXIT_FAILURE)
 
 #endif
