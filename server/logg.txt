@@ -5,3 +5,9 @@
 [Jun 02 02:32:42] [INF] [source/main.c/main:684] client server running at 0.0.0.0:1584 (backlog 30)
 [Jun 02 02:32:42] [INF] [source/main.c/main:684] device server running at 0.0.0.0:3606 (backlog 30)
 [Jun 02 02:33:58] [ERR] [source/socket_manager.c/socket_data_create:091] failed to bind(): Address already in use
+[Jun 02 02:59:04] [INF] [source/main.c/client_producer:218] Waiting event...
+[Jun 02 02:59:04] [INF] [source/main.c/main:415] client server running at 0.0.0.0:1584 (backlog 30)
+[Jun 02 02:59:04] [INF] [source/main.c/client_consumer:117] [2] waiting data from the producer
+[Jun 02 02:59:04] [INF] [source/main.c/client_consumer:117] [0] waiting data from the producer
+[Jun 02 02:59:04] [INF] [source/main.c/client_consumer:117] [1] waiting data from the producer
+[Jun 02 02:59:04] [INF] [source/main.c/main:415] device server running at 0.0.0.0:3606 (backlog 30)

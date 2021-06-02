@@ -4,7 +4,7 @@
 #include <pthread.h>
 
 struct node {
-	struct queue_data data;
+	void *data;
 	struct node *next;
 };
 
@@ -57,7 +57,7 @@ struct queue *queue_create(size_t size, bool is_sync)
 	return queue;
 }
 
-int queue_enqueue(struct queue *queue, struct queue_data data)
+int queue_enqueue(struct queue *queue, void *data)
 {
 	struct node *new_node;
 
@@ -89,10 +89,10 @@ int queue_enqueue(struct queue *queue, struct queue_data data)
 	return 0;
 }
 
-struct queue_data queue_dequeue(struct queue *queue)
+void *queue_dequeue(struct queue *queue)
 {
-	struct queue_data ret = { .type = QUEUE_DATA_UNDEF };
 	struct node *prev;
+	void *ret;
 
 	if (queue->is_sync) {
 		pthread_mutex_lock(&queue->mutex);
@@ -101,12 +101,12 @@ struct queue_data queue_dequeue(struct queue *queue)
 		// -------------------------------------
 		if (pthread_cond_wait(&queue->cond, &queue->mutex) != 0) {
 			pthread_mutex_unlock(&queue->mutex);
-			return (struct queue_data) { .type = QUEUE_DATA_ERROR };
+			return NULL;
 		}
 
 		if (queue->usage == 0) {
 			pthread_mutex_unlock(&queue->mutex);
-			return (struct queue_data) { .type = QUEUE_DATA_UNDEF };
+			return NULL;
 		}
 
 		ret = queue->tail->data;
@@ -120,7 +120,7 @@ struct queue_data queue_dequeue(struct queue *queue)
 		pthread_mutex_unlock(&queue->mutex);
 	} else {
 		if (queue->usage == 0)
-			return (struct queue_data) { .type = QUEUE_DATA_UNDEF };
+			return NULL;
 
 		ret = queue->tail->data;
 		prev = queue->tail;
@@ -134,14 +134,14 @@ struct queue_data queue_dequeue(struct queue *queue)
 	return ret;
 }
 
-struct queue_data ueue_peek(struct queue *queue)
+void *queue_peek(struct queue *queue)
 {
 	return queue->tail->data;
 }
 
 void queue_destroy(struct queue *queue)
 {
-	while (queue_dequeue(queue).type != (QUEUE_DATA_UNDEF | QUEUE_DATA_ERROR))
+	while (queue_dequeue(queue) != NULL)
 		/* empty loop body */ ;
 
 	pthread_mutex_destroy(&queue->mutex);

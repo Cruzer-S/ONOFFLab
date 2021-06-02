@@ -93,5 +93,3 @@ CLEANUP:
 	va_end(ap);
 	return ret;
 }
-
-

@@ -2,6 +2,7 @@
 
 #include "utility.h"
 #include "logger.h"
+#include "queue.h"
 
 #include <sys/timerfd.h>
 
