@@ -1,6 +1,0 @@
-[Jun 01 16:27:49] [INF] [source/main.c/client_consumer:221] [0] waiting data from the producer
-[Jun 01 16:27:49] [INF] [source/main.c/client_producer:533] Waiting event...
-[Jun 01 16:27:49] [INF] [source/main.c/main:778] client server running at 0.0.0.0:1584 (backlog 30)
-[Jun 01 16:27:49] [INF] [source/main.c/client_consumer:221] [2] waiting data from the producer
-[Jun 01 16:27:49] [INF] [source/main.c/client_consumer:221] [1] waiting data from the producer
-[Jun 01 16:27:49] [INF] [source/main.c/main:778] device server running at 0.0.0.0:3606 (backlog 30)

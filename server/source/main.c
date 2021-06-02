@@ -13,10 +13,9 @@
 
 #include "socket_manager.h"
 #include "queue.h"
+#include "hashtab.h"
 #include "utility.h"
 #include "event_data.h"
-
-#define REDIRECTION logger
 
 #include "logger.h"
 
@@ -114,168 +113,6 @@ bool verify_checksum(struct client_packet *packet);
 int initialize_server_data(struct parameter_data *data, int argc, char **argv, int type);
 
 int makeup_server(struct producer_argument *arg, int type);
-
-int create_timer(void);
-int set_timer(int fd, int timeout);
-
-FILE *logger;
-
-struct node {
-	void *key;
-	void *value;
-	struct node *next;
-};
-
-struct hashtab {
-	int (*hash_func)(void *key);
-	int (*comp_func)(void *k1, void *k2);
-
-	int bucket_size;
-	int freed_node_count;
-	int used_node_count;
-
-	struct node *bucket;
-
-	struct node *freed_node;
-	struct node *freed_node_origin;
-};
-
-struct hashtab *hashtab_create(int bucket_size, int node_size, int (*hash_func)(void *key), int (*comp_func)(void *key1, void *key2));
-void hashtab_destroy(struct hashtab *hash);
-
-void *hashtab_find(struct hashtab *hash, void *key, bool pull_out);
-int hashtab_insert(struct hashtab *hash, void *key, void *value);
-
-void *hashtab_find(struct hashtab *hash, void *key, bool pull_out)
-{
-	int index;
-	struct node *bucket, *prev, *cur;
-
-	index = hash->hash_func(key) % hash->bucket_size;
-
-	bucket = &hash->bucket[index];
-
-	for (prev = cur = bucket->next;
-		 cur != NULL;
-		 prev = cur, cur = cur->next)
-	{
-		if (hash->comp_func(cur->key, key) == 0) {
-			if (pull_out) {
-				if (prev->next)
-					prev->next = cur->next;
-				else
-					bucket->next = NULL;
-
-				hash->freed_node_count++;
-				cur->next = hash->freed_node;
-				hash->freed_node = cur;
-			}
-
-			return cur->value;
-		}
-	}
-
-	return NULL;
-}
-
-int hashtab_insert(struct hashtab *hash, void *key, void *value)
-{
-	struct node *bucket, *new_node;
-	int index;
-	void *ptr;
-
-	if ((ptr = hashtab_find(hash, key, false))) {
-		pr_err("find the same key in the hashtab: %p", ptr);
-		return -1;
-	}
-
-	if (hash->freed_node <= 0) {
-		pr_err("failed to allocate hash: %s", "freed node is zero");
-		return -2;
-	} else {	
-		new_node = hash->freed_node;
-		hash->freed_node = hash->freed_node->next;
-		hash->freed_node_count--;
-	}
-
-	new_node->key = key;
-	new_node->value = value;
-
-	index = hash->hash_func(key) % hash->bucket_size;
-	bucket = &hash->bucket[index];
-	
-	if (bucket->next) {
-		new_node->next = bucket->next;
-	} else {
-		new_node->next = NULL;
-	}
-
-	bucket->next = new_node;
-	
-	return 0;
-}
-
-struct hashtab *hashtab_create(
-		int bucket_size,
-		int node_size,
-		int (*hash_func)(void *key),
-		int (*comp_func)(void *key1, void *key2))
-{
-	struct hashtab *hash;
-
-	hash = malloc(sizeof(struct hashtab));
-	if (hash == NULL) {
-		pr_err("failed to malloc(): %s", strerror(errno));
-		return NULL;
-	}
-
-	hash->hash_func = hash_func;
-	hash->comp_func = comp_func;
-	hash->bucket_size = bucket_size;
-
-	hash->freed_node_count = node_size;
-	hash->used_node_count = 0;
-
-	hash->freed_node = NULL;
-
-	hash->bucket = malloc(sizeof(struct node) * hash->bucket_size);
-	if (hash->bucket) {
-		pr_err("failed to malloc(): %s", strerror(errno));
-		free(hash);
-		return NULL;
-	} else for (int i = 0; i < hash->bucket_size; i++) {
-		hash->bucket[i].next = NULL;
-	}
-
-	struct node *freed_node = malloc(sizeof(struct node) * hash->freed_node_count);
-	if (freed_node == NULL) {
-		free(hash->bucket);
-		free(hash);
-		return NULL;
-	}
-
-	for (int i = 0; i < hash->freed_node_count - 1; i++)
-		freed_node[i].next = &freed_node[i + 1];
-	freed_node[hash->freed_node_count].next = NULL;
-
-	hash->freed_node_origin = hash->freed_node = freed_node;
-
-	return hash;
-}
-
-void hashtab_destroy(struct hashtab *hash)
-{
-	struct node *tmp;
-
-	while (hash->freed_node) {
-		tmp = hash->freed_node->next;
-		free(hash->freed_node);
-		hash->freed_node = tmp;
-	}
-
-	free(hash->bucket);
-	free(hash);
-}
 
 int send_response(int fd, uint32_t retval, uint8_t *response, struct client_packet *packet)
 {
@@ -777,25 +614,16 @@ void *device_consumer(void *args)
 	return NULL;
 }
 
-void use_logger(void)
-{
-	logger = fopen("log.txt", "w+");
-	if (logger == NULL) {
-		fprintf(stderr, "failed to fopen(): %s", strerror(errno));
-		exit(EXIT_FAILURE);
-	}
-
-	setvbuf(logger, NULL, _IONBF, 1);
-}
-
 int main(int argc, char *argv[])
 {
 	struct producer_argument prod_args[2];
 	struct consumer_argument clnt_cons_args[CLIENT_CONSUMER_THREADS];
 	struct consumer_argument dev_cons_args[DEVICE_CONSUMER_THREADS];
 	int ret;
+	FILE *fp;
 
-	use_logger();
+	fp = fopen("logg.txt", "a+");
+	logger_message_redirect(fp);
 
 	for (int i = 0; i < 2; i++, argc -= 2, argv += 2)
 		if ((ret = initialize_server_data(&prod_args[i].param, argc, argv, i)) < 0)
@@ -885,9 +713,7 @@ int main(int argc, char *argv[])
 		event_data_destroy(prod_args[i].event);
 	}
 
-#if defined(REDIRECTION)
-	fclose(logger);
-#endif
+	fclose(fp);
 	
 	return 0;
 }
