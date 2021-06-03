@@ -40,7 +40,10 @@ int change_nonblocking(int fd)
 	return 0;
 }
 
-struct socket_data *socket_data_create(uint16_t port, int backlog, enum make_listener_option option)
+struct socket_data *socket_data_create(
+		uint16_t port,
+		int backlog,
+		enum make_listener_option option)
 {
 	struct socket_data *data;
 	char portstr[10];
@@ -56,8 +59,10 @@ struct socket_data *socket_data_create(uint16_t port, int backlog, enum make_lis
 	sprintf(portstr, "%" PRIu16, port);
 	
 	memset(&ai, 0x00, sizeof(struct addrinfo));
-	ai.ai_family = (option & MAKE_LISTENER_IPV6) ? AF_INET6 : AF_INET;
-	ai.ai_socktype = (option & MAKE_LISTENER_DGRAM) ? SOCK_DGRAM : SOCK_STREAM;
+	ai.ai_family = (option & MAKE_LISTENER_IPV6) 
+		         ? AF_INET6 : AF_INET;
+	ai.ai_socktype = (option & MAKE_LISTENER_DGRAM) 
+		           ? SOCK_DGRAM : SOCK_STREAM;
 	ai.ai_flags = AI_ADDRCONFIG | AI_PASSIVE;
 
 	if ((ret = getaddrinfo(NULL, portstr, &ai, &ai_ret)) != 0) {
@@ -125,8 +130,9 @@ void socket_data_destroy(struct socket_data *data)
 	free(data);
 }
 
-int epoll_handler_register(struct epoll_handler *handler, int tgfd, void *ptr, int events)
+int epoll_handler_register(EpollHandler Handler, int tgfd, void *ptr, int events)
 {
+	struct epoll_handler *handler = Handler;
 	struct epoll_event event;
 
 	event.events = events;
@@ -143,8 +149,9 @@ int epoll_handler_register(struct epoll_handler *handler, int tgfd, void *ptr, i
 	return 0;
 }
 
-int epoll_handler_unregister(struct epoll_handler *handler, int tgfd)
+int epoll_handler_unregister(EpollHandler Handler, int tgfd)
 {
+	struct epoll_handler *handler = Handler;
 	if (epoll_ctl(handler->fd, EPOLL_CTL_DEL, tgfd, NULL) == -1) {
 		pr_err("failed to epoll_ctl(): %s", strerror(errno));
 		return -1;
@@ -153,12 +160,15 @@ int epoll_handler_unregister(struct epoll_handler *handler, int tgfd)
 	return 0;
 }
 
-int epoll_handler_wait(struct epoll_handler *handler, int timeout)
+int epoll_handler_wait(EpollHandler Handler, int timeout)
 {
-	if ((handler->cnt = epoll_wait(handler->fd,
-				                   handler->events, handler->max_events,
-								   timeout)) < 0)
-	{
+	struct epoll_handler *handler = Handler;
+
+	handler->cnt = epoll_wait(handler->fd,
+				              handler->events,
+							  handler->max_events,
+							  timeout);
+	if (handler->cnt < 0) {
 		pr_err("failed to epoll_wait(): %s", strerror(errno));
 		return -1;
 	}
@@ -166,22 +176,25 @@ int epoll_handler_wait(struct epoll_handler *handler, int timeout)
 	return handler->cnt;
 }
 
-struct epoll_event *epoll_handler_pop(struct epoll_handler *handler)
+struct epoll_event *epoll_handler_pop(EpollHandler Handler)
 {
+	struct epoll_handler *handler = Handler;
 	if (handler->cnt-- <= 0)
 		return NULL;
 
 	return &handler->events[handler->cnt];
 }
 
-void epoll_handler_destroy(struct epoll_handler *handler)
+void epoll_handler_destroy(EpollHandler Handler)
 {
+	struct epoll_handler *handler = Handler;
+
 	close(handler->fd);
 	free(handler->events);
 	free(handler);
 }
 
-struct epoll_handler *epoll_handler_create(size_t max_events)
+EpollHandler epoll_handler_create(size_t max_events)
 {
 	struct epoll_handler *handler;
 
@@ -212,19 +225,22 @@ struct epoll_handler *epoll_handler_create(size_t max_events)
 }
 
 
-int epoll_handler_get_fd(struct epoll_handler *handler)
+int epoll_handler_get_fd(EpollHandler handler)
 {
-	return handler->fd;
+	return ((struct epoll_handler *)handler)->fd;
 }
 
-int extract_addrinfo(struct addrinfo *ai, char *hoststr, char *portstr)
+int extract_addrinfo(
+		struct addrinfo *ai,
+		char *hoststr,
+		char *portstr)
 {
 	int ret;
 	
 	if ((ret = getnameinfo(
 			ai->ai_addr, ai->ai_addrlen,			  // address
 			hoststr, sizeof(hoststr),				  // host name
-			portstr, sizeof(portstr),				  // service name (port number)
+			portstr, sizeof(portstr),				  // service name
 			NI_NUMERICHOST | NI_NUMERICSERV)) != 0)	{ // flags
 		pr_err("failed to getnameinfo(): %s", gai_strerror(ret));
 		return -1;

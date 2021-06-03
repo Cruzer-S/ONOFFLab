@@ -1,13 +1,7 @@
-[Jun 02 02:32:42] [INF] [source/main.c/client_consumer:136] [0] waiting data from the producer
-[Jun 02 02:32:42] [INF] [source/main.c/client_consumer:136] [1] waiting data from the producer
-[Jun 02 02:32:42] [INF] [source/main.c/client_consumer:136] [2] waiting data from the producer
-[Jun 02 02:32:42] [INF] [source/main.c/client_producer:448] Waiting event...
-[Jun 02 02:32:42] [INF] [source/main.c/main:684] client server running at 0.0.0.0:1584 (backlog 30)
-[Jun 02 02:32:42] [INF] [source/main.c/main:684] device server running at 0.0.0.0:3606 (backlog 30)
-[Jun 02 02:33:58] [ERR] [source/socket_manager.c/socket_data_create:091] failed to bind(): Address already in use
-[Jun 02 02:59:04] [INF] [source/main.c/client_producer:218] Waiting event...
-[Jun 02 02:59:04] [INF] [source/main.c/main:415] client server running at 0.0.0.0:1584 (backlog 30)
-[Jun 02 02:59:04] [INF] [source/main.c/client_consumer:117] [2] waiting data from the producer
-[Jun 02 02:59:04] [INF] [source/main.c/client_consumer:117] [0] waiting data from the producer
-[Jun 02 02:59:04] [INF] [source/main.c/client_consumer:117] [1] waiting data from the producer
-[Jun 02 02:59:04] [INF] [source/main.c/main:415] device server running at 0.0.0.0:3606 (backlog 30)
+[Jun 02 08:15:36] [ERR] [source/client_handler.c/client_server_create:093] failed to server_data_find_available(): -1
+[Jun 02 08:22:36] [INF] [source/client_handler.c/client_server_create:124] client server running at 0.0.0.0:1584 (5)
+[Jun 02 08:23:00] [INF] [source/client_handler.c/client_server_create:124] client server running at 0.0.0.0:1584 (5)
+[Jun 02 08:23:06] [INF] [source/client_handler.c/client_server_create:124] client server running at 0.0.0.0:1584 (5)
+[Jun 03 05:11:06] [ERR] [source/client_server.c/client_server_create:051] failed to malloc(data->worker_tid): 1468333647
+[Jun 03 05:11:49] [ERR] [source/client_server.c/client_server_create:051] failed to malloc(data->worker_tid): -767775153
+[Jun 03 05:12:54] [ERR] [source/client_server.c/client_server_create:051] failed to malloc(data->worker_tid): -1300074929

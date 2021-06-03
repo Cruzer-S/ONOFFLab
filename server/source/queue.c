@@ -20,7 +20,7 @@ struct queue {
 	bool is_sync;
 };
 
-struct queue *queue_create(size_t size, bool is_sync)
+Queue queue_create(size_t size, bool is_sync)
 {
 	struct queue *queue;
 
@@ -57,8 +57,9 @@ struct queue *queue_create(size_t size, bool is_sync)
 	return queue;
 }
 
-int queue_enqueue(struct queue *queue, void *data)
+int queue_enqueue(Queue Queue, void *data)
 {
+	struct queue *queue = Queue;
 	struct node *new_node;
 
 	new_node = malloc(sizeof(struct node));
@@ -89,8 +90,9 @@ int queue_enqueue(struct queue *queue, void *data)
 	return 0;
 }
 
-void *queue_dequeue(struct queue *queue)
+void *queue_dequeue(Queue Queue)
 {
+	struct queue *queue = Queue;
 	struct node *prev;
 	void *ret;
 
@@ -134,13 +136,14 @@ void *queue_dequeue(struct queue *queue)
 	return ret;
 }
 
-void *queue_peek(struct queue *queue)
+void *queue_peek(Queue queue)
 {
-	return queue->tail->data;
+	return ((struct queue *)queue)->tail->data;
 }
 
-void queue_destroy(struct queue *queue)
+void queue_destroy(Queue Queue)
 {
+	struct queue *queue = Queue;
 	while (queue_dequeue(queue) != NULL)
 		/* empty loop body */ ;
 
@@ -150,23 +153,25 @@ void queue_destroy(struct queue *queue)
 	free(queue);
 }
 
-size_t queue_usage(struct queue *queue)
+size_t queue_usage(Queue queue)
 {
-	return queue->usage;
+	return ((struct queue *)queue)->usage;
 }
 
-bool queue_empty(struct queue *queue)
+bool queue_empty(Queue queue)
 {
 	return queue_usage(queue);
 }
 
-size_t queue_size(struct queue *queue)
+size_t queue_size(Queue queue)
 {
-	return queue->size;
+	return ((struct queue *) queue)->size;
 }
 
-size_t queue_resize(struct queue *queue, size_t resize)
+size_t queue_resize(Queue Queue, size_t resize)
 {
+	struct queue *queue = Queue;
+
 	if (resize > QUEUE_MAX_SIZE)
 		return queue->size;
 

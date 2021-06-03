@@ -3,11 +3,14 @@
 
 #include <stdbool.h>
 
-struct hashtab;
+typedef void *Hashtab;
 
-struct hashtab *hashtab_create(int bucket_size, int node_size, int (*hash_func)(void *key), int (*comp_func)(void *key1, void *key2));
-void hashtab_destroy(struct hashtab *hash);
-void *hashtab_find(struct hashtab *hash, void *key, bool pull_out);
-int hashtab_insert(struct hashtab *hash, void *key, void *value);
+Hashtab hashtab_create(
+		int bucket_size, int node_size,
+		int (*hash_func)(void *key),
+		int (*comp_func)(void *key1, void *key2));
+void hashtab_destroy(Hashtab hash);
+void *hashtab_find(Hashtab hash, void *key, bool pull_out);
+int hashtab_insert(Hashtab hash, void *key, void *value);
 
 #endif

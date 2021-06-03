@@ -7,16 +7,16 @@
 
 #define QUEUE_MAX_SIZE 1024
 
-struct queue;
+typedef void *Queue;
 
-struct queue *queue_create(size_t size, bool is_sync);
-int queue_enqueue(struct queue *queue, void *data);
-void *queue_dequeue(struct queue *queue);
-void *queue_peek(struct queue *queue);
-bool queue_empty(struct queue *queue);
-void queue_destroy(struct queue *queue);
-size_t queue_size(struct queue *queue);
-size_t queue_usage(struct queue *queue);
-size_t queue_resize(struct queue *queue, size_t resize);
+Queue queue_create(size_t size, bool is_sync);
+int queue_enqueue(Queue queue, void *data);
+void *queue_dequeue(Queue queue);
+void *queue_peek(Queue queue);
+bool queue_empty(Queue queue);
+void queue_destroy(Queue queue);
+size_t queue_size(Queue queue);
+size_t queue_usage(Queue queue);
+size_t queue_resize(Queue queue, size_t resize);
 
 #endif

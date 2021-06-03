@@ -28,7 +28,7 @@ enum make_listener_option {
 	MAKE_LISTENER_DGRAM			= 0x08,
 };
 
-struct epoll_handler;
+typedef void *EpollHandler;
 
 struct socket_data {
 	int fd;
@@ -37,6 +37,8 @@ struct socket_data {
 	struct addrinfo *ai;
 };
 
+typedef struct socket_data *SockData;
+
 int socket_reuseaddr(int sock);
 int change_nonblocking(int fd);
 
@@ -44,12 +46,12 @@ int change_nonblocking(int fd);
 struct socket_data *socket_data_create(uint16_t port, int backlog, enum make_listener_option option);
 void socket_data_destroy(struct socket_data *data);
 
-int epoll_handler_register(struct epoll_handler *handler, int tgfd, void *ptr, int events);
-int epoll_handler_unregister(struct epoll_handler *handler, int tgfd);
-int epoll_handler_wait(struct epoll_handler *handler, int timeout);
-struct epoll_event *epoll_handler_pop(struct epoll_handler *handler);
-void epoll_handler_destroy(struct epoll_handler *handler);
-struct epoll_handler *epoll_handler_create(size_t max_events);
+int epoll_handler_register(EpollHandler handler, int tgfd, void *ptr, int events);
+int epoll_handler_unregister(EpollHandler handler, int tgfd);
+int epoll_handler_wait(EpollHandler handler, int timeout);
+struct epoll_event *epoll_handler_pop(EpollHandler handler);
+void epoll_handler_destroy(EpollHandler handler);
+EpollHandler epoll_handler_create(size_t max_events);
 
 int extract_addrinfo(struct addrinfo *ai, char *hoststr, char *portstr);
 

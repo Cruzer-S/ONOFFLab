@@ -26,10 +26,11 @@ struct hashtab {
 	struct node *freed_node_origin;
 };
 
-void *hashtab_find(struct hashtab *hash, void *key, bool pull_out)
+void *hashtab_find(Hashtab Hash, void *key, bool pull_out)
 {
 	int index;
 	struct node *bucket, *prev, *cur;
+	struct hashtab *hash = Hash;
 
 	index = hash->hash_func(key) % hash->bucket_size;
 
@@ -59,9 +60,10 @@ void *hashtab_find(struct hashtab *hash, void *key, bool pull_out)
 	return NULL;
 }
 
-int hashtab_insert(struct hashtab *hash, void *key, void *value)
+int hashtab_insert(Hashtab Hash, void *key, void *value)
 {
 	struct node *bucket, *new_node;
+	struct hashtab *hash = Hash;
 	int index;
 	void *ptr;
 
@@ -95,7 +97,7 @@ int hashtab_insert(struct hashtab *hash, void *key, void *value)
 	return 0;
 }
 
-struct hashtab *hashtab_create(
+Hashtab hashtab_create(
 		int bucket_size,
 		int node_size,
 		int (*hash_func)(void *key),
@@ -105,7 +107,7 @@ struct hashtab *hashtab_create(
 
 	hash = malloc(sizeof(struct hashtab));
 	if (hash == NULL) {
-		pr_err("failed to malloc(): %s", strerror(errno));
+		pr_err("failed to malloc(struct hashtab): %s", strerror(errno));
 		return NULL;
 	}
 
@@ -119,16 +121,18 @@ struct hashtab *hashtab_create(
 	hash->freed_node = NULL;
 
 	hash->bucket = malloc(sizeof(struct node) * hash->bucket_size);
-	if (hash->bucket) {
-		pr_err("failed to malloc(): %s", strerror(errno));
+	if (hash->bucket == NULL) {
+		pr_err("failed to malloc(struct node: bucket): %s", strerror(errno));
 		free(hash);
 		return NULL;
 	} else for (int i = 0; i < hash->bucket_size; i++) {
 		hash->bucket[i].next = NULL;
 	}
 
-	struct node *freed_node = malloc(sizeof(struct node) * hash->freed_node_count);
+	struct node *freed_node = malloc(
+		sizeof(struct node) * hash->freed_node_count);
 	if (freed_node == NULL) {
+		pr_err("failed to malloc(struct node: freed node): %s", strerror(errno));
 		free(hash->bucket);
 		free(hash);
 		return NULL;
@@ -143,8 +147,9 @@ struct hashtab *hashtab_create(
 	return hash;
 }
 
-void hashtab_destroy(struct hashtab *hash)
+void hashtab_destroy(Hashtab Hash)
 {
+	struct hashtab *hash = Hash;
 	struct node *tmp;
 
 	while (hash->freed_node) {

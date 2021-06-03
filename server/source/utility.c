@@ -35,40 +35,37 @@ int set_timer(int fd, int timeout)
 	return 0;
 }
 
-int parse_arguments(int argc, char *argv[], ...)
+int parse_arguments(int cnt, char *vector[], ...)
 {
 	char *test;
 	long overflow;
 	va_list ap;
 	int ret = 0, type;
 
-	va_start(ap, argv);
+	va_start(ap, vector);
 
-	while (argv++, --argc > 0) {
-		switch ( (type = va_arg(ap, int)) ) {
-		case 16: // uint16_t
-		case  4: // int
-			overflow = strtol(*argv, &test, 10);
-			if (overflow == 0 && *argv == test) {
+	for (int i = 1; i < cnt; i++) {
+		type = va_arg(ap, int);
+
+		switch (type) {
+		case PARSE_ARGUMENT_UINT16:
+		case PARSE_ARGUMENT_INT:
+			errno = 0;
+			overflow = strtol(vector[i], &test, 10);
+			if (overflow == 0 && vector[i] == test) {
 				pr_err("failed to convert string to long: %s", "Not a number");
 				ret = -1; goto CLEANUP;
 			}
 
-			if (overflow == LONG_MIN || overflow == LONG_MAX)
-				if (errno == ERANGE) {
-					pr_err("failed to strtol(): %s", strerror(errno));
-					ret = -2; goto CLEANUP;
-				}
-
+			if (errno == ERANGE) {
+				pr_err("failed to strtol(): %s", strerror(errno));
+				ret = -2; goto CLEANUP;
+			}
 			break;
-
-		default:
-			pr_err("unspecific type: %d", type);
-			ret = -3; goto CLEANUP;
 		}
 
 		switch (type) {
-		case 16: 
+		case PARSE_ARGUMENT_UINT16:
 			if (overflow < 0 || overflow > UINT16_MAX) {
 				pr_err("failed to convert string to uint16_t: %s", "Out of range");
 				ret = -4; goto CLEANUP;
@@ -77,7 +74,12 @@ int parse_arguments(int argc, char *argv[], ...)
 			*va_arg(ap, uint16_t *) = overflow;
 			break;
 
-		case 4:
+		case 4:	// int
+			if (errno == ERANGE) {
+				pr_err("failed to strtol(): %s", strerror(errno));
+				ret = -2; goto CLEANUP;
+			}
+
 			if (overflow < INT_MIN || overflow > INT_MAX) {
 				pr_err("failed to convert string to int: %s", "Out of range");
 				ret = -5; goto CLEANUP;
@@ -86,6 +88,9 @@ int parse_arguments(int argc, char *argv[], ...)
 			*va_arg(ap, int *) = overflow;
 			break;
 
+		case PARSE_ARGUMENT_CHARPTR: // char *
+			*va_arg(ap, char **) = vector[i];
+			break;
 		}
 	}
 
