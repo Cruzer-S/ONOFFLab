@@ -5,12 +5,11 @@
 #include "queue.h"
 
 #include <sys/timerfd.h>
-
+/*
 void event_data_destroy(struct event_data *data)
 {
 	switch (data->type) {
 	case ETYPE_LISTENER:
-		/* do nothing */
 		break;
 
 	case ETYPE_FOREIGNER:
@@ -89,4 +88,4 @@ struct event_data *event_data_create(int type, ...)
 	
 	return data;
 }
-
+*/

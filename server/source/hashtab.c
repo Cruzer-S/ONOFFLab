@@ -136,13 +136,11 @@ Hashtab hashtab_create(
 		free(hash->bucket);
 		free(hash);
 		return NULL;
-	}
+	} else hash->freed_node_origin = hash->freed_node = freed_node;
 
 	for (int i = 0; i < hash->freed_node_count - 1; i++)
 		freed_node[i].next = &freed_node[i + 1];
-	freed_node[hash->freed_node_count].next = NULL;
-
-	hash->freed_node_origin = hash->freed_node = freed_node;
+	freed_node[hash->freed_node_count - 1].next = NULL;
 
 	return hash;
 }
@@ -152,12 +150,7 @@ void hashtab_destroy(Hashtab Hash)
 	struct hashtab *hash = Hash;
 	struct node *tmp;
 
-	while (hash->freed_node) {
-		tmp = hash->freed_node->next;
-		free(hash->freed_node);
-		hash->freed_node = tmp;
-	}
-
+	free(hash->freed_node_origin);
 	free(hash->bucket);
 	free(hash);
 }

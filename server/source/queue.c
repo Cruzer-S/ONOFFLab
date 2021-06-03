@@ -100,7 +100,7 @@ void *queue_dequeue(Queue Queue)
 		pthread_mutex_lock(&queue->mutex);
 		// -------------------------------------
 		// Critical Section Start
-		// -------------------------------------
+		// -------------------------------------	
 		if (pthread_cond_wait(&queue->cond, &queue->mutex) != 0) {
 			pthread_mutex_unlock(&queue->mutex);
 			return NULL;
@@ -110,7 +110,7 @@ void *queue_dequeue(Queue Queue)
 			pthread_mutex_unlock(&queue->mutex);
 			return NULL;
 		}
-
+		
 		ret = queue->tail->data;
 		prev = queue->tail;
 		queue->tail = queue->tail->next;
@@ -144,8 +144,6 @@ void *queue_peek(Queue queue)
 void queue_destroy(Queue Queue)
 {
 	struct queue *queue = Queue;
-	while (queue_dequeue(queue) != NULL)
-		/* empty loop body */ ;
 
 	pthread_mutex_destroy(&queue->mutex);
 	pthread_cond_destroy(&queue->cond);

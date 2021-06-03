@@ -15,6 +15,7 @@ struct deliverer_argument {
 	SockData sock_data;
 
 	size_t filesize;
+	size_t timeout;
 
 	pthread_barrier_t *barrier;
 };

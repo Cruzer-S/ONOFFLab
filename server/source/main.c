@@ -70,7 +70,7 @@ int extract_parameter(struct parameter_data *data,
 int main(int argc, char *argv[])
 {
 	struct parameter_data param_data;
-	struct client_server_argument clnt_arg;
+	struct client_server_argument clnt_serv_arg;
 	Hashtab shared_table;
 	CServData serv_data;
 	int ret;
@@ -87,11 +87,14 @@ int main(int argc, char *argv[])
 	if (shared_table == NULL)
 		ERROR_HANDLING("failed to %s", "hashtab_create()");
 
-	clnt_arg.port = param_data.port[CLIENT];
-	clnt_arg.backlog = param_data.backlog[CLIENT];
-	clnt_arg.shared_table = shared_table;
+	clnt_serv_arg.port = param_data.port[CLIENT];
+	clnt_serv_arg.backlog = param_data.backlog[CLIENT];
+	clnt_serv_arg.shared_table = shared_table;
+	clnt_serv_arg.worker = 4;
+	clnt_serv_arg.event = 1024;
+	clnt_serv_arg.filesize = 1024 * 1024 * 10;
 
-	if ((serv_data = client_server_create(&clnt_arg)) == NULL)
+	if ((serv_data = client_server_create(&clnt_serv_arg)) == NULL)
 		ERROR_HANDLING("failed to %s", "client_server_create()");
 
 	if ((ret = client_server_start(serv_data)) < 0)

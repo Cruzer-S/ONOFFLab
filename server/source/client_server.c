@@ -59,7 +59,7 @@ CServData client_server_create(CARGS *arg)
 		goto FAILED_TO_HANDLER;
 	}
 
-	data->queue = queue_create(arg->event * arg->worker, true);
+	data->queue = queue_create(arg->event, true);
 	if (data->queue == NULL) {
 		pr_err("failed to %s", "queue_create()");
 		goto FAILED_TO_QUEUE;
@@ -115,8 +115,6 @@ int client_server_start(CServData serv_data)
 		.barrier = &barrier
 	};
 
-	
-
 	worker = (struct worker_argument) {
 		.queue = data->queue,
 		.barrier = &barrier
@@ -128,6 +126,7 @@ int client_server_start(CServData serv_data)
 			client_handler_deliverer,
 			&deliverer);
 	if (ret != 0) {
+		pthread_barrier_destroy(&barrier);
 		pr_err("failed to pthread_create(): %s", strerror(ret));
 		return -1;
 	}
@@ -157,13 +156,19 @@ int client_server_start(CServData serv_data)
 int client_server_wait(CServData serv_data)
 {
 	struct server_data *data = serv_data;
+	void *ret;
 
-	if (pthread_join(data->server_tid, NULL) != 0)
+	if (pthread_join(data->server_tid, &ret) != 0)
 		return -1;
 
-	for (int i = 0; i < data->worker_count; i++)
-		if (pthread_join(data->worker_tid[i], NULL) != 0)
+	pr_out("return value from server: %d", ret);
+
+	for (int i = 0; i < data->worker_count; i++) {
+		if (pthread_join(data->worker_tid[i], &ret) != 0)
 			return -(2 + i);
+
+		pr_out("return value from worker: %d", ret);
+	}
 
 	return 0;
 }

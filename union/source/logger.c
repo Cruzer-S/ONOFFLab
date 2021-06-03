@@ -17,9 +17,25 @@ static char *get_time0(char *buf, size_t sz_buf)
 	return buf;
 }
 
-inline void logger_message_redirect(FILE *fp)
+inline int logger_create(const char *filename)
 {
-	redirect = fp;
+	if (redirect != NULL)
+		return -1;
+
+	redirect = fopen(filename, "a+");
+	if (redirect == NULL)
+		return -2;
+
+	return 0;
+}
+
+inline void logger_destroy(void)
+{
+	if (redirect == NULL)
+		return ;
+
+	fclose(redirect);
+	redirect = NULL;
 }
 
 void __print_message(FILE *fp, const char *fmt, ...)

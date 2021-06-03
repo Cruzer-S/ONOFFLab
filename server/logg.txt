@@ -1,7 +1,5 @@
-[Jun 02 08:15:36] [ERR] [source/client_handler.c/client_server_create:093] failed to server_data_find_available(): -1
-[Jun 02 08:22:36] [INF] [source/client_handler.c/client_server_create:124] client server running at 0.0.0.0:1584 (5)
-[Jun 02 08:23:00] [INF] [source/client_handler.c/client_server_create:124] client server running at 0.0.0.0:1584 (5)
-[Jun 02 08:23:06] [INF] [source/client_handler.c/client_server_create:124] client server running at 0.0.0.0:1584 (5)
-[Jun 03 05:11:06] [ERR] [source/client_server.c/client_server_create:051] failed to malloc(data->worker_tid): 1468333647
-[Jun 03 05:11:49] [ERR] [source/client_server.c/client_server_create:051] failed to malloc(data->worker_tid): -767775153
-[Jun 03 05:12:54] [ERR] [source/client_server.c/client_server_create:051] failed to malloc(data->worker_tid): -1300074929
+[Jun 03 08:25:31] [INF] [source/client_handler.c/client_handler_worker:113] client_handler_worker() start
+[Jun 03 08:25:31] [INF] [source/client_handler.c/client_handler_worker:113] client_handler_worker() start
+[Jun 03 08:25:31] [INF] [source/client_handler.c/client_handler_worker:113] client_handler_worker() start
+[Jun 03 08:25:31] [INF] [source/client_handler.c/client_handler_deliverer:090] client server running at 0.0.0.0:1584 (5)
+[Jun 03 08:25:31] [INF] [source/client_handler.c/client_handler_worker:113] client_handler_worker() start

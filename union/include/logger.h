@@ -6,7 +6,8 @@
 #include <stdbool.h>	// true, false
 
 void __print_message(FILE *fp, const char *fmt, ...);
-void logger_message_redirect(FILE *fp);
+int logger_create(const char *filename);
+void logger_destroy(void);
 
 #define print_message(FPTR, TYPE, FMT, ...) 	\
 	__print_message(FPTR,						\
