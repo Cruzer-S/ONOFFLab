@@ -9,23 +9,31 @@
 #include "socket_manager.h"
 #include "queue.h"
 
-struct deliverer_argument {
-	EpollHandler handler;
-	Queue queue;
-	SockData sock_data;
+struct client_listener_data {
+	EpollHandler *epolls;
+	int deliverer_count;
+	int listener;
 
-	size_t filesize;
-	size_t timeout;
+	int timeout;
 
-	pthread_barrier_t *barrier;
+	pthread_t tid;
 };
 
-struct worker_argument {
+struct client_deliverer_data {
 	Queue queue;
-	pthread_barrier_t *barrier;
+	EpollHandler epoll;
+
+	pthread_t tid;
 };
 
-void *client_handler_deliverer(void *deliverer_argument);
-void *client_handler_worker(void *worker_argument);
+struct client_worker_data {
+	Queue queue;
+
+	pthread_t tid;
+};
+
+typedef struct client_listener_data CListenerData;
+typedef struct client_deliverer_data CDelivererData;
+typedef struct client_worker_data CWorkerData;
 
 #endif

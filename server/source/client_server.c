@@ -11,174 +11,150 @@
 #include "queue.h"	 				// queueu_enqueue
 #include "logger.h"	 				// pr_err()
 
+#include "client_server.h"
 #include "client_handler.h"
 
-#define MAX_FILE_SIZE 1024 * 1024 * 10 // 10 MiB
+#define FILE_LIMIT (1024 * 1024 * 10) // 10 MiB
+#define DELIVERER_LIMIT 8
+#define WORKER_LIMIT 8
+#define EVENT_LIMIT 8192
 
-#define MAX_WORKER_THREAD 8
+struct client_server {
+	EpollHandler *epoll;
+	EpollHandler *listener;
 
-struct server_data {
-	EpollHandler handler;
-	SockData sock_data;
-	Queue *queue;
+	SockData sock;
+	Queue queue;
 
-	pthread_t server_tid;
-	pthread_t *worker_tid;
-
+	int deliverer_count;
 	int worker_count;
-	size_t filesize;
+
+	int event_probe;
+
+	size_t timeout;
+
+	size_t header_size;
+	size_t body_size;
 };
 
-CServData client_server_create(CARGS *arg)
+typedef struct client_server *Server;
+
+static inline int test_and_set(Server server, ClntServArg *arg)
 {
-	struct server_data *data;
+	if (arg->event > EVENT_LIMIT)
+		return -1;
 
-	data = malloc(sizeof(struct server_data));
-	if (data == NULL) {
-		pr_err("failed to malloc(struct serv_data): %d",
-				strerror(errno));
-		goto FAILED_TO_MALLOC_SERV;
-	}
+	if (arg->deliverer > DELIVERER_LIMIT)
+		return -2;
 
-	if (arg->worker > MAX_WORKER_THREAD) {
-		pr_err("fail: %s", "Too many worker threads to handle");
-		goto FAILED_TO_WORKER;
-	} else data->worker_count = arg->worker;
+	if (arg->worker > WORKER_LIMIT)
+		return -3;
 
-	data->worker_tid = malloc(
-			sizeof(pthread_t) * data->worker_count);
-	if (data->worker_tid == NULL) {
-		pr_err("failed to malloc(data->worker_tid): %d",
-				strerror(errno));
-		goto FAILED_TO_MALLOC_WORKER;
-	}
+	if (arg->body_size > FILE_LIMIT)
+		return -4;
 
-	data->handler = epoll_handler_create(arg->event);
-	if (data->handler == NULL) {
-		pr_err("failed to %s", "epoll_handler_create()");
-		goto FAILED_TO_HANDLER;
-	}
+	server->event_probe = arg->event;
+	server->deliverer_count = arg->deliverer;
+	server->worker_count = arg->worker;
+	server->body_size = arg->body_size;
+	server->header_size = arg->header_size;
+	server->timeout = arg->timeout;
 
-	data->queue = queue_create(arg->event, true);
-	if (data->queue == NULL) {
-		pr_err("failed to %s", "queue_create()");
-		goto FAILED_TO_QUEUE;
-	}
-
-	data->sock_data = socket_data_create(
-			arg->port, arg->backlog,
-			MAKE_LISTENER_DEFAULT);
-	if (data->sock_data == NULL) {
-		pr_err("failed to %s", "socket_data_create()");
-		goto FAILED_TO_SOCK;
-	}
-
-	data->filesize = arg->filesize;
-
-	return data;
-FAILED_TO_SOCK:
-	queue_destroy(data->queue);
-FAILED_TO_QUEUE:
-	epoll_handler_destroy(data->handler);
-FAILED_TO_HANDLER:
-	free(data->worker_tid);
-FAILED_TO_MALLOC_WORKER:
-FAILED_TO_WORKER:
-	free(data);
-FAILED_TO_MALLOC_SERV:
-	return NULL;
+	return 0;
 }
 
-int client_server_start(CServData serv_data)
+static inline void destroy_epoll(Server server)
 {
-	struct server_data *data = serv_data;
-	struct deliverer_argument deliverer;
-	struct worker_argument worker;
-	pthread_barrier_t barrier;
-	int ret;
+	for (int i = 0; i < server->deliverer_count + 1; i++)
+		epoll_handler_destroy(server->epoll[i]);
 
-	ret = pthread_barrier_init(
-			&barrier,
-			NULL,
-			data->worker_count + 1 + 1);
-	if (ret != 0) {
-		pr_err("failed to pthread_barrier_init(): %s",
-				strerror(ret));
+	free(server->epoll);
+}
+
+static inline int epoll_create_arg(Server server, ClntServArg *arg)
+{
+	int cnt = arg->deliverer;
+	int event = arg->event / arg->deliverer;
+
+	server->epoll = malloc(sizeof(EpollHandler) * (cnt + 1));
+	if (server->epoll == NULL)
 		return -1;
-	}
 
-	deliverer = (struct deliverer_argument) {
-		.handler = data->handler,
-		.queue = data->queue,
-		.sock_data = data->sock_data,
-		.filesize = data->filesize,
-		.barrier = &barrier
-	};
-
-	worker = (struct worker_argument) {
-		.queue = data->queue,
-		.barrier = &barrier
-	};
-
-	ret = pthread_create(
-			&data->server_tid,
-			NULL,
-			client_handler_deliverer,
-			&deliverer);
-	if (ret != 0) {
-		pthread_barrier_destroy(&barrier);
-		pr_err("failed to pthread_create(): %s", strerror(ret));
-		return -1;
-	}
-
-	for (int i = 0; i < data->worker_count; i++) {
-		ret = pthread_create(
-				&data->worker_tid[i],
-				NULL,
-				client_handler_worker,
-				&worker);
-		if (ret != 0) {
-			pr_err("failed to pthread_create: %s", strerror(ret));
+	for (int i = 0; i < cnt + 1; i++) {
+		server->epoll[i] = epoll_handler_create(event);
+		if (server->epoll[i] == NULL) {
+			for (int j = 0; j < i; j++)
+				epoll_handler_destroy(server->epoll[j]);
+			free(server->epoll);
 			return -2;
 		}
 	}
 
-	ret = pthread_barrier_wait(&barrier);
-	if (ret != 0 && ret != PTHREAD_BARRIER_SERIAL_THREAD)
-		pr_err("failed to pthread_barrier_wait(): %s", 
-				strerror(ret));
-
-	pthread_barrier_destroy(&barrier);
+	server->listener = server->epoll[cnt];
 
 	return 0;
 }
 
-int client_server_wait(CServData serv_data)
+ClntServ client_server_create(ClntServArg *arg)
 {
-	struct server_data *data = serv_data;
-	void *ret;
+	Server server;
+	int ret;
 
-	if (pthread_join(data->server_tid, &ret) != 0)
-		return -1;
-
-	pr_out("return value from server: %d", ret);
-
-	for (int i = 0; i < data->worker_count; i++) {
-		if (pthread_join(data->worker_tid[i], &ret) != 0)
-			return -(2 + i);
-
-		pr_out("return value from worker: %d", ret);
+	server = malloc(sizeof(struct client_server));
+	if (server == NULL) {
+		pr_err("failed to malloc(): %s", strerror(errno));
+		goto FAIL_MALLOC;
 	}
 
+	if ((ret = test_and_set(server, arg)) < 0) {
+		pr_err("failed to test_limit(): %d", ret);
+		goto FREE_SERVER;
+	}
+
+	if ((ret = epoll_create_arg(server, arg)) < 0) {
+		pr_err("failed to initialize_epoll(): %d", ret);
+		goto FREE_SERVER;
+	}
+
+	server->queue = queue_create(arg->deliverer, true);
+	if (server->queue == NULL) {
+		pr_err("failed to queue_create(): %p", NULL);
+		goto DESTROY_EPOLL;
+	}
+
+	server->sock = socket_data_create(
+			arg->port, arg->backlog, MAKE_LISTENER_DEFAULT);
+	if (server->sock == NULL) {
+		pr_err("failed to socket_data_create(): %p", NULL);
+		goto QUEUE_DESTROY;
+	}
+
+	return server;
+QUEUE_DESTROY:
+	queue_destroy(server->queue);
+DESTROY_EPOLL:
+	destroy_epoll(server);
+FREE_SERVER:
+	free(server);
+FAIL_MALLOC:
+	return NULL;
+}
+
+void client_server_destroy(ClntServ clnt_serv)
+{
+	Server server = clnt_serv;
+
+	queue_destroy(server->queue);
+	destroy_epoll(server);
+	free(server);
+}
+
+int client_server_wait(ClntServ clnt_serv)
+{
 	return 0;
 }
 
-void client_server_destroy(CServData serv_data)
+int client_server_start(ClntServ clnt_serv)
 {
-	struct server_data *data = serv_data;
-
-	socket_data_destroy(data->sock_data);
-	queue_destroy(data->queue);
-	epoll_handler_destroy(data->handler);
-	free(data);
+	return 0;
 }

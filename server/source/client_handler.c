@@ -2,19 +2,15 @@
 
 #include <stdarg.h>
 
-#include "client_event_data.h"
+#include "client_event_handler.h"
 #include "logger.h"
-
-void event_data_destroy(EventData data)
-{
-	free(data);
-}
-
+/*
 void *client_handler_deliverer(void *argument)
 {
 	struct deliverer_argument arg;
-	EventData data;
+	EventHandler handler;
 	int ret;
+	void *process_data, *server_data;
 
 	arg = *(struct deliverer_argument *) argument;
 	ret = pthread_barrier_wait(arg.barrier);
@@ -25,10 +21,12 @@ void *client_handler_deliverer(void *argument)
 		return (void *) -1;
 	}
 
-	data = event_data_create(ETYPE_SERVER, arg.sock_data->fd);
-	if (data == NULL) {
-		pr_err("failed to event_data_create(%d)",
-				arg.sock_data->fd);
+	handler = event_handler_create(
+			arg.epoll, arg.header_size, 
+			arg.body_size, arg.timeout,
+			arg.sock_data->fd);
+	if (handler) {
+		pr_err("failed to %s", "event_handler_create()");
 		return (void *) -2;
 	}
 
@@ -36,15 +34,19 @@ void *client_handler_deliverer(void *argument)
 		char hoststr[128], portstr[128];
 
 		extract_addrinfo(arg.sock_data->ai, hoststr, portstr);
-		pr_out("client server running at %s:%s (%d)", 
+		pr_out("client server running at %s:%s (%d)",
 				hoststr, portstr, arg.sock_data->fd);
 	} while (false);
 
-	while ((ret = process_event_data(0)) >= 0) ;
+	while ((ret = event_handler_process(handler,
+					                    &process_data)) > 0)
+		if (process_data)
+			queue_enqueue(arg.queue, process_data);
 
-	pr_err("failed to process_event_data(): %d", ret);
+	if (ret < 0)
+		pr_err("failed to process_event_data(): %d", ret);
 
-	event_data_destroy(data);
+	event_handler_destroy(handler);
 
 	return (void *) ((ssize_t) ret);
 }
@@ -66,3 +68,5 @@ void *client_handler_worker(void *argument)
 
 	return (void *) 0;
 }
+
+*/

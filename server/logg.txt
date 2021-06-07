@@ -1,5 +1,0 @@
-[Jun 03 08:25:31] [INF] [source/client_handler.c/client_handler_worker:113] client_handler_worker() start
-[Jun 03 08:25:31] [INF] [source/client_handler.c/client_handler_worker:113] client_handler_worker() start
-[Jun 03 08:25:31] [INF] [source/client_handler.c/client_handler_worker:113] client_handler_worker() start
-[Jun 03 08:25:31] [INF] [source/client_handler.c/client_handler_deliverer:090] client server running at 0.0.0.0:1584 (5)
-[Jun 03 08:25:31] [INF] [source/client_handler.c/client_handler_worker:113] client_handler_worker() start

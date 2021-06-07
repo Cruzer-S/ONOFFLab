@@ -2,24 +2,33 @@
 #define CLIENT_SERVER_H__
 
 #include <stdint.h>
+#include <stdlib.h>
+
 #include "hashtab.h"
 
 struct client_server_argument {
 	uint16_t port;
 	int backlog;
+
 	int worker;
+	int deliverer;
+
 	int event;
-	int filesize;
+
+	size_t header_size;
+	size_t body_size;
+
+	size_t timeout;
 
 	Hashtab shared_table;
 };
 
-typedef struct client_server_argument CARGS;
-typedef void *CServData;
+typedef struct client_server_argument ClntServArg;
+typedef void *ClntServ;
 
-CServData client_server_create(CARGS *carg);
-int client_server_start(CServData serv_data);
-int client_server_wait(CServData serv_data);
-void client_server_destroy(CServData serv_data);
+ClntServ client_server_create(ClntServArg *carg);
+int client_server_start(ClntServ clnt_serv);
+int client_server_wait(ClntServ clnt_serv);
+void client_server_destroy(ClntServ clnt_serv);
 
 #endif

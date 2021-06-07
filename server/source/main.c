@@ -1,4 +1,6 @@
-#include <stdio.h>
+#include <stdio.h>		// fprintf, NULL
+#include <stdlib.h> 	// exit, EXIT_FAILURE
+#include <stdint.h>
 
 #include "client_server.h"
 #include "hashtab.h"
@@ -23,10 +25,63 @@ struct parameter_data {
 	uint16_t port[2];
 	int backlog[2];
 	char *logger;
+	int temp;
 };
 
 int extract_parameter(struct parameter_data *data,
 		              int argc, char **argv);
+
+#define ERROR_HANDLING(FMT, ...)			\
+	fprintf(stderr, FMT "\n", __VA_ARGS__), \
+	exit(EXIT_FAILURE)
+
+int main(int argc, char *argv[])
+{
+	struct parameter_data param_data;
+	ClntServArg cserv_arg;
+	Hashtab shared_table;
+	ClntServ clnt_serv;
+	int ret;
+	
+	if ((ret = extract_parameter(&param_data, argc, argv)) < 0)
+		ERROR_HANDLING("failed to extract_parameter(): %d", ret);
+
+	if ((ret = logger_create(param_data.logger)) < 0)
+		ERROR_HANDLING("failed to logger_create(): %d", ret);
+
+	shared_table = hashtab_create(
+		SHARED_TABLE_BUCKET_SIZE, SHARED_TABLE_NODE_COUNT,
+		shared_data_hash, shared_data_compare);
+	if (shared_table == NULL)
+		ERROR_HANDLING("failed to %s", "hashtab_create()");
+
+	cserv_arg.port = param_data.port[CLIENT];
+	cserv_arg.backlog = param_data.backlog[CLIENT];
+	cserv_arg.shared_table = shared_table;
+
+	cserv_arg.deliverer = 8;
+	cserv_arg.worker = 4;
+
+	cserv_arg.event = 8192;
+	cserv_arg.timeout = 5;
+
+	cserv_arg.header_size = 1024;
+	cserv_arg.body_size = 1024 * 1024 * 10;
+
+	if ((clnt_serv = client_server_create(&cserv_arg)) == NULL)
+		ERROR_HANDLING("failed to %s", "client_server_create()");
+
+	if ((ret = client_server_start(clnt_serv)) < 0)
+		ERROR_HANDLING("failed to client_server_start(): %d",ret);
+
+	client_server_wait(clnt_serv);
+
+	client_server_destroy(clnt_serv);
+	hashtab_destroy(shared_table);
+	logger_destroy();
+	
+	return 0;
+}
 
 int extract_parameter(struct parameter_data *data,
 		              int argc, char **argv)
@@ -41,12 +96,14 @@ int extract_parameter(struct parameter_data *data,
 	data->port[DEVICE]		= DEFAULT_DEVICE_PORT;
 	data->backlog[DEVICE]	= DEFAULT_DEVICE_BACKLOG;
 
-	if (!(argc == 1 || argc == 5))
+	if (!(argc == 1 || argc == 5)) {
 		fprintf(stderr, "usage: %s "
 				"[logger]"
 				"[clnt-port] [clnt-blog]" 
 				"[dev-port] [dev-blog]\n",
 				argv[0]);
+		return -1;
+	}
 
 	ret = parse_arguments(
 		argc, argv,
@@ -63,48 +120,3 @@ int extract_parameter(struct parameter_data *data,
 	return 0;
 }
 
-#define ERROR_HANDLING(FMT, ...)			\
-	fprintf(stderr, FMT "\n", __VA_ARGS__), \
-	exit(EXIT_FAILURE)
-
-int main(int argc, char *argv[])
-{
-	struct parameter_data param_data;
-	struct client_server_argument clnt_serv_arg;
-	Hashtab shared_table;
-	CServData serv_data;
-	int ret;
-	
-	if ((ret = extract_parameter(&param_data, argc, argv)) < 0)
-		ERROR_HANDLING("failed to extract_parameter(): %d", ret);
-
-	if ((ret = logger_create(param_data.logger)) < 0)
-		ERROR_HANDLING("failed to logger_create(): %d", ret);
-
-	shared_table = hashtab_create(
-		SHARED_TABLE_BUCKET_SIZE, SHARED_TABLE_NODE_COUNT,
-		shared_data_hash, shared_data_compare);
-	if (shared_table == NULL)
-		ERROR_HANDLING("failed to %s", "hashtab_create()");
-
-	clnt_serv_arg.port = param_data.port[CLIENT];
-	clnt_serv_arg.backlog = param_data.backlog[CLIENT];
-	clnt_serv_arg.shared_table = shared_table;
-	clnt_serv_arg.worker = 4;
-	clnt_serv_arg.event = 1024;
-	clnt_serv_arg.filesize = 1024 * 1024 * 10;
-
-	if ((serv_data = client_server_create(&clnt_serv_arg)) == NULL)
-		ERROR_HANDLING("failed to %s", "client_server_create()");
-
-	if ((ret = client_server_start(serv_data)) < 0)
-		ERROR_HANDLING("failed to client_server_start(): %d",ret);
-
-	client_server_wait(serv_data);
-
-	client_server_destroy(serv_data);
-	hashtab_destroy(shared_table);
-	logger_destroy();
-	
-	return 0;
-}
