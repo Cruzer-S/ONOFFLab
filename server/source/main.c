@@ -35,6 +35,25 @@ int extract_parameter(struct parameter_data *data,
 	fprintf(stderr, FMT "\n", __VA_ARGS__), \
 	exit(EXIT_FAILURE)
 
+static inline void fill_client_server_argument(
+		ClntServArg *cserv_arg,
+		struct parameter_data *param_data,
+		Hashtab shared_table)
+{
+	cserv_arg->port = param_data->port[CLIENT];
+	cserv_arg->backlog = param_data->backlog[CLIENT];
+	cserv_arg->shared_table = shared_table;
+
+	cserv_arg->deliverer = 8;
+	cserv_arg->worker = 4;
+
+	cserv_arg->event = 8192;
+	cserv_arg->timeout = 5;
+
+	cserv_arg->header_size = 1024;
+	cserv_arg->body_size = 1024 * 1024 * 10;
+}
+
 int main(int argc, char *argv[])
 {
 	struct parameter_data param_data;
@@ -55,24 +74,17 @@ int main(int argc, char *argv[])
 	if (shared_table == NULL)
 		ERROR_HANDLING("failed to %s", "hashtab_create()");
 
-	cserv_arg.port = param_data.port[CLIENT];
-	cserv_arg.backlog = param_data.backlog[CLIENT];
-	cserv_arg.shared_table = shared_table;
-
-	cserv_arg.deliverer = 8;
-	cserv_arg.worker = 4;
-
-	cserv_arg.event = 8192;
-	cserv_arg.timeout = 5;
-
-	cserv_arg.header_size = 1024;
-	cserv_arg.body_size = 1024 * 1024 * 10;
-
+	fill_client_server_argument(
+			&cserv_arg,
+			&param_data,
+			shared_table
+	);
+	
 	if ((clnt_serv = client_server_create(&cserv_arg)) == NULL)
 		ERROR_HANDLING("failed to %s", "client_server_create()");
 
 	if ((ret = client_server_start(clnt_serv)) < 0)
-		ERROR_HANDLING("failed to client_server_start(): %d",ret);
+		ERROR_HANDLING("failed to client_server_start(): %d", ret);
 
 	client_server_wait(clnt_serv);
 
@@ -119,4 +131,3 @@ int extract_parameter(struct parameter_data *data,
 
 	return 0;
 }
-
