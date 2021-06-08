@@ -1,0 +1,2 @@
+[Jun 08 09:40:25] [INF] [source/client_server.c/announce_client_server:223] client server running at 0.0.0.0:1584 (30)
+listener thread: 1	worker thread: 4	deliverer thread: 8

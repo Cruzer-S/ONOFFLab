@@ -12,7 +12,6 @@
 #include "queue.h"	 				// queueu_enqueue
 #include "logger.h"	 				// pr_err()
 
-#include "client_server.h"
 #include "client_handler.h"
 
 #define FILE_LIMIT (1024 * 1024 * 10) // 10 MiB
@@ -38,7 +37,7 @@ struct client_server {
 	CDelivererDataPtr ddata;
 	CWorkerDataPtr wdata;
 
-	pthread_mutex_t sync;
+	sem_t sync;
 };
 
 typedef struct client_server *ServData;
@@ -65,22 +64,6 @@ static inline int test_and_set(ServData server, ClntServArg *arg)
 	server->timeout = arg->timeout;
 
 	return 0;
-}
-
-static inline void destroy_epoll(ServData server)
-{
-	CListenerDataPtr listener = server->ldata;
-	CDelivererDataPtr deliverer = server->ddata;
-
-	int cnt = server->dcount;
-	int event = server->eprobe / cnt;
-
-	for (int i = 0; i < cnt; i++) {
-		epoll_handler_destroy(deliverer[i].epoll);
-	}
-
-	epoll_handler_destroy(listener->listener);
-	free(listener->deliverer);
 }
 
 static inline int epoll_create_arg(ServData server)
@@ -142,8 +125,6 @@ static inline CListenerDataPtr create_listener_data(
 	listener->timeout = server->timeout;
 	listener->tid = (pthread_t) 0;
 
-	listener->valid = true;
-
 	return listener;
 DESTROY_HANDLER:
 	epoll_handler_destroy(listener->listener);
@@ -164,13 +145,13 @@ static inline CDelivererDataPtr create_deliverer_data(
 		ServData server)
 {
 	CDelivererDataPtr deliverer;
-	int cnt = server->dcount + 1;
+	int cnt = server->dcount;
 
-	deliverer = malloc(sizeof(CDelivererData) * cnt);
+	deliverer = malloc(sizeof(CDelivererData) * (cnt + 1));
 	if (deliverer == NULL)
 		goto RETURN_NULL;
 
-	for (int i = 0; i < cnt - 1; i++) {
+	for (int i = 0; i < cnt; i++) {
 		deliverer[i].epoll = epoll_handler_create(server->eprobe);
 		if (deliverer[i].epoll == NULL) {
 			for (int j = 0; j < i; j++)
@@ -180,13 +161,10 @@ static inline CDelivererDataPtr create_deliverer_data(
 		}
 
 		deliverer[i].queue = server->queue;
-
 		deliverer[i].tid = (pthread_t) 0;
-
-		deliverer[i].valid = true;
 	}
 
-	deliverer[cnt].valid = false;
+	deliverer[cnt].epoll = NULL;
 
 	return deliverer;
 FREE_DELIVERER:
@@ -198,7 +176,7 @@ RETURN_NULL:
 static inline void destroy_deliverer_data(CDelivererDataPtr deliverer)
 {
 	for (CDelivererDataPtr ptr = deliverer;
-		 ptr->valid == true;
+		 ptr->epoll != NULL;
 		 ptr++)
 		epoll_handler_destroy(ptr->epoll);
 
@@ -208,24 +186,22 @@ static inline void destroy_deliverer_data(CDelivererDataPtr deliverer)
 static inline CWorkerDataPtr create_worker_data(ServData server)
 {
 	CWorkerDataPtr worker;
-	int count = server->wcount + 1;
+	int count = server->wcount;
 
-	worker = malloc(sizeof(CWorkerData) * count);
+	worker = malloc(sizeof(CWorkerData) * (count + 1));
 	if (worker == NULL)
 		goto RETURN_NULL;
 
-	for (int i = 0; i < count - 1; i++) {
+	for (int i = 0; i < count + 1; i++) {
 		worker[i].queue = server->queue;
 
 		worker[i].body_size = server->body_size;
 		worker[i].header_size = server->header_size;
 
 		worker[i].tid = (pthread_t) 0;
-
-		worker[i].valid = true;
 	}
 
-	worker[count].valid = false;
+	worker[count].queue = NULL;
 
 	return worker;
 
@@ -236,6 +212,20 @@ RETURN_NULL:
 static inline void destroy_worker_data(CWorkerDataPtr worker)
 {
 	free(worker);
+}
+
+static inline void announce_client_server(ServData server)
+{
+	char hoststr[128], portstr[128];
+
+	extract_addrinfo(server->listener->ai, hoststr, portstr);
+
+	pr_out("client server running at %s:%s (%d)\n"
+		   "listener thread: %d\t" "worker thread: %d\t"
+		   "deliverer thread: %d",
+			hoststr, portstr,
+			server->listener->backlog,
+			1, server->wcount, server->dcount);
 }
 
 // =================================================================
@@ -256,8 +246,9 @@ ClntServ client_server_create(ClntServArg *arg)
 		goto FREE_SERVER;
 	}
 
-	if (pthread_mutex_init(&server->sync, NULL) != 0) {
-		pr_err("failed to pthread_cond_init(): %s",
+	if (sem_init(&server->sync, -1,
+				 server->dcount + server->wcount + 1) == -1) {
+		pr_err("failed to sem_init(): %s",
 				strerror(errno));
 		goto FREE_SERVER;
 	}
@@ -288,8 +279,15 @@ ClntServ client_server_create(ClntServArg *arg)
 				server->wdata);
 		goto DESTROY_LISTENER;
 	}
+
+	server->listener = socket_data_create(
+			arg->port, arg->backlog, MAKE_LISTENER_DEFAULT);
+	if (server->listener == NULL)
+		goto DESTROY_WORKER;
 	
 	return server;
+DESTROY_WORKER:
+	destroy_worker_data(server->wdata);
 DESTROY_LISTENER:
 	destroy_listener_data(server->ldata);
 DESTROY_DELIVERER:
@@ -297,7 +295,7 @@ DESTROY_DELIVERER:
 QUEUE_DESTROY:
 	queue_destroy(server->queue);
 DESTROY_SYNC:
-	pthread_mutex_destroy(&server->sync);
+	sem_destroy(&server->sync);
 FREE_SERVER:
 	free(server);
 RETURN_NULL:
@@ -314,6 +312,8 @@ void client_server_destroy(ClntServ clnt_serv)
 
 	queue_destroy(server->queue);
 
+	sem_destroy(&server->sync);
+
 	free(server);
 }
 
@@ -329,23 +329,17 @@ int client_server_start(ClntServ clnt_serv)
 	CWorkerDataPtr worker = server->wdata;
 	CDelivererDataPtr deliverer = server->ddata;
 	int ret;
-
-	if ((ret = pthread_mutex_lock(&server->sync)) != 0) {
-		pr_err("failed to pthread_mutex_lock: %s",
-				strerror(ret));
-		return -1;
-	}
-
+	
 	ret = pthread_create(&listener->tid, NULL,
 			             client_handler_listener,
 						 listener);
 	if (ret != 0) {
 		pr_err("failed to pthread_create(): %s",
 				strerror(errno));
-		return -2;
+		return -1;
 	}
 
-	for (CWorkerDataPtr ptr = worker; ptr->valid; ptr++) {
+	for (CWorkerDataPtr ptr = worker; ptr->queue; ptr++) {
 		ret = pthread_create(
 				&ptr->tid, NULL,
 				client_handler_worker,
@@ -353,11 +347,11 @@ int client_server_start(ClntServ clnt_serv)
 		if (ret < 0) {
 			pr_err("failed to pthread_create(): %s",
 					strerror(errno));
-			goto FAIL_PTHREAD_CREATE;
+			return -2;
 		}
 	}
 
-	for (CDelivererDataPtr ptr = deliverer; ptr->valid; ptr++) {
+	for (CDelivererDataPtr ptr = deliverer; ptr->epoll; ptr++) {
 		ret = pthread_create(
 				&ptr->tid, NULL,
 				client_handler_deliverer,
@@ -365,22 +359,20 @@ int client_server_start(ClntServ clnt_serv)
 		if (ret < 0) {
 			pr_err("failed to pthread_create(): %s",
 					strerror(errno));
-			goto FAIL_PTHREAD_CREATE;
+			return -3;
 		}
 	}
 
-	pthread_mutex_unlock(&server->sync);
-	
+	ret = sem_timedwait(
+		&server->sync, 
+		&(struct timespec ) {
+			  .tv_sec = 3,
+			  .tv_nsec = 0
+		});
+	if (ret == ETIMEDOUT)
+		return -4;
+
+	announce_client_server(server);
+
 	return 0;
-FAIL_PTHREAD_CREATE:
-	listener->valid = false;
-	for (int i = 0; i < server->dcount; i++)
-		deliverer[i].valid = false;
-	for (int i = 0; i < server->wcount; i++)
-		worker[i].valid = false;
-	pthread_mutex_unlock(&server->sync);
-
-	pthread_mutex_destroy(
-
-	return -3;
 }

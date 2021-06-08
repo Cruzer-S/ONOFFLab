@@ -79,7 +79,7 @@ int main(int argc, char *argv[])
 			&param_data,
 			shared_table
 	);
-	
+
 	if ((clnt_serv = client_server_create(&cserv_arg)) == NULL)
 		ERROR_HANDLING("failed to %s", "client_server_create()");
 

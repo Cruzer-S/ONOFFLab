@@ -21,8 +21,6 @@ struct client_listener_data {
 	pthread_t tid;
 
 	sem_t *sync;
-
-	bool valid;
 };
 
 struct client_deliverer_data {
@@ -32,8 +30,6 @@ struct client_deliverer_data {
 	pthread_t tid;
 
 	sem_t *sync;
-
-	bool valid;
 };
 
 struct client_worker_data {
@@ -45,8 +41,6 @@ struct client_worker_data {
 	pthread_t tid;
 
 	sem_t *sync;
-
-	bool valid;
 };
 
 typedef struct client_listener_data CListenerData;
