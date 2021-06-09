@@ -6,13 +6,12 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <pthread.h>
-#include <semaphore.h>
+#include <semaphore.h>			
 
 #include "socket_manager.h" 		// recv
 #include "queue.h"	 				// queueu_enqueue
 #include "logger.h"	 				// pr_err()
-
-#include "client_handler.h"
+#include "client_handler.h"			// CListenerData, ...
 
 #define FILE_LIMIT (1024 * 1024 * 10) // 10 MiB
 #define DELIVERER_LIMIT 8
@@ -37,7 +36,7 @@ struct client_server {
 	CDelivererDataPtr ddata;
 	CWorkerDataPtr wdata;
 
-	sem_t sync;
+	sem_t synchronizer[2];
 };
 
 typedef struct client_server *ServData;
@@ -246,19 +245,25 @@ ClntServ client_server_create(ClntServArg *arg)
 		goto FREE_SERVER;
 	}
 
-	if (sem_init(&server->sync, -1,
+	if (sem_init(&server->synchronizer[0], -1,
 				 server->dcount + server->wcount + 1) == -1) {
-		pr_err("failed to sem_init(): %s",
+		pr_err("failed to sem_init(sync[0]): %s",
 				strerror(errno));
 		goto FREE_SERVER;
+	}
+
+	if (sem_init(&server->synchronizer[1], -1, 0) == -1) {
+		pr_err("failed to sem_init(sync[0]): %s",
+				strerror(errno));
+		goto DESTROY_SYNC0;
 	}
 
 	server->queue = queue_create(QUEUE_MAX_SIZE, true);
 	if (server->queue == NULL) {
 		pr_err("failed to queue_create(): %s", server->queue);
-		goto DESTROY_SYNC;
+		goto DESTROY_SYNC1;
 	}
-		
+
 	server->ddata = create_deliverer_data(server);
 	if (server->ddata == NULL) {
 		pr_err("failed to create_deliverer_data(): %p",
@@ -284,7 +289,7 @@ ClntServ client_server_create(ClntServArg *arg)
 			arg->port, arg->backlog, MAKE_LISTENER_DEFAULT);
 	if (server->listener == NULL)
 		goto DESTROY_WORKER;
-	
+
 	return server;
 DESTROY_WORKER:
 	destroy_worker_data(server->wdata);
@@ -363,16 +368,8 @@ int client_server_start(ClntServ clnt_serv)
 		}
 	}
 
-	ret = sem_timedwait(
-		&server->sync, 
-		&(struct timespec ) {
-			  .tv_sec = 3,
-			  .tv_nsec = 0
-		});
-	if (ret == ETIMEDOUT)
-		return -4;
-
 	announce_client_server(server);
 
 	return 0;
 }
+
