@@ -11,3 +11,16 @@
 [Jun 10 11:12:25] [ERR] [source/client_handler.c/client_handler_deliverer:063] failed to wait_other_thread: -4
 [Jun 10 11:12:25] [ERR] [source/client_handler.c/client_handler_worker:048] failed to wait_other_thread: -4
 [Jun 10 11:12:25] [ERR] [source/client_handler.c/client_handler_deliverer:063] failed to wait_other_thread: -4
+[Jun 10 11:17:41] [ERR] [source/client_handler.c/client_handler_worker:048] failed to wait_other_thread: -4
+[Jun 10 11:17:41] [ERR] [source/client_handler.c/client_handler_deliverer:063] failed to wait_other_thread: -4
+[Jun 10 11:17:41] [ERR] [source/client_handler.c/client_handler_deliverer:063] failed to wait_other_thread: -4
+[Jun 10 11:17:41] [ERR] [source/client_handler.c/client_handler_deliverer:063] failed to wait_other_thread: -4
+[Jun 10 11:17:41] [ERR] [source/client_handler.c/client_handler_deliverer:063] failed to wait_other_thread: -4
+[Jun 10 11:17:41] [ERR] [source/client_handler.c/client_handler_worker:048] failed to wait_other_thread: -4
+[Jun 10 11:17:41] [ERR] [source/client_handler.c/client_handler_deliverer:063] failed to wait_other_thread: -4
+[Jun 10 11:17:41] [ERR] [source/client_handler.c/client_handler_listener:033] failed to wait_other_thread: -4
+[Jun 10 11:17:41] [ERR] [source/client_handler.c/client_handler_worker:048] failed to wait_other_thread: -4
+[Jun 10 11:17:41] [ERR] [source/client_handler.c/client_handler_deliverer:063] failed to wait_other_thread: -4
+[Jun 10 11:17:41] [ERR] [source/client_handler.c/client_handler_deliverer:063] failed to wait_other_thread: -4
+[Jun 10 11:17:41] [ERR] [source/client_handler.c/client_handler_worker:048] failed to wait_other_thread: -4
+[Jun 10 11:17:41] [ERR] [source/client_handler.c/client_handler_deliverer:063] failed to wait_other_thread: -4
