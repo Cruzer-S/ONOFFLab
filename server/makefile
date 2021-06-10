@@ -38,6 +38,7 @@ clean:
 	@rm -f $(wildcard $(OBJ_DIR)/*.o)
 	@make -C $(UNION_DIR) clean
 	@rm -f $(TARGET)
+	@rm -f logg.txt
 
 union:
 ifeq ($(DEBUG), 1)

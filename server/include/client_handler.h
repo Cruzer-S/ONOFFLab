@@ -11,6 +11,8 @@
 #include "queue.h"
 
 struct client_listener_data {
+	pthread_t tid;
+
 	EpollHandler listener;
 	int deliverer_count;
 
@@ -18,28 +20,31 @@ struct client_listener_data {
 
 	int timeout;
 
-	pthread_t tid;
+	int id;
 
 	sem_t *sync;
 };
 
 struct client_deliverer_data {
+	pthread_t tid;
+
 	Queue queue;
 	EpollHandler epoll;
 
-	pthread_t tid;
+	int id;
 
 	sem_t *sync;
 };
 
 struct client_worker_data {
+	pthread_t tid;
+
 	Queue queue;
 
 	size_t header_size;
 	size_t body_size;
 
-	pthread_t tid;
-
+	int id;
 	sem_t *sync;
 };
 

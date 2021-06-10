@@ -246,7 +246,5 @@ int extract_addrinfo(
 		return -1;
 	}
 
-	freeaddrinfo(ai);
-
 	return 0;
 }

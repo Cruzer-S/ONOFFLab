@@ -32,6 +32,7 @@ static inline int extract_parameter(
 		struct parameter_data *data,
 		int argc, 
 		char **argv);
+
 static inline void fill_client_server_argument(
 		ClntServArg *cserv_arg,
 		struct parameter_data *param_data,
@@ -70,16 +71,23 @@ int main(int argc, char *argv[])
 	if ((clnt_serv = client_server_create(&cserv_arg)) == NULL)
 		ERROR_HANDLING("failed to %s", "client_server_create()");
 
-	if ((ret = client_server_start(clnt_serv)) < 0)
-		ERROR_HANDLING("failed to client_server_start(): %d", ret);
+	if ((ret = client_server_start(clnt_serv)) < 0) {	
+		fprintf(stderr, "failed to client_server_start(): %d", ret);
+		ret = EXIT_FAILURE; goto CLEANUP;
+	}
 
-	client_server_wait(clnt_serv);
+	if (client_server_wait(clnt_serv) < 0) {
+		fprintf(stderr, "failed to client_server_wait(): %d", ret);
+		ret = EXIT_FAILURE; goto CLEANUP;
+	}
 
+	ret = EXIT_SUCCESS;
+CLEANUP:
 	client_server_destroy(clnt_serv);
 	hashtab_destroy(shared_table);
 	logger_destroy();
 	
-	return 0;
+	return ret;
 }
 
 int extract_parameter(struct parameter_data *data,
