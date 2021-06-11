@@ -143,7 +143,7 @@ int epoll_handler_register(EpollHandler Handler, int tgfd, void *ptr, int events
 
 	if (epoll_ctl(handler->fd, EPOLL_CTL_ADD, tgfd, &event) == -1) {
 		pr_err("failed to epoll_ctl(): %s", strerror(errno));
-		return -2;
+		return -1;
 	}
 
 	return 0;

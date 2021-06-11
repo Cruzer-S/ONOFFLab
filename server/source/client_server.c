@@ -146,6 +146,7 @@ static inline CListenerDataPtr create_listener_data(
 	listener->tid = (pthread_t) 0;
 	listener->sync = server->synchronizer;
 	listener->id = 1;
+	listener->deliverer_count = cnt;
 
 	return listener;
 DESTROY_HANDLER:
@@ -486,11 +487,22 @@ int client_server_start(ClntServ clnt_serv)
 		data, func
 	);
 
+	if ((err = epoll_handler_register(
+			server->ldata->listener,
+			server->listener->fd,
+			NULL,
+			EPOLLIN | EPOLLET)) < 0)
+		pr_err("failed to epoll_handler_register(): %d",
+				err);
+
 	for (int i = 0; i < 3; i++) {
 		if (start_xclient_thread(
 				count[i], sizeof_data[i],
 				data[i], func[i],
 				&server->synchronizer[1]) < 0) {
+			epoll_handler_unregister(
+					server->ldata->listener,
+					server->listener->fd);
 			pr_err("failed to start_client_xthread(%s)",
 					"client_handler_listener");
 			return -1;
@@ -498,6 +510,9 @@ int client_server_start(ClntServ clnt_serv)
 	}
 
 	if (wait_xclient_thread(server->synchronizer, 3) < 0) {
+		epoll_handler_unregister(
+					server->ldata->listener,
+					server->listener->fd);
 		for (int i = 0; i < 3; i++)
 			destroy_xclient_thread(
 					data[i], count[i], sizeof_data[i],

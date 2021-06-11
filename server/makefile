@@ -40,6 +40,9 @@ clean:
 	@rm -f $(TARGET)
 	@rm -f logg.txt
 
+logg:
+	@rm -f logg.txt
+
 union:
 ifeq ($(DEBUG), 1)
 	@make -C $(UNION_DIR) DEBUG=1

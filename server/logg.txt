@@ -1,26 +1,19 @@
-[Jun 10 11:12:25] [ERR] [source/client_handler.c/client_handler_deliverer:063] failed to wait_other_thread: -4
-[Jun 10 11:12:25] [ERR] [source/client_handler.c/client_handler_deliverer:063] failed to wait_other_thread: -4
-[Jun 10 11:12:25] [ERR] [source/client_handler.c/client_handler_deliverer:063] failed to wait_other_thread: -4
-[Jun 10 11:12:25] [ERR] [source/client_handler.c/client_handler_deliverer:063] failed to wait_other_thread: -4
-[Jun 10 11:12:25] [ERR] [source/client_handler.c/client_handler_worker:048] failed to wait_other_thread: -4
-[Jun 10 11:12:25] [ERR] [source/client_handler.c/client_handler_listener:033] failed to wait_other_thread: -4
-[Jun 10 11:12:25] [ERR] [source/client_handler.c/client_handler_worker:048] failed to wait_other_thread: -4
-[Jun 10 11:12:25] [ERR] [source/client_handler.c/client_handler_worker:048] failed to wait_other_thread: -4
-[Jun 10 11:12:25] [ERR] [source/client_handler.c/client_handler_deliverer:063] failed to wait_other_thread: -4
-[Jun 10 11:12:25] [ERR] [source/client_handler.c/client_handler_deliverer:063] failed to wait_other_thread: -4
-[Jun 10 11:12:25] [ERR] [source/client_handler.c/client_handler_deliverer:063] failed to wait_other_thread: -4
-[Jun 10 11:12:25] [ERR] [source/client_handler.c/client_handler_worker:048] failed to wait_other_thread: -4
-[Jun 10 11:12:25] [ERR] [source/client_handler.c/client_handler_deliverer:063] failed to wait_other_thread: -4
-[Jun 10 11:17:41] [ERR] [source/client_handler.c/client_handler_worker:048] failed to wait_other_thread: -4
-[Jun 10 11:17:41] [ERR] [source/client_handler.c/client_handler_deliverer:063] failed to wait_other_thread: -4
-[Jun 10 11:17:41] [ERR] [source/client_handler.c/client_handler_deliverer:063] failed to wait_other_thread: -4
-[Jun 10 11:17:41] [ERR] [source/client_handler.c/client_handler_deliverer:063] failed to wait_other_thread: -4
-[Jun 10 11:17:41] [ERR] [source/client_handler.c/client_handler_deliverer:063] failed to wait_other_thread: -4
-[Jun 10 11:17:41] [ERR] [source/client_handler.c/client_handler_worker:048] failed to wait_other_thread: -4
-[Jun 10 11:17:41] [ERR] [source/client_handler.c/client_handler_deliverer:063] failed to wait_other_thread: -4
-[Jun 10 11:17:41] [ERR] [source/client_handler.c/client_handler_listener:033] failed to wait_other_thread: -4
-[Jun 10 11:17:41] [ERR] [source/client_handler.c/client_handler_worker:048] failed to wait_other_thread: -4
-[Jun 10 11:17:41] [ERR] [source/client_handler.c/client_handler_deliverer:063] failed to wait_other_thread: -4
-[Jun 10 11:17:41] [ERR] [source/client_handler.c/client_handler_deliverer:063] failed to wait_other_thread: -4
-[Jun 10 11:17:41] [ERR] [source/client_handler.c/client_handler_worker:048] failed to wait_other_thread: -4
-[Jun 10 11:17:41] [ERR] [source/client_handler.c/client_handler_deliverer:063] failed to wait_other_thread: -4
+[Jun 11 02:31:30] [INF] [source/client_server.c/announce_client_server:114] client server running at 0.0.0.0:1584 (30)
+listener thread: 1	worker thread: 4	deliverer thread: 8
+[Jun 11 02:31:30] [INF] [source/client_handler.c/client_handler_worker:089] worker thread start: 4
+[Jun 11 02:31:30] [INF] [source/client_handler.c/client_handler_listener:038] listener thread start: 1
+[Jun 11 02:31:30] [INF] [source/client_handler.c/client_handler_worker:089] worker thread start: 2
+[Jun 11 02:31:30] [INF] [source/client_handler.c/client_handler_deliverer:104] deliverer thread start: 2
+[Jun 11 02:31:30] [INF] [source/client_handler.c/client_handler_deliverer:104] deliverer thread start: 1
+[Jun 11 02:31:30] [INF] [source/client_handler.c/client_handler_deliverer:104] deliverer thread start: 6
+[Jun 11 02:31:30] [INF] [source/client_handler.c/client_handler_deliverer:104] deliverer thread start: 7
+[Jun 11 02:31:30] [INF] [source/client_handler.c/client_handler_deliverer:104] deliverer thread start: 5
+[Jun 11 02:31:30] [INF] [source/client_handler.c/client_handler_worker:089] worker thread start: 3
+[Jun 11 02:31:30] [INF] [source/client_handler.c/client_handler_worker:089] worker thread start: 1
+[Jun 11 02:31:30] [INF] [source/client_handler.c/client_handler_deliverer:104] deliverer thread start: 8
+[Jun 11 02:31:30] [INF] [source/client_handler.c/client_handler_deliverer:104] deliverer thread start: 4
+[Jun 11 02:31:30] [INF] [source/client_handler.c/client_handler_deliverer:104] deliverer thread start: 3
+[Jun 11 02:31:34] [INF] [source/client_handler.c/client_handler_listener:066] foreign client connect to server [fd:14 => deliverer:0]
+[Jun 11 02:31:34] [INF] [source/client_handler.c/client_handler_listener:068] i = 0
+[Jun 11 02:31:34] [INF] [source/client_handler.c/client_handler_listener:066] foreign client connect to server [fd:15 => deliverer:1]
+[Jun 11 02:31:34] [INF] [source/client_handler.c/client_handler_listener:068] i = 1
