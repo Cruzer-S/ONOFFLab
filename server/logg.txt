@@ -1,25 +1,26 @@
-[Jun 14 08:27:44] [ERR] [source/socket_manager.c/socket_data_create:096] failed to bind(): Address already in use
-[Jun 14 08:27:48] [INF] [source/client_server.c/announce_client_server:112] client server running at 0.0.0.0:1584 (30)
+[Jun 14 09:03:31] [ERR] [source/socket_manager.c/socket_data_create:096] failed to bind(): Address already in use
+[Jun 14 09:03:36] [INF] [source/client_server.c/announce_client_server:112] client server running at 0.0.0.0:1584 (30)
 listener thread: 1	worker thread: 4	deliverer thread: 8
-[Jun 14 08:27:48] [INF] [source/client_handler.c/client_handler_worker:400] worker thread start: 3
-[Jun 14 08:27:48] [INF] [source/client_handler.c/client_handler_listener:320] listener thread start: 1
-[Jun 14 08:27:48] [INF] [source/client_handler.c/client_handler_worker:400] worker thread start: 1
-[Jun 14 08:27:48] [INF] [source/client_handler.c/client_handler_deliverer:360] deliverer thread start: 4
-[Jun 14 08:27:48] [INF] [source/client_handler.c/client_handler_deliverer:360] deliverer thread start: 2
-[Jun 14 08:27:48] [INF] [source/client_handler.c/client_handler_deliverer:360] deliverer thread start: 6
-[Jun 14 08:27:48] [INF] [source/client_handler.c/client_handler_deliverer:360] deliverer thread start: 7
-[Jun 14 08:27:48] [INF] [source/client_handler.c/client_handler_deliverer:360] deliverer thread start: 5
-[Jun 14 08:27:48] [INF] [source/client_handler.c/client_handler_worker:400] worker thread start: 4
-[Jun 14 08:27:48] [INF] [source/client_handler.c/client_handler_deliverer:360] deliverer thread start: 1
-[Jun 14 08:27:48] [INF] [source/client_handler.c/client_handler_worker:400] worker thread start: 2
-[Jun 14 08:27:48] [INF] [source/client_handler.c/client_handler_deliverer:360] deliverer thread start: 3
-[Jun 14 08:27:48] [INF] [source/client_handler.c/client_handler_deliverer:360] deliverer thread start: 8
-[Jun 14 08:28:06] [INF] [source/client_handler.c/process_listener_data:172] foreign client connect to server [fd:14 => deliverer:0]
-[Jun 14 08:28:06] [INF] [source/client_handler.c/show_deliverer_data:232] 
+[Jun 14 09:03:36] [INF] [source/client_handler.c/client_handler_worker:406] worker thread start: 4
+[Jun 14 09:03:36] [INF] [source/client_handler.c/client_handler_worker:406] worker thread start: 1
+[Jun 14 09:03:36] [INF] [source/client_handler.c/client_handler_worker:406] worker thread start: 3
+[Jun 14 09:03:36] [INF] [source/client_handler.c/client_handler_deliverer:366] deliverer thread start: 4
+[Jun 14 09:03:36] [INF] [source/client_handler.c/client_handler_deliverer:366] deliverer thread start: 1
+[Jun 14 09:03:36] [INF] [source/client_handler.c/client_handler_deliverer:366] deliverer thread start: 6
+[Jun 14 09:03:36] [INF] [source/client_handler.c/client_handler_deliverer:366] deliverer thread start: 2
+[Jun 14 09:03:36] [INF] [source/client_handler.c/client_handler_listener:326] listener thread start: 1
+[Jun 14 09:03:36] [INF] [source/client_handler.c/client_handler_deliverer:366] deliverer thread start: 8
+[Jun 14 09:03:36] [INF] [source/client_handler.c/client_handler_deliverer:366] deliverer thread start: 3
+[Jun 14 09:03:36] [INF] [source/client_handler.c/client_handler_worker:406] worker thread start: 2
+[Jun 14 09:03:36] [INF] [source/client_handler.c/client_handler_deliverer:366] deliverer thread start: 7
+[Jun 14 09:03:36] [INF] [source/client_handler.c/client_handler_deliverer:366] deliverer thread start: 5
+[Jun 14 09:03:46] [INF] [source/client_handler.c/process_listener_data:172] foreign client connect to server [fd:14 => deliverer:0]
+[Jun 14 09:03:46] [INF] [source/client_handler.c/show_deliverer_data:234] received body data
 id: 132201
 passwd: ONOFFLAB88@
 method: 130
 quality: 30
 filesize: 10002912
 checksum: 10134874
-[Jun 14 08:28:06] [INF] [source/client_handler.c/sever_deliverer_data:214] client 14 request closing session
+[Jun 14 09:03:46] [INF] [source/client_handler.c/process_deliverer_data:305] received all the data from client: 14
+[Jun 14 09:03:46] [INF] [source/client_handler.c/sever_deliverer_data:214] client 14 request closing session

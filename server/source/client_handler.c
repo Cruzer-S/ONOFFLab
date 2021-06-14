@@ -225,17 +225,20 @@ static inline void sever_deliverer_data(
 	close(real_fd);
 }
 
-static inline void show_deliverer_data(EventData data)
+static inline void show_deliverer_data(
+		const char *str,
+		EventData data)
 {
 	struct header_data *header = &data->header;
 
-	pr_out("\n"
+	pr_out("%s\n"
 		   "id: %"			PRIu32  "\n"
 		   "passwd: %"		"s"		"\n"
 		   "method: %"		PRIu8	"\n"
 		   "quality: %"		PRIu8	"\n"
 		   "filesize: %"	PRIu32	"\n"
 		   "checksum: %"	PRIu32	,
+		   str,
 		   header->id,
 		   header->passwd,
 		   header->method,
@@ -297,7 +300,10 @@ static inline int process_deliverer_data(
 				data->sz_body = data->header.filesize;
 			}
 
-			show_deliverer_data(data);
+			show_deliverer_data("received body data", data);
+		} else {
+			pr_out("received all the data from client: %d",
+					data->fd);
 		}
 	}
 
