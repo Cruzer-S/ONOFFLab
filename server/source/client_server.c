@@ -41,8 +41,6 @@ struct client_server {
 };
 
 typedef struct client_server *ServData;
-
-
 // =====================================================
 // Etc. 
 // =====================================================
@@ -147,6 +145,7 @@ static inline CListenerDataPtr create_listener_data(
 	listener->sync = server->synchronizer;
 	listener->id = 1;
 	listener->deliverer_count = cnt;
+	listener->header_size = server->header_size;
 
 	return listener;
 DESTROY_HANDLER:
@@ -223,9 +222,6 @@ static inline CWorkerDataPtr create_worker_data(ServData server)
 
 	for (int i = 0; i < count; i++) {
 		worker[i].queue = server->queue;
-
-		worker[i].body_size = server->body_size;
-		worker[i].header_size = server->header_size;
 
 		worker[i].tid = (pthread_t) 0;
 		worker[i].id = (i + 1);
@@ -370,7 +366,7 @@ static inline int wait_xclient_thread(sem_t *sync, int timeout)
 
 	return -2;
 }
-// =================================================================
+// =====================================================
 ClntServ client_server_create(ClntServArg *arg)
 {
 	ServData server;

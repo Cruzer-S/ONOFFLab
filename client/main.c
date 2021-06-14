@@ -11,24 +11,33 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 
-struct __attribute__((packed)) client_packet {
-	uint32_t id;
-	uint8_t passwd[32];
+struct header_data {
+	uint32_t id;			// 4
+	uint8_t passwd[32];		// 36
+	uint8_t method;			// 37
+	uint8_t quality;		// 38
+	uint32_t filesize;		// 42
+	uint32_t checksum;		// 46
 
-	uint8_t request;
+	uint8_t dummy[1024 - 46];
+} __attribute__((packed));
 
-	uint8_t quality;
+uint32_t calc_checksum(struct header_data *data)
+{
+	uint32_t checksum = 0;
 
-	uint64_t filesize;
+	checksum ^= data->id;
+	checksum ^= data->passwd[0];
+	checksum ^= data->filesize;
+	checksum ^= data->quality;
+	checksum ^= data->method;
 
-	uint32_t checksum;
-
-	uint8_t dummy[1024 - 50];
-};
+	return checksum;
+}
 
 int main(int argc, char *argv[])
 {
-	struct client_packet packet;
+	struct header_data packet;
 	FILE *fp;
 	uint32_t u32;
 	uint8_t u8;
@@ -55,9 +64,9 @@ int main(int argc, char *argv[])
 		scanf("%s", (char *) u8_32);
 		memcpy(packet.passwd, u8_32, 32);
 
-		printf("request: ");
+		printf("method: ");
 		scanf("%" PRIu8, &u8);
-		packet.request = u8;
+		packet.method = u8;
 
 		printf("quality: ");
 		scanf("%" PRIu8, &u8);
@@ -68,8 +77,14 @@ int main(int argc, char *argv[])
 		packet.filesize = u64;
 
 		printf("checksum: ");
-		scanf("%" PRIu32, &u32);
-		packet.checksum = u32;
+		if (scanf("%" PRIu32, &u32) != 0) {
+			packet.checksum = u32;
+		} else {
+			while (getchar() != '\n') ;
+			packet.checksum = calc_checksum(&packet);
+			printf("caculated checksum: %" PRIu32 "\n",
+					packet.checksum);
+		}
 
 		fp = fopen(argv[1], "wb");
 		if (fp == NULL) {
@@ -77,14 +92,17 @@ int main(int argc, char *argv[])
 			exit(EXIT_FAILURE);
 		}
 
-		if (fwrite(&packet, sizeof(struct client_packet), 1, fp) != 1) {
+		if (fwrite(&packet, sizeof(struct header_data), 1, fp) != 1) {
 			fprintf(stderr, "failed to write data to file\n");
 			exit(EXIT_FAILURE);
 		}
 
 		do {
-			uint8_t body[packet.filesize];
-			if (fwrite(&body, sizeof(body), 1, fp) != 1) {
+			uint8_t *body = malloc(packet.filesize);
+			if (body == NULL)
+				exit(EXIT_FAILURE);
+
+			if (fwrite(body, packet.filesize, 1, fp) != 1) {
 				fprintf(stderr, "failed to write file from data\n");
 				exit(EXIT_FAILURE);
 			}
@@ -98,17 +116,17 @@ int main(int argc, char *argv[])
 		if (fp == NULL)
 			fprintf(stderr, "failed to open file: %s\n", strerror(errno));
 
-		if (fread(&packet, sizeof(struct client_packet), 1, fp) != 1) {
+		if (fread(&packet, sizeof(struct header_data), 1, fp) != 1) {
 			fprintf(stderr, "failed to read data from file\n");
 			exit(EXIT_FAILURE);
 		}
 		
-		printf("id: %d\n", packet.id);
+		printf("id: %" PRIu32 "\n", packet.id);
 		printf("passwd: %s\n", packet.passwd);
-		printf("request: %d\n", packet.request);
-		printf("quality: %d\n", packet.quality);
-		printf("filesize: %zu\n", packet.filesize);
-		printf("checksum: %d\n", packet.checksum);
+		printf("request: %" PRIu8 "\n", packet.method);
+		printf("quality: %" PRIu8 "\n", packet.quality);
+		printf("filesize: %" PRIu32 "\n", packet.filesize);
+		printf("checksum: %" PRIu32 "\n", packet.checksum);
 
 		fclose(fp);
 		break;
@@ -125,16 +143,14 @@ int main(int argc, char *argv[])
 		struct sockaddr_in sock_adr;
 		sock_adr.sin_family = AF_INET;
 		sock_adr.sin_port = htons(1584);
-		sock_adr.sin_addr.s_addr = inet_addr("3.133.79.98");
+		sock_adr.sin_addr.s_addr = inet_addr("127.0.0.1");
 		if (connect(sock, (struct sockaddr *) &sock_adr, sizeof(sock_adr)) == -1)
 			fprintf(stderr, "failed to connect(): %s", strerror(errno));
 
 		uint8_t buffer[BUFSIZ];
 		size_t read;
-		while ((read = fread(&buffer, 1, BUFSIZ, fp)) >  0) {
+		while ((read = fread(&buffer, 1, BUFSIZ, fp)) >  0)
 			write(sock, &buffer, read);
-			usleep(1000);
-		}
 		
 		close(sock);
 		fclose(fp);

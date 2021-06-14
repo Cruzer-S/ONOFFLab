@@ -71,7 +71,7 @@ int main(int argc, char *argv[])
 	if ((clnt_serv = client_server_create(&cserv_arg)) == NULL)
 		ERROR_HANDLING("failed to %s", "client_server_create()");
 
-	if ((ret = client_server_start(clnt_serv)) < 0) {	
+	if ((ret = client_server_start(clnt_serv)) < 0) {
 		fprintf(stderr, "failed to client_server_start(): %d", ret);
 		ret = EXIT_FAILURE; goto CLEANUP;
 	}

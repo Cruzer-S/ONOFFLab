@@ -19,6 +19,7 @@ struct client_listener_data {
 	EpollHandler *deliverer;
 
 	int timeout;
+	size_t header_size;
 
 	int id;
 
@@ -39,10 +40,7 @@ struct client_deliverer_data {
 struct client_worker_data {
 	pthread_t tid;
 
-	Queue queue;
-
-	size_t header_size;
-	size_t body_size;
+	Queue queue;	
 
 	int id;
 	sem_t *sync;

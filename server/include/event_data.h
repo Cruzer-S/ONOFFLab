@@ -14,7 +14,7 @@ enum event_type {
 };
 
 struct event_data {
-	int type; 
+	int type;
 
 	union {
 		struct event_data_listener {
