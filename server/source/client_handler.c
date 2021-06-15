@@ -247,67 +247,103 @@ static inline void show_deliverer_data(
 		   header->checksum);
 }
 
-static inline int process_deliverer_data(
-		struct epoll_event *event,
-		CDelivererDataPtr deliverer)
+static inline int receive_deliverer_data(
+		struct event_data *data)
 {
-	struct event_data *data = event->data.ptr;
-
 	uint8_t *ptr;
 	size_t to_read;
 	size_t *received;
 	size_t maximum;
-
-	if (data[0].fd < 0)
-		return 0;
+	int type;
 
 	while (true) {
 		if (data->body == NULL) {
-			ptr = (uint8_t *) &data->header 
-				            + data->header_recv;
+			ptr = (uint8_t *) &data->header
+							+ data->header_recv;
 			to_read = data->sz_header - data->header_recv;
 			received = &data->header_recv;
 			maximum = data->sz_header;
+
+			type = 1;
 		} else {
 			ptr = data->body + data->body_recv;
 			to_read = data->sz_body - data->body_recv;
 			received = &data->body_recv;
 			maximum = data->sz_body;
+
+			type = 2;
 		}
 
 		int ret = recv(data->fd, ptr, to_read, 0);
 		if (ret == -1) {
 			if (errno == EAGAIN)
-				return 1;
+				return 0;
 
-			return -1;
+			return -2;
 		} else if (ret == 0) {
-			return 0;
+			return -1;
 		} else *received += ret;
 
-		if (maximum != *received)
-			continue;
-
-		if (data->body == NULL) {
-			if (check_checksum(&data->header) < 0)
-				return -2;
-
-			data->body = malloc(data->header.filesize);
-			if (data->body == NULL) {
-				return -3;
-			} else {
-				data->body_recv = 0;
-				data->sz_body = data->header.filesize;
-			}
-
-			show_deliverer_data("received body data", data);
-		} else {
-			pr_out("received all the data from client: %d",
-					data->fd);
-		}
+		if (maximum == *received)
+			return type;
 	}
 
-	return 1;
+	return -1;
+}
+
+static inline int process_deliverer_data(
+		struct epoll_event *event,
+		CDelivererDataPtr deliverer)
+{
+	struct event_data *data = event->data.ptr;
+	int ret;
+
+	if (data[0].fd < 0)
+		return 0;
+
+	ret = receive_deliverer_data(data);
+	switch (ret) {
+	case 1: // receive all the header data
+		if (check_checksum(&data->header) < 0)
+			return -2;
+
+		data->body = malloc(data->header.filesize);
+		if (data->body == NULL) {
+			return -3;
+		} else {
+			data->body_recv = 0;
+			data->sz_body = data->header.filesize;
+		}
+
+		show_deliverer_data("received body data", data);
+		break;
+
+	case 2: // receive all the body data
+		pr_out("received all the data from client: %d",
+				data->fd);
+
+		// destroy timerfd
+		epoll_handler_unregister(
+				deliverer->epoll,
+				data[1].fd);
+		close(data[1].fd);
+
+		// unregister epoll handler
+		epoll_handler_unregister(
+				deliverer->epoll,
+				data[1].fd);
+
+		if (queue_enqueue(
+				deliverer->queue,
+				data) < 0)
+			return 
+		break;
+
+	 case 0: return 1;		// ret = 0, EAGAIN
+	case -1: return 0;		// ret = -1, close request
+	}
+
+	return ret;
 }
 // ==========================================================
 // =					Public Function						=

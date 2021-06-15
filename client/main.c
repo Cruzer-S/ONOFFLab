@@ -44,14 +44,16 @@ int main(int argc, char *argv[])
 	uint64_t u64;
 	int what;
 
-	if (argc != 2) {
+	if (argc < 2) {
 		fprintf(stderr, "usage: %s <filename>\n", argv[0]);
 		exit(EXIT_FAILURE);
+	} else if (argc == 3) {
+		what = strtol(argv[2], NULL, 10);
+	} else {
+		printf("what? ");
+		printf("0. make packet, 1. read packet, 2. send packet\n");
+		scanf("%d", &what);
 	}
-
-	printf("what? ");
-	printf("0. make packet, 1. read packet, 2. send packet\n");
-	scanf("%d", &what);
 
 	switch (what) {
 	case 0: // make packet
