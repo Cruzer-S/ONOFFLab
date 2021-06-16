@@ -301,6 +301,7 @@ static inline int process_deliverer_data(
 	if (data[0].fd < 0)
 		return 0;
 
+RECEIVE_BODY:
 	ret = receive_deliverer_data(data);
 	switch (ret) {
 	case 1: // receive all the header data
@@ -308,38 +309,41 @@ static inline int process_deliverer_data(
 			return -2;
 
 		data->body = malloc(data->header.filesize);
-		if (data->body == NULL) {
+		if (data->body == NULL)
 			return -3;
-		} else {
-			data->body_recv = 0;
-			data->sz_body = data->header.filesize;
-		}
+
+		data->body_recv = 0;
+		data->sz_body = data->header.filesize;
 
 		show_deliverer_data("received body data", data);
-		break;
 
+		goto RECEIVE_BODY;
 	case 2: // receive all the body data
 		pr_out("received all the data from client: %d",
 				data->fd);
 
 		// destroy timerfd
-		epoll_handler_unregister(
-				deliverer->epoll,
-				data[1].fd);
-		close(data[1].fd);
+		int timerfd = -data[1].fd;
+		epoll_handler_unregister(deliverer->epoll, timerfd);
+		close(timerfd);
 
 		// unregister epoll handler
-		epoll_handler_unregister(
-				deliverer->epoll,
-				data[1].fd);
+		epoll_handler_unregister(deliverer->epoll, data[0].fd);
 
-		if (queue_enqueue(
-				deliverer->queue,
-				data) < 0)
-			return 
+		int ret = queue_enqueue(deliverer->queue, data);
+		if (ret < 0) {
+			pr_err("failed to enqueue_data: %d", ret);
+
+			close(data[0].fd);
+			free(data[0].body);
+			free(data);
+			return 0xDEADBEEF;
+		}
+
+		pr_out("enqueu client %d data: deliverer %d > worker",
+				data[0].fd, deliverer->id);
 		break;
-
-	 case 0: return 1;		// ret = 0, EAGAIN
+	case 0: return 1;		// ret = 0, EAGAIN
 	case -1: return 0;		// ret = -1, close request
 	}
 
@@ -426,6 +430,9 @@ void *client_handler_deliverer(void *argument)
 		}
 	}
 
+	// int x = 0xfull * 0xcafedeep-0f / 0xdeadbeef / 0x01dB1ade;
+	// full cafedeep-of deadbeef old blade
+
 	return (void *) 0;
 }
 
@@ -440,6 +447,36 @@ void *client_handler_worker(void *argument)
 	}
 
 	pr_out("worker thread start: %d", worker->id);
+
+	while (true) {
+		EventData data = queue_dequeue(worker->queue);
+		if (data == NULL) {
+		}
+		if (ret < 0) {
+			pr_err("failed to epoll_handler_wait(): %d",
+					ret);
+			continue;
+		} else for (int i = 0; i < ret; i++) {
+			event = epoll_handler_pop(deliverer->epoll);
+
+			if (event == NULL) {
+				pr_err("failed to epoll_handler_pop(): %p",
+						event);
+				continue;
+			} else ret = process_deliverer_data(
+				event, deliverer
+			);
+
+			if (ret <= 0) sever_deliverer_data(
+				event->data.ptr,
+				deliverer->epoll,
+				ret
+			);
+		}
+	}
+
+	while (true) {
+	}
 
 	return (void *) 0;
 }

@@ -1,15 +1,274 @@
-[Jun 15 01:27:39] [INF] [source/client_server.c/announce_client_server:112] client server running at 0.0.0.0:1584 (30)
+[Jun 15 04:23:38] [INF] [source/client_server.c/announce_client_server:112] client server running at 0.0.0.0:1584 (30)
 listener thread: 1	worker thread: 4	deliverer thread: 8
-[Jun 15 01:27:39] [INF] [source/client_handler.c/client_handler_deliverer:366] deliverer thread start: 6
-[Jun 15 01:27:39] [INF] [source/client_handler.c/client_handler_deliverer:366] deliverer thread start: 8
-[Jun 15 01:27:39] [INF] [source/client_handler.c/client_handler_deliverer:366] deliverer thread start: 2
-[Jun 15 01:27:39] [INF] [source/client_handler.c/client_handler_worker:406] worker thread start: 1
-[Jun 15 01:27:39] [INF] [source/client_handler.c/client_handler_deliverer:366] deliverer thread start: 3
-[Jun 15 01:27:39] [INF] [source/client_handler.c/client_handler_worker:406] worker thread start: 3
-[Jun 15 01:27:39] [INF] [source/client_handler.c/client_handler_worker:406] worker thread start: 4
-[Jun 15 01:27:39] [INF] [source/client_handler.c/client_handler_listener:326] listener thread start: 1
-[Jun 15 01:27:39] [INF] [source/client_handler.c/client_handler_worker:406] worker thread start: 2
-[Jun 15 01:27:39] [INF] [source/client_handler.c/client_handler_deliverer:366] deliverer thread start: 5
-[Jun 15 01:27:39] [INF] [source/client_handler.c/client_handler_deliverer:366] deliverer thread start: 1
-[Jun 15 01:27:39] [INF] [source/client_handler.c/client_handler_deliverer:366] deliverer thread start: 4
-[Jun 15 01:27:39] [INF] [source/client_handler.c/client_handler_deliverer:366] deliverer thread start: 7
+[Jun 15 04:23:38] [INF] [source/client_handler.c/client_handler_deliverer:406] deliverer thread start: 5
+[Jun 15 04:23:38] [INF] [source/client_handler.c/client_handler_worker:449] worker thread start: 4
+[Jun 15 04:23:38] [INF] [source/client_handler.c/client_handler_deliverer:406] deliverer thread start: 4
+[Jun 15 04:23:38] [INF] [source/client_handler.c/client_handler_worker:449] worker thread start: 3
+[Jun 15 04:23:38] [INF] [source/client_handler.c/client_handler_listener:366] listener thread start: 1
+[Jun 15 04:23:38] [INF] [source/client_handler.c/client_handler_deliverer:406] deliverer thread start: 2
+[Jun 15 04:23:38] [INF] [source/client_handler.c/client_handler_deliverer:406] deliverer thread start: 8
+[Jun 15 04:23:38] [INF] [source/client_handler.c/client_handler_deliverer:406] deliverer thread start: 3
+[Jun 15 04:23:38] [INF] [source/client_handler.c/client_handler_worker:449] worker thread start: 2
+[Jun 15 04:23:38] [INF] [source/client_handler.c/client_handler_deliverer:406] deliverer thread start: 6
+[Jun 15 04:23:38] [INF] [source/client_handler.c/client_handler_deliverer:406] deliverer thread start: 7
+[Jun 15 04:23:38] [INF] [source/client_handler.c/client_handler_deliverer:406] deliverer thread start: 1
+[Jun 15 04:23:38] [INF] [source/client_handler.c/client_handler_worker:449] worker thread start: 1
+[Jun 15 04:23:43] [INF] [source/client_handler.c/process_listener_data:172] foreign client connect to server [fd:14 => deliverer:0]
+[Jun 15 04:23:43] [INF] [source/client_handler.c/show_deliverer_data:234] received body data
+id: 132201
+passwd: ONOFFLAB88@
+method: 130
+quality: 30
+filesize: 10002912
+checksum: 10134874
+[Jun 15 04:23:43] [INF] [source/client_handler.c/process_deliverer_data:322] received all the data from client: 14
+[Jun 15 04:23:43] [INF] [source/client_handler.c/process_deliverer_data:343] enqueu client 14 data: deliverer 1 > worker
+[Jun 15 04:23:43] [ERR] [source/client_handler.c/client_handler_deliverer:418] failed to epoll_handler_pop(): (nil)
+[Jun 15 04:30:47] [INF] [source/client_handler.c/process_listener_data:172] foreign client connect to server [fd:15 => deliverer:1]
+[Jun 15 04:30:47] [INF] [source/client_handler.c/process_listener_data:172] foreign client connect to server [fd:17 => deliverer:2]
+[Jun 15 04:30:52] [INF] [source/client_handler.c/sever_deliverer_data:212] client 15 time-out: close session
+[Jun 15 04:30:52] [INF] [source/client_handler.c/sever_deliverer_data:212] client 17 time-out: close session
+[Jun 15 04:30:52] [INF] [source/client_handler.c/process_listener_data:172] foreign client connect to server [fd:15 => deliverer:3]
+[Jun 15 04:30:57] [INF] [source/client_handler.c/sever_deliverer_data:212] client 15 time-out: close session
+[Jun 15 04:30:58] [INF] [source/client_handler.c/process_listener_data:172] foreign client connect to server [fd:15 => deliverer:4]
+[Jun 15 04:30:58] [INF] [source/client_handler.c/process_listener_data:172] foreign client connect to server [fd:17 => deliverer:5]
+[Jun 15 04:31:03] [INF] [source/client_handler.c/sever_deliverer_data:212] client 17 time-out: close session
+[Jun 15 04:31:03] [INF] [source/client_handler.c/sever_deliverer_data:212] client 15 time-out: close session
+[Jun 15 04:31:03] [INF] [source/client_handler.c/process_listener_data:172] foreign client connect to server [fd:15 => deliverer:6]
+[Jun 15 04:31:08] [INF] [source/client_handler.c/sever_deliverer_data:212] client 15 time-out: close session
+[Jun 15 04:31:13] [INF] [source/client_handler.c/process_listener_data:172] foreign client connect to server [fd:15 => deliverer:7]
+[Jun 15 04:31:13] [INF] [source/client_handler.c/process_listener_data:172] foreign client connect to server [fd:17 => deliverer:0]
+[Jun 15 04:31:18] [INF] [source/client_handler.c/sever_deliverer_data:212] client 15 time-out: close session
+[Jun 15 04:31:18] [INF] [source/client_handler.c/sever_deliverer_data:212] client 17 time-out: close session
+[Jun 15 04:31:18] [INF] [source/client_handler.c/process_listener_data:172] foreign client connect to server [fd:15 => deliverer:1]
+[Jun 15 04:31:20] [INF] [source/client_handler.c/sever_deliverer_data:214] client 15 request closing session
+[Jun 15 04:32:36] [INF] [source/client_handler.c/process_listener_data:172] foreign client connect to server [fd:15 => deliverer:2]
+[Jun 15 04:32:36] [INF] [source/client_handler.c/show_deliverer_data:234] received body data
+id: 132201
+passwd: ONOFFLAB88@
+method: 130
+quality: 30
+filesize: 10002912
+checksum: 10134874
+[Jun 15 04:32:36] [INF] [source/client_handler.c/process_deliverer_data:322] received all the data from client: 15
+[Jun 15 04:32:36] [INF] [source/client_handler.c/process_deliverer_data:343] enqueu client 15 data: deliverer 3 > worker
+[Jun 15 04:32:36] [ERR] [source/client_handler.c/client_handler_deliverer:418] failed to epoll_handler_pop(): (nil)
+[Jun 15 04:52:09] [INF] [source/client_handler.c/process_listener_data:172] foreign client connect to server [fd:16 => deliverer:3]
+[Jun 15 04:52:09] [INF] [source/client_handler.c/show_deliverer_data:234] received body data
+id: 132201
+passwd: ONOFFLAB88@
+method: 130
+quality: 30
+filesize: 10002912
+checksum: 10134874
+[Jun 15 04:52:09] [INF] [source/client_handler.c/process_listener_data:172] foreign client connect to server [fd:18 => deliverer:4]
+[Jun 15 04:52:09] [INF] [source/client_handler.c/show_deliverer_data:234] received body data
+id: 132201
+passwd: ONOFFLAB88@
+method: 130
+quality: 30
+filesize: 10002912
+checksum: 10134874
+[Jun 15 04:52:09] [INF] [source/client_handler.c/process_listener_data:172] foreign client connect to server [fd:20 => deliverer:5]
+[Jun 15 04:52:09] [INF] [source/client_handler.c/process_listener_data:172] foreign client connect to server [fd:22 => deliverer:6]
+[Jun 15 04:52:09] [INF] [source/client_handler.c/process_listener_data:172] foreign client connect to server [fd:24 => deliverer:7]
+[Jun 15 04:52:09] [INF] [source/client_handler.c/show_deliverer_data:234] received body data
+id: 132201
+passwd: ONOFFLAB88@
+method: 130
+quality: 30
+filesize: 10002912
+checksum: 10134874
+[Jun 15 04:52:09] [INF] [source/client_handler.c/process_listener_data:172] foreign client connect to server [fd:26 => deliverer:0]
+[Jun 15 04:52:09] [INF] [source/client_handler.c/show_deliverer_data:234] received body data
+id: 132201
+passwd: ONOFFLAB88@
+method: 130
+quality: 30
+filesize: 10002912
+checksum: 10134874
+[Jun 15 04:52:09] [INF] [source/client_handler.c/show_deliverer_data:234] received body data
+id: 132201
+passwd: ONOFFLAB88@
+method: 130
+quality: 30
+filesize: 10002912
+checksum: 10134874
+[Jun 15 04:52:09] [INF] [source/client_handler.c/process_listener_data:172] foreign client connect to server [fd:28 => deliverer:1]
+[Jun 15 04:52:09] [INF] [source/client_handler.c/process_listener_data:172] foreign client connect to server [fd:30 => deliverer:2]
+[Jun 15 04:52:09] [INF] [source/client_handler.c/show_deliverer_data:234] received body data
+id: 132201
+passwd: ONOFFLAB88@
+method: 130
+quality: 30
+filesize: 10002912
+checksum: 10134874
+[Jun 15 04:52:09] [INF] [source/client_handler.c/process_listener_data:172] foreign client connect to server [fd:32 => deliverer:3]
+[Jun 15 04:52:09] [INF] [source/client_handler.c/show_deliverer_data:234] received body data
+id: 132201
+passwd: ONOFFLAB88@
+method: 130
+quality: 30
+filesize: 10002912
+checksum: 10134874
+[Jun 15 04:52:09] [INF] [source/client_handler.c/process_listener_data:172] foreign client connect to server [fd:34 => deliverer:4]
+[Jun 15 04:52:09] [INF] [source/client_handler.c/show_deliverer_data:234] received body data
+id: 132201
+passwd: ONOFFLAB88@
+method: 130
+quality: 30
+filesize: 10002912
+checksum: 10134874
+[Jun 15 04:52:09] [INF] [source/client_handler.c/show_deliverer_data:234] received body data
+id: 132201
+passwd: ONOFFLAB88@
+method: 130
+quality: 30
+filesize: 10002912
+checksum: 10134874
+[Jun 15 04:52:09] [INF] [source/client_handler.c/show_deliverer_data:234] received body data
+id: 132201
+passwd: ONOFFLAB88@
+method: 130
+quality: 30
+filesize: 10002912
+checksum: 10134874
+[Jun 15 04:52:09] [INF] [source/client_handler.c/process_deliverer_data:322] received all the data from client: 24
+[Jun 15 04:52:09] [INF] [source/client_handler.c/process_deliverer_data:343] enqueu client 24 data: deliverer 8 > worker
+[Jun 15 04:52:09] [ERR] [source/client_handler.c/client_handler_deliverer:418] failed to epoll_handler_pop(): (nil)
+[Jun 15 04:52:09] [INF] [source/client_handler.c/process_deliverer_data:322] received all the data from client: 32
+[Jun 15 04:52:09] [INF] [source/client_handler.c/process_deliverer_data:343] enqueu client 32 data: deliverer 4 > worker
+[Jun 15 04:52:09] [INF] [source/client_handler.c/process_deliverer_data:322] received all the data from client: 30
+[Jun 15 04:52:09] [INF] [source/client_handler.c/process_deliverer_data:343] enqueu client 30 data: deliverer 3 > worker
+[Jun 15 04:52:09] [ERR] [source/client_handler.c/client_handler_deliverer:418] failed to epoll_handler_pop(): (nil)
+[Jun 15 04:52:09] [INF] [source/client_handler.c/process_deliverer_data:322] received all the data from client: 28
+[Jun 15 04:52:09] [INF] [source/client_handler.c/process_deliverer_data:343] enqueu client 28 data: deliverer 2 > worker
+[Jun 15 04:52:09] [ERR] [source/client_handler.c/client_handler_deliverer:418] failed to epoll_handler_pop(): (nil)
+[Jun 15 04:52:09] [INF] [source/client_handler.c/process_deliverer_data:322] received all the data from client: 20
+[Jun 15 04:52:09] [INF] [source/client_handler.c/process_deliverer_data:343] enqueu client 20 data: deliverer 6 > worker
+[Jun 15 04:52:09] [ERR] [source/client_handler.c/client_handler_deliverer:418] failed to epoll_handler_pop(): (nil)
+[Jun 15 04:52:09] [INF] [source/client_handler.c/process_deliverer_data:322] received all the data from client: 22
+[Jun 15 04:52:09] [INF] [source/client_handler.c/process_deliverer_data:343] enqueu client 22 data: deliverer 7 > worker
+[Jun 15 04:52:09] [ERR] [source/client_handler.c/client_handler_deliverer:418] failed to epoll_handler_pop(): (nil)
+[Jun 15 04:52:09] [INF] [source/client_handler.c/process_deliverer_data:322] received all the data from client: 26
+[Jun 15 04:52:09] [INF] [source/client_handler.c/process_deliverer_data:343] enqueu client 26 data: deliverer 1 > worker
+[Jun 15 04:52:09] [ERR] [source/client_handler.c/client_handler_deliverer:418] failed to epoll_handler_pop(): (nil)
+[Jun 15 04:52:09] [INF] [source/client_handler.c/process_deliverer_data:322] received all the data from client: 16
+[Jun 15 04:52:09] [INF] [source/client_handler.c/process_deliverer_data:343] enqueu client 16 data: deliverer 4 > worker
+[Jun 15 04:52:09] [ERR] [source/client_handler.c/client_handler_deliverer:418] failed to epoll_handler_pop(): (nil)
+[Jun 15 04:52:09] [INF] [source/client_handler.c/process_deliverer_data:322] received all the data from client: 34
+[Jun 15 04:52:09] [INF] [source/client_handler.c/process_deliverer_data:343] enqueu client 34 data: deliverer 5 > worker
+[Jun 15 04:52:09] [ERR] [source/client_handler.c/client_handler_deliverer:418] failed to epoll_handler_pop(): (nil)
+[Jun 15 04:52:09] [INF] [source/client_handler.c/process_deliverer_data:322] received all the data from client: 18
+[Jun 15 04:52:09] [INF] [source/client_handler.c/process_deliverer_data:343] enqueu client 18 data: deliverer 5 > worker
+[Jun 15 04:52:09] [ERR] [source/client_handler.c/client_handler_deliverer:418] failed to epoll_handler_pop(): (nil)
+[Jun 15 04:52:50] [INF] [source/client_handler.c/process_listener_data:172] foreign client connect to server [fd:17 => deliverer:5]
+[Jun 15 04:52:50] [INF] [source/client_handler.c/show_deliverer_data:234] received body data
+id: 132201
+passwd: ONOFFLAB88@
+method: 130
+quality: 30
+filesize: 10002912
+checksum: 10134874
+[Jun 15 04:52:50] [INF] [source/client_handler.c/process_listener_data:172] foreign client connect to server [fd:21 => deliverer:6]
+[Jun 15 04:52:50] [INF] [source/client_handler.c/show_deliverer_data:234] received body data
+id: 132201
+passwd: ONOFFLAB88@
+method: 130
+quality: 30
+filesize: 10002912
+checksum: 10134874
+[Jun 15 04:52:50] [INF] [source/client_handler.c/process_listener_data:172] foreign client connect to server [fd:25 => deliverer:7]
+[Jun 15 04:52:50] [INF] [source/client_handler.c/process_listener_data:172] foreign client connect to server [fd:29 => deliverer:0]
+[Jun 15 04:52:50] [INF] [source/client_handler.c/process_listener_data:172] foreign client connect to server [fd:33 => deliverer:1]
+[Jun 15 04:52:50] [INF] [source/client_handler.c/process_listener_data:172] foreign client connect to server [fd:36 => deliverer:2]
+[Jun 15 04:52:50] [INF] [source/client_handler.c/show_deliverer_data:234] received body data
+id: 132201
+passwd: ONOFFLAB88@
+method: 130
+quality: 30
+filesize: 10002912
+checksum: 10134874
+[Jun 15 04:52:50] [INF] [source/client_handler.c/show_deliverer_data:234] received body data
+id: 132201
+passwd: ONOFFLAB88@
+method: 130
+quality: 30
+filesize: 10002912
+checksum: 10134874
+[Jun 15 04:52:50] [INF] [source/client_handler.c/show_deliverer_data:234] received body data
+id: 132201
+passwd: ONOFFLAB88@
+method: 130
+quality: 30
+filesize: 10002912
+checksum: 10134874
+[Jun 15 04:52:50] [INF] [source/client_handler.c/show_deliverer_data:234] received body data
+id: 132201
+passwd: ONOFFLAB88@
+method: 130
+quality: 30
+filesize: 10002912
+checksum: 10134874
+[Jun 15 04:52:50] [INF] [source/client_handler.c/process_listener_data:172] foreign client connect to server [fd:38 => deliverer:3]
+[Jun 15 04:52:50] [INF] [source/client_handler.c/show_deliverer_data:234] received body data
+id: 132201
+passwd: ONOFFLAB88@
+method: 130
+quality: 30
+filesize: 10002912
+checksum: 10134874
+[Jun 15 04:52:50] [INF] [source/client_handler.c/process_listener_data:172] foreign client connect to server [fd:40 => deliverer:4]
+[Jun 15 04:52:50] [INF] [source/client_handler.c/show_deliverer_data:234] received body data
+id: 132201
+passwd: ONOFFLAB88@
+method: 130
+quality: 30
+filesize: 10002912
+checksum: 10134874
+[Jun 15 04:52:50] [INF] [source/client_handler.c/process_listener_data:172] foreign client connect to server [fd:42 => deliverer:5]
+[Jun 15 04:52:50] [INF] [source/client_handler.c/process_listener_data:172] foreign client connect to server [fd:44 => deliverer:6]
+[Jun 15 04:52:50] [INF] [source/client_handler.c/show_deliverer_data:234] received body data
+id: 132201
+passwd: ONOFFLAB88@
+method: 130
+quality: 30
+filesize: 10002912
+checksum: 10134874
+[Jun 15 04:52:50] [INF] [source/client_handler.c/process_deliverer_data:322] received all the data from client: 36
+[Jun 15 04:52:50] [INF] [source/client_handler.c/process_deliverer_data:343] enqueu client 36 data: deliverer 3 > worker
+[Jun 15 04:52:50] [ERR] [source/client_handler.c/client_handler_deliverer:418] failed to epoll_handler_pop(): (nil)
+[Jun 15 04:52:50] [INF] [source/client_handler.c/process_deliverer_data:322] received all the data from client: 17
+[Jun 15 04:52:50] [INF] [source/client_handler.c/process_deliverer_data:343] enqueu client 17 data: deliverer 6 > worker
+[Jun 15 04:52:50] [ERR] [source/client_handler.c/client_handler_deliverer:418] failed to epoll_handler_pop(): (nil)
+[Jun 15 04:52:50] [INF] [source/client_handler.c/show_deliverer_data:234] received body data
+id: 132201
+passwd: ONOFFLAB88@
+method: 130
+quality: 30
+filesize: 10002912
+checksum: 10134874
+[Jun 15 04:52:50] [INF] [source/client_handler.c/process_deliverer_data:322] received all the data from client: 25
+[Jun 15 04:52:50] [INF] [source/client_handler.c/process_deliverer_data:343] enqueu client 25 data: deliverer 8 > worker
+[Jun 15 04:52:50] [ERR] [source/client_handler.c/client_handler_deliverer:418] failed to epoll_handler_pop(): (nil)
+[Jun 15 04:52:50] [INF] [source/client_handler.c/process_deliverer_data:322] received all the data from client: 29
+[Jun 15 04:52:50] [INF] [source/client_handler.c/process_deliverer_data:343] enqueu client 29 data: deliverer 1 > worker
+[Jun 15 04:52:50] [ERR] [source/client_handler.c/client_handler_deliverer:418] failed to epoll_handler_pop(): (nil)
+[Jun 15 04:52:50] [INF] [source/client_handler.c/process_deliverer_data:322] received all the data from client: 33
+[Jun 15 04:52:50] [INF] [source/client_handler.c/process_deliverer_data:343] enqueu client 33 data: deliverer 2 > worker
+[Jun 15 04:52:50] [ERR] [source/client_handler.c/client_handler_deliverer:418] failed to epoll_handler_pop(): (nil)
+[Jun 15 04:52:50] [INF] [source/client_handler.c/process_deliverer_data:322] received all the data from client: 38
+[Jun 15 04:52:50] [INF] [source/client_handler.c/process_deliverer_data:343] enqueu client 38 data: deliverer 4 > worker
+[Jun 15 04:52:50] [ERR] [source/client_handler.c/client_handler_deliverer:418] failed to epoll_handler_pop(): (nil)
+[Jun 15 04:52:50] [INF] [source/client_handler.c/process_deliverer_data:322] received all the data from client: 40
+[Jun 15 04:52:50] [INF] [source/client_handler.c/process_deliverer_data:343] enqueu client 40 data: deliverer 5 > worker
+[Jun 15 04:52:50] [ERR] [source/client_handler.c/client_handler_deliverer:418] failed to epoll_handler_pop(): (nil)
+[Jun 15 04:52:50] [INF] [source/client_handler.c/process_deliverer_data:322] received all the data from client: 44
+[Jun 15 04:52:50] [INF] [source/client_handler.c/process_deliverer_data:343] enqueu client 44 data: deliverer 7 > worker
+[Jun 15 04:52:50] [ERR] [source/client_handler.c/client_handler_deliverer:418] failed to epoll_handler_pop(): (nil)
+[Jun 15 04:52:50] [INF] [source/client_handler.c/process_deliverer_data:322] received all the data from client: 21
+[Jun 15 04:52:50] [INF] [source/client_handler.c/process_deliverer_data:343] enqueu client 21 data: deliverer 7 > worker
+[Jun 15 04:52:50] [ERR] [source/client_handler.c/client_handler_deliverer:418] failed to epoll_handler_pop(): (nil)
+[Jun 15 04:52:50] [INF] [source/client_handler.c/process_deliverer_data:322] received all the data from client: 42
+[Jun 15 04:52:50] [INF] [source/client_handler.c/process_deliverer_data:343] enqueu client 42 data: deliverer 6 > worker
+[Jun 15 04:52:50] [ERR] [source/client_handler.c/client_handler_deliverer:418] failed to epoll_handler_pop(): (nil)

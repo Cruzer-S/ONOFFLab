@@ -173,6 +173,11 @@ int epoll_handler_wait(EpollHandler Handler, int timeout)
 		return -1;
 	}
 
+	if (handler->cnt == 0) {
+		pr_out("timeout occured when epoll_wait(): %d",
+				handler->cnt);
+	}
+
 	return handler->cnt;
 }
 
