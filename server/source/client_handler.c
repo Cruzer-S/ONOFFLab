@@ -4,6 +4,8 @@
 #include "utility.h"
 
 #include <inttypes.h>
+#include <sys/epoll.h>
+#include <sys/mman.h>
 
 struct header_data {
 	uint32_t id;			// 4
@@ -20,18 +22,19 @@ struct event_data {
 	int fd;
 
 	struct header_data header;
-
 	uint8_t *body;
+
+	int bodyfd;
 	size_t body_recv;
 	size_t header_recv;
 	size_t sz_header;
 	size_t sz_body;
 };
 
+typedef struct header_data *HeaderData;
 typedef struct event_data *EventData;
-
 // ==========================================================
-// =					Private Function					=
+// =			Private Function		    =
 // ==========================================================
 // Event Data
 // ==========================================================
@@ -56,12 +59,16 @@ static inline EventData event_data_create(
 		free(data);
 	} else data[1].fd = -data[1].fd;
 
+	data[0].fd = client;
+
 	data[0].body = NULL;
+
+	data[0].bodyfd = -1;
 	data[0].body_recv = 0;
+	data[0].sz_body = 0;
+
 	data[0].header_recv = 0;
 	data[0].sz_header = sizeof(struct header_data);
-	data[0].sz_body = 0;
-	data[0].fd = client;
 
 	return data;
 }
@@ -219,7 +226,8 @@ static inline void sever_deliverer_data(
 	if (data->fd < 0)
 		data--;
 
-	free(data->body);
+	munmap(data->body, data->header.filesize);
+	close(data->bodyfd);
 
 	event_data_destroy(data, handler);
 	close(real_fd);
@@ -250,45 +258,66 @@ static inline void show_deliverer_data(
 static inline int receive_deliverer_data(
 		struct event_data *data)
 {
-	uint8_t *ptr;
-	size_t to_read;
+	size_t *to_read, read_entity;
 	size_t *received;
-	size_t maximum;
-	int type;
+	int ret;
+	uint8_t *ptr;
+
+	to_read = &read_entity;
+	if (data->bodyfd == -1) {
+		received = &data->header_recv;
+		*to_read = data->sz_header - *received;
+		ptr = (void *) &data->header;
+	} else {
+		received = &data->body_recv;
+		*to_read = data->sz_body - *received;
+		ptr = data->body;
+	}
 
 	while (true) {
-		if (data->body == NULL) {
-			ptr = (uint8_t *) &data->header
-							+ data->header_recv;
-			to_read = data->sz_header - data->header_recv;
-			received = &data->header_recv;
-			maximum = data->sz_header;
-
-			type = 1;
-		} else {
-			ptr = data->body + data->body_recv;
-			to_read = data->sz_body - data->body_recv;
-			received = &data->body_recv;
-			maximum = data->sz_body;
-
-			type = 2;
-		}
-
-		int ret = recv(data->fd, ptr, to_read, 0);
-		if (ret == -1) {
-			if (errno == EAGAIN)
+		ret = recv(data->fd, (void *) ptr + *received, *to_read, 0);
+		switch (ret) {
+		case -1: if (errno == EAGAIN)
 				return 0;
 
-			return -2;
-		} else if (ret == 0) {
-			return -1;
-		} else *received += ret;
+			 pr_err("failed to recv(): %s", strerror(errno));
+			 return -2;
+		case  0: return -1;
+		default: *received += ret;
+			 *to_read -= ret;
+		}
 
-		if (maximum == *received)
-			return type;
+		if (*to_read == 0)
+			return (data->bodyfd == -1) ? 1 : 2;
 	}
 
 	return -1;
+}
+
+static inline int allocate_body(EventData data)
+{
+	char fname[1024];
+
+	sprintf(fname, "%dto%d.stl", data->fd, data->header.id);
+
+	data->bodyfd = open(fname, O_RDWR | O_CREAT, 0664); //rw-rw-r--
+	if (data->bodyfd == -1) {
+		pr_err("failed to open(): %s", strerror(errno));
+		return -1;
+	}
+
+	ftruncate(data->bodyfd, data->sz_body);
+
+	data->body = mmap((void *) 0, data->sz_body,
+			  PROT_READ | PROT_WRITE, MAP_SHARED,
+			  data->bodyfd, 0);
+	if (data->body == MAP_FAILED) {
+		pr_err("failed to mmap(): %s", strerror(errno));
+		close(data->bodyfd);
+		return -2;
+	}
+
+	return 0;
 }
 
 static inline int process_deliverer_data(
@@ -301,27 +330,28 @@ static inline int process_deliverer_data(
 	if (data[0].fd < 0)
 		return 0;
 
-RECEIVE_BODY:
+RECEIVE_AGAIN:
 	ret = receive_deliverer_data(data);
 	switch (ret) {
 	case 1: // receive all the header data
-		if (check_checksum(&data->header) < 0)
-			return -2;
+		if ((ret = check_checksum(&data->header)) < 0) {
+			pr_err("failed to check_checksum(): %d", ret);
+			return -1;
+		}
 
-		data->body = malloc(data->header.filesize);
-		if (data->body == NULL)
-			return -3;
-
-		data->body_recv = 0;
 		data->sz_body = data->header.filesize;
 
+		if ((ret = allocate_body(data)) < 0) {
+			pr_err("failed to allocate_body(): %d", ret);
+			return -2;
+		}
+		
 		show_deliverer_data("received body data", data);
 
-		goto RECEIVE_BODY;
+		goto RECEIVE_AGAIN;
 	case 2: // receive all the body data
-		pr_out("received all the data from client: %d",
-				data->fd);
-
+		pr_out("received all the data from client: %d", data->fd);	
+		
 		// destroy timerfd
 		int timerfd = -data[1].fd;
 		epoll_handler_unregister(deliverer->epoll, timerfd);
@@ -330,27 +360,55 @@ RECEIVE_BODY:
 		// unregister epoll handler
 		epoll_handler_unregister(deliverer->epoll, data[0].fd);
 
-		int ret = queue_enqueue(deliverer->queue, data);
+		pr_out("enqueu client %d data: deliverer %d > worker",
+			data[0].fd, deliverer->id);
+
+		ret = queue_enqueue_with_bcast(deliverer->queue, data);
 		if (ret < 0) {
 			pr_err("failed to enqueue_data: %d", ret);
-
-			close(data[0].fd);
-			free(data[0].body);
-			free(data);
-			return 0xDEADBEEF;
+			return -3;
 		}
-
-		pr_out("enqueu client %d data: deliverer %d > worker",
-				data[0].fd, deliverer->id);
-		break;
-	case 0: return 1;		// ret = 0, EAGAIN
-	case -1: return 0;		// ret = -1, close request
+	case  0: return (ret = 1);
+	case -1: return (ret = 0);
+	default: pr_err("failed to receive_deliverer_data(): %d", ret);
+		 return ret;
 	}
 
 	return ret;
 }
 // ==========================================================
-// =					Public Function						=
+// Worker Deliverer
+// ==========================================================
+#define DEFAULT_PRINTER_SETTINGS \
+	"resources/definitions/fdmprinter.def.json "
+
+static inline int process_worker_data(EventData data)
+{
+	char executable[1024];
+	HeaderData header = &data->header;
+	char fname[1024];
+
+	sprintf(fname, "%dto%d.stl", data->fd, data->header.id);
+
+	sprintf(executable, "./cura_engine slice "
+		"-j " DEFAULT_PRINTER_SETTINGS
+		"-l %s -o %dto%d.gcode",
+		fname, data->fd, header->id);
+
+	pr_out("execute: %s", executable);
+
+	FILE *fp = popen(executable, "r");
+	if (fp == NULL) {
+		pr_err("failed to popen(): %s", strerror(errno));
+		return -1;
+	}
+
+	fclose(fp);
+
+	return 0;
+}
+// ==========================================================
+// =			Public Function	    		    =
 // ==========================================================
 void *client_handler_listener(void *argument)
 {
@@ -396,7 +454,7 @@ void *client_handler_deliverer(void *argument)
 {
 	CDelivererDataPtr deliverer = argument;
 	struct epoll_event *event;
-	int ret;
+	int ret, nclient;
 
 	if ((ret = wait_other_thread(deliverer->sync)) < 0) {
 		pr_err("failed to wait_other_thread: %d", ret);
@@ -406,17 +464,18 @@ void *client_handler_deliverer(void *argument)
 	pr_out("deliverer thread start: %d", deliverer->id);
 
 	while (true) {
-		ret = epoll_handler_wait(deliverer->epoll, -1);
-		if (ret < 0) {
-			pr_err("failed to epoll_handler_wait(): %d",
-					ret);
+		nclient = epoll_handler_wait(deliverer->epoll, -1);
+		if (nclient < 0) {
+			pr_err("failed to epoll_handler_wait(): %d", ret);
 			continue;
-		} else for (int i = 0; i < ret; i++) {
+		} 
+
+		for (int i = 0; i < nclient; i++) {
 			event = epoll_handler_pop(deliverer->epoll);
 
 			if (event == NULL) {
-				pr_err("failed to epoll_handler_pop(): %p",
-						event);
+				pr_err("failed to epoll_handler_pop(): %p", 
+					event);
 				continue;
 			} else ret = process_deliverer_data(
 				event, deliverer
@@ -451,33 +510,20 @@ void *client_handler_worker(void *argument)
 	while (true) {
 		EventData data = queue_dequeue(worker->queue);
 		if (data == NULL) {
-		}
-		if (ret < 0) {
-			pr_err("failed to epoll_handler_wait(): %d",
-					ret);
+			pr_err("failed to queue_dequeue: %p", data);
 			continue;
-		} else for (int i = 0; i < ret; i++) {
-			event = epoll_handler_pop(deliverer->epoll);
-
-			if (event == NULL) {
-				pr_err("failed to epoll_handler_pop(): %p",
-						event);
-				continue;
-			} else ret = process_deliverer_data(
-				event, deliverer
-			);
-
-			if (ret <= 0) sever_deliverer_data(
-				event->data.ptr,
-				deliverer->epoll,
-				ret
-			);
 		}
-	}
 
-	while (true) {
+		pr_out("dequeuing data from the deliverer: %d",
+				data->fd);
+
+		if ((ret = process_worker_data(data)) < 0)
+			pr_err("failed to process_worker_data(%d): %d",
+					data->fd, ret);
+
+		close(data->fd);
+		free(data);
 	}
 
 	return (void *) 0;
 }
-

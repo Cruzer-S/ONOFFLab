@@ -9,10 +9,10 @@
 #include <semaphore.h>
 #include <inttypes.h>
 
-#include "socket_manager.h" 		// recv
-#include "queue.h"	 				// queueu_enqueue
-#include "logger.h"	 				// pr_err()
-#include "client_handler.h"			// CListenerData, ...
+#include "socket_manager.h" 	// recv
+#include "queue.h"	 	// queueu_enqueue
+#include "logger.h"	 	// pr_err()
+#include "client_handler.h"	// CListenerData, ...
 
 #define FILE_LIMIT (1024 * 1024 * 10) // 10 MiB
 #define DELIVERER_LIMIT 8
@@ -110,11 +110,10 @@ static inline void announce_client_server(ServData server)
 	extract_addrinfo(server->listener->ai, hoststr, portstr);
 
 	pr_out("client server running at %s:%s (%d)\n"
-		   "listener thread: %d\t" "worker thread: %d\t"
-		   "deliverer thread: %d",
-			hoststr, portstr,
-			server->listener->backlog,
-			1, server->wcount, server->dcount);
+	       "listener thread: %d\t" "worker thread: %d\t"
+	       "deliverer thread: %d",
+		hoststr, portstr, server->listener->backlog,
+		1, server->wcount, server->dcount);
 }
 // =====================================================
 // Listener Data
@@ -444,22 +443,28 @@ int client_server_wait(ClntServ clnt_serv)
 	int err;
 
 	if (pthread_join(server->ldata->tid, &ret) != 0) {
-		pr_err("failed to pthread_join(): %s", strerror((intptr_t) ret));
+		pr_err("failed to pthread_join(): %s", 
+				strerror((intptr_t) ret));
 		err = -1;
-	} else pr_out("listener thread return: %" PRIdPTR, (intptr_t) ret);
+	} else pr_out("listener thread return: %" PRIdPTR, 
+			       (intptr_t) ret);
 
 	for (int i = 0; i < server->wcount; i++) {
 		if (pthread_join(server->wdata[i].tid, &ret) != 0) {
-			pr_err("failed to pthread_join(): %s", strerror((intptr_t) ret));
+			pr_err("failed to pthread_join(): %s", 
+					strerror((intptr_t) ret));
 			err = -2;
-		} else pr_out("worker thread return: %" PRIdPTR, (intptr_t) ret);
+		} else pr_out("worker thread return: %" PRIdPTR, 
+				      (intptr_t) ret);
 	}
 
 	for (int i = 0; i < server->dcount; i++) {
 		if (pthread_join(server->ddata[i].tid, &ret) != 0) {
-			pr_err("failed to pthread_join(): %s", strerror((intptr_t) ret));
+			pr_err("failed to pthread_join(): %s", 
+					strerror((intptr_t) ret));
 			err = -3;
-		} else pr_out("deliverer thread return: %" PRIdPTR, (intptr_t) ret);
+		} else pr_out("deliverer thread return: %" PRIdPTR, 
+				       (intptr_t) ret);
 	}
 	
 	return 0;

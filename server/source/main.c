@@ -6,7 +6,6 @@
 #include "hashtab.h"
 #include "utility.h"
 #include "logger.h"
-#include "shared_data.h"
 
 #define CLIENT 0
 #define DEVICE 1
@@ -38,6 +37,9 @@ static inline void fill_client_server_argument(
 		struct parameter_data *param_data,
 		Hashtab shared_table);
 
+static inline int hash_func(void *key);
+static inline int comp_func(void *key1, void *key2);
+
 #define ERROR_HANDLING(FMT, ...)			\
 	fprintf(stderr, FMT "\n", __VA_ARGS__), \
 	exit(EXIT_FAILURE)
@@ -58,14 +60,12 @@ int main(int argc, char *argv[])
 
 	shared_table = hashtab_create(
 		SHARED_TABLE_BUCKET_SIZE, SHARED_TABLE_NODE_COUNT,
-		shared_data_hash, shared_data_compare);
+		hash_func, comp_func);
 	if (shared_table == NULL)
 		ERROR_HANDLING("failed to %s", "hashtab_create()");
 
 	fill_client_server_argument(
-			&cserv_arg,
-			&param_data,
-			shared_table
+		&cserv_arg, &param_data, shared_table
 	);
 
 	if ((clnt_serv = client_server_create(&cserv_arg)) == NULL)
@@ -82,11 +82,10 @@ int main(int argc, char *argv[])
 	}
 
 	ret = EXIT_SUCCESS;
-CLEANUP:
-	client_server_destroy(clnt_serv);
+CLEANUP:client_server_destroy(clnt_serv);
 	hashtab_destroy(shared_table);
 	logger_destroy();
-	
+
 	return ret;
 }
 
@@ -104,11 +103,10 @@ int extract_parameter(struct parameter_data *data,
 	data->backlog[DEVICE]	= DEFAULT_DEVICE_BACKLOG;
 
 	if (!(argc == 1 || argc == 5)) {
-		fprintf(stderr, "usage: %s "
-				"[logger]"
-				"[clnt-port] [clnt-blog]" 
-				"[dev-port] [dev-blog]\n",
-				argv[0]);
+		fprintf(stderr,
+			"usage: %s [logger] [clnt-port] "
+			"[clnt-blog] [dev-port] [dev-blog]\n",
+			argv[0]);
 		return -1;
 	}
 
@@ -145,3 +143,14 @@ static inline void fill_client_server_argument(
 	cserv_arg->header_size = 1024;
 	cserv_arg->body_size = 1024 * 1024 * 10;
 }
+
+static inline int hash_func(void *key)
+{
+	return 0;	// empty 
+}
+
+static inline int comp_func(void *key1, void *key2)
+{
+	return 0;	// empty
+}
+

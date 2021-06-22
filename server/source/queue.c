@@ -57,7 +57,7 @@ Queue queue_create(size_t size, bool is_sync)
 	return queue;
 }
 
-int queue_enqueue(Queue Queue, void *data)
+int queue_enqueue_with_bcast(Queue Queue, void *data)
 {
 	struct queue *queue = Queue;
 	struct node *new_node;
@@ -82,6 +82,45 @@ int queue_enqueue(Queue Queue, void *data)
 		pthread_mutex_unlock(&queue->mutex);
 
 		pthread_cond_broadcast(&queue->cond);
+	} else {
+		queue->tail = new_node;
+		queue->usage++;
+	}
+
+	return 0;
+}
+
+int queue_broadcast(Queue Queue)
+{
+	struct queue *queue = Queue;
+	int ret = pthread_cond_broadcast(&queue->cond);
+
+	return (ret == 0) ? (-1) : (0);
+}
+
+int queue_enqueue(Queue Queue, void *data)
+{
+	struct queue *queue = Queue;
+	struct node *new_node;
+
+	new_node = malloc(sizeof(struct node));
+	if (new_node == NULL)
+		return -1;
+
+	new_node->data = data;
+	new_node->next = queue->tail;
+
+	if (queue->is_sync) {
+		pthread_mutex_lock(&queue->mutex);
+		// -------------------------------------
+		// Critical Section Start
+		// -------------------------------------
+		queue->tail = new_node;
+		queue->usage++;
+		// -------------------------------------
+		// Critical Section End
+		// -------------------------------------
+		pthread_mutex_unlock(&queue->mutex);
 	} else {
 		queue->tail = new_node;
 		queue->usage++;
