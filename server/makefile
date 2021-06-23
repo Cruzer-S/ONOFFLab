@@ -39,6 +39,7 @@ clean:
 	@make -C $(UNION_DIR) clean
 	@rm -f $(TARGET)
 	@rm -f logg.txt
+	@rm -f *.stl *.gcode
 
 logg:
 	@rm -f logg.txt

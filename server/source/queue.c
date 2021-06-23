@@ -56,7 +56,7 @@ Queue queue_create(size_t size, bool is_sync)
 
 	return queue;
 }
-
+/*
 int queue_enqueue_with_bcast(Queue Queue, void *data)
 {
 	struct queue *queue = Queue;
@@ -89,11 +89,19 @@ int queue_enqueue_with_bcast(Queue Queue, void *data)
 
 	return 0;
 }
-
+*/
 int queue_broadcast(Queue Queue)
 {
 	struct queue *queue = Queue;
 	int ret = pthread_cond_broadcast(&queue->cond);
+
+	return (ret == 0) ? (-1) : (0);
+}
+
+int queue_wakeup(Queue Queue)
+{
+	struct queue *queue = Queue;
+	int ret = pthread_cond_signal(&queue->cond);
 
 	return (ret == 0) ? (-1) : (0);
 }
@@ -128,6 +136,58 @@ int queue_enqueue(Queue Queue, void *data)
 
 	return 0;
 }
+
+void *queue_dequeue_nonblock(Queue Queue)
+{
+	struct queue *queue = Queue;
+	struct node *prev;
+	void *ret;
+
+	if (queue->is_sync) {
+		pthread_mutex_lock(&queue->mutex);
+		// -------------------------------------
+		// Critical Section Start
+		// -------------------------------------
+		if (queue->usage == 0) {
+			pthread_mutex_unlock(&queue->mutex);
+			return NULL;
+		}
+
+		if (pthread_cond_wait(&queue->cond, &queue->mutex) != 0) {
+			pthread_mutex_unlock(&queue->mutex);
+			return NULL;
+		}
+
+		if (queue->usage == 0) {
+			pthread_mutex_unlock(&queue->mutex);
+			return NULL;
+		}
+		
+		ret = queue->tail->data;
+		prev = queue->tail;
+		queue->tail = queue->tail->next;
+
+		queue->usage--;
+		// -------------------------------------
+		// Critical Section End
+		// -------------------------------------
+		pthread_mutex_unlock(&queue->mutex);
+	} else {
+		if (queue->usage == 0)
+			return NULL;
+
+		ret = queue->tail->data;
+		prev = queue->tail;
+		queue->tail = queue->tail->next;
+
+		queue->usage--;
+	}
+
+	free(prev);
+
+	return ret;
+}
+
 
 void *queue_dequeue(Queue Queue)
 {

@@ -6,6 +6,8 @@
 #include <inttypes.h>
 #include <sys/epoll.h>
 #include <sys/mman.h>
+#include <signal.h>
+#include <sys/wait.h>
 
 struct header_data {
 	uint32_t id;			// 4
@@ -23,12 +25,14 @@ struct event_data {
 
 	struct header_data header;
 	uint8_t *body;
-
 	int bodyfd;
+
 	size_t body_recv;
 	size_t header_recv;
 	size_t sz_header;
 	size_t sz_body;
+
+	struct slicer_data *slicer;
 };
 
 typedef struct header_data *HeaderData;
@@ -66,6 +70,8 @@ static inline EventData event_data_create(
 	data[0].bodyfd = -1;
 	data[0].body_recv = 0;
 	data[0].sz_body = 0;
+
+	data[0].slicer = NULL;
 
 	data[0].header_recv = 0;
 	data[0].sz_header = sizeof(struct header_data);
@@ -118,31 +124,24 @@ static inline int wait_other_thread(sem_t *sems)
 {
 	int sval;
 
-	if (sem_wait(&sems[0]) != 0)
-		return -1;
+	if (sem_wait(&sems[0]) != 0) return -1;
 
-	if (sem_wait(&sems[1]) != 0)
-		return -2;
+	if (sem_wait(&sems[1]) != 0) return -2;
 
-	if (sem_post(&sems[1]) != 0)
-		return -5;
+	if (sem_post(&sems[1]) != 0) return -5;
 
-	if (sem_getvalue(&sems[2], &sval) != 0)
-		return -3;
+	if (sem_getvalue(&sems[2], &sval) != 0) return -3;
 
-	if (sval != 1)
-		return -4;
+	if (sval != 1) return -4;
 
 	return 0;
 }
 // ==========================================================
 // Process Listener
 // ==========================================================
-static inline int process_listener_data(
-		struct epoll_event *event,
-		CListenerDataPtr listener,
-		// Never use the `trace` as a static variables.
-		int *trace)
+static inline int process_listener_data(struct epoll_event *event,
+					CListenerDataPtr listener,
+/* NEVER use the `trace` as a static variables. */     int *trace)
 {
 	struct event_data *data;
 	int ret, fd, client;
@@ -150,8 +149,9 @@ static inline int process_listener_data(
 
 	fd = event->data.fd;
 
-	for (;	(client = accept(fd, NULL, NULL)) != -1;
-			(*trace)++, *trace %= listener->deliverer_count) {
+	for (; (client = accept(fd, NULL, NULL)) != -1;
+	       (*trace)++, *trace %= listener->deliverer_count) 
+	{
 		if ((ret = change_nonblocking(client)) < 0) {
 			pr_err("failed to change_nonblocking(): %d", ret);
 			close(client);
@@ -160,30 +160,25 @@ static inline int process_listener_data(
 
 		data = event_data_create(client, listener->timeout);
 		if (data == NULL) {
-			pr_err("failed to event_data_create(): %p",
-					data);
+			pr_err("failed to event_data_create(): %p", data);
 			close(client);
 			continue;
 		}
 
-		if ((ret = event_data_register(
-					listener->deliverer[*trace], 
-					data)) < 0) {
-			pr_err("failed to event_data_register(): %d", 
-					ret);
+		if ((ret = event_data_register(listener->deliverer[*trace],
+					       data)) < 0) {
+			pr_err("failed to event_data_register(): %d", ret);
 			event_data_destroy(data, NULL);
 			close(client);
 			continue;
 		}
 
 		pr_out("foreign client connect to server "
-			   "[fd:%d => deliverer:%d]",
-				client, *trace);
+		       "[fd:%d => deliverer:%d]", client, *trace);
 	}
 
 	if (errno != EAGAIN) {
-		pr_err("failed to accept(): %s",
-				strerror(errno));
+		pr_err("failed to accept(): %s", strerror(errno));
 		return -1;
 	}
 
@@ -221,12 +216,13 @@ static inline void sever_deliverer_data(
 		pr_out("client %d request closing session", real_fd);
 	else
 		pr_out("failed to process_deliverer_data(%d): %d",
-				real_fd, ret);
+			real_fd, ret);
 
 	if (data->fd < 0)
 		data--;
 
-	munmap(data->body, data->header.filesize);
+	ftruncate(data->bodyfd, 0);
+	munmap(data->body, data->sz_body);
 	close(data->bodyfd);
 
 	event_data_destroy(data, handler);
@@ -240,19 +236,19 @@ static inline void show_deliverer_data(
 	struct header_data *header = &data->header;
 
 	pr_out("%s\n"
-		   "id: %"			PRIu32  "\n"
-		   "passwd: %"		"s"		"\n"
-		   "method: %"		PRIu8	"\n"
-		   "quality: %"		PRIu8	"\n"
-		   "filesize: %"	PRIu32	"\n"
-		   "checksum: %"	PRIu32	,
-		   str,
-		   header->id,
-		   header->passwd,
-		   header->method,
-		   header->quality,
-		   header->filesize,
-		   header->checksum);
+		"id: %"		PRIu32	"\n"
+		"passwd: %"	"s"	"\n"
+		"method: %"	PRIu8	"\n"
+		"quality: %"	PRIu8	"\n"
+		"filesize: %"	PRIu32	"\n"
+		"checksum: %"	PRIu32,
+		str,
+		header->id,
+		header->passwd,
+		header->method,
+		header->quality,
+		header->filesize,
+		header->checksum);
 }
 
 static inline int receive_deliverer_data(
@@ -291,7 +287,7 @@ static inline int receive_deliverer_data(
 			return (data->bodyfd == -1) ? 1 : 2;
 	}
 
-	return -1;
+	return -3;
 }
 
 static inline int allocate_body(EventData data)
@@ -320,29 +316,26 @@ static inline int allocate_body(EventData data)
 	return 0;
 }
 
-static inline int process_deliverer_data(
-		struct epoll_event *event,
-		CDelivererDataPtr deliverer)
+static inline int process_deliverer_data(struct epoll_event *event,
+		                         CDelivererDataPtr deliverer)
 {
 	struct event_data *data = event->data.ptr;
-	int ret;
+	int err, ret;
 
 	if (data[0].fd < 0)
 		return 0;
 
-RECEIVE_AGAIN:
-	ret = receive_deliverer_data(data);
+RECEIVE_AGAIN: ret = receive_deliverer_data(data);
 	switch (ret) {
 	case 1: // receive all the header data
-		if ((ret = check_checksum(&data->header)) < 0) {
-			pr_err("failed to check_checksum(): %d", ret);
+		if ((err = check_checksum(&data->header)) < 0) {
+			pr_err("failed to check_checksum(): %d", err);
 			return -1;
 		}
 
 		data->sz_body = data->header.filesize;
-
-		if ((ret = allocate_body(data)) < 0) {
-			pr_err("failed to allocate_body(): %d", ret);
+		if ((err = allocate_body(data)) < 0) {
+			pr_err("failed to allocate_body(): %d", err);
 			return -2;
 		}
 		
@@ -350,8 +343,7 @@ RECEIVE_AGAIN:
 
 		goto RECEIVE_AGAIN;
 	case 2: // receive all the body data
-		pr_out("received all the data from client: %d", data->fd);	
-		
+		pr_out("received all the data from client: %d", data->fd);
 		// destroy timerfd
 		int timerfd = -data[1].fd;
 		epoll_handler_unregister(deliverer->epoll, timerfd);
@@ -363,52 +355,193 @@ RECEIVE_AGAIN:
 		pr_out("enqueu client %d data: deliverer %d > worker",
 			data[0].fd, deliverer->id);
 
-		ret = queue_enqueue_with_bcast(deliverer->queue, data);
-		if (ret < 0) {
-			pr_err("failed to enqueue_data: %d", ret);
+		err = queue_enqueue(deliverer->queue, data);
+		if (err < 0) {
+			pr_err("failed to enqueue_data: %d", err);
 			return -3;
 		}
-	case  0: return (ret = 1);
-	case -1: return (ret = 0);
-	default: pr_err("failed to receive_deliverer_data(): %d", ret);
+
+		break;
+	case  0: // receive_deliverer_data() =>  0 : recv(EAGAIN)
+		 return 1;
+	case -1: // receive_deliverer_data() => -1 : recv() => 0(close)
+		 return 0;
+	default: // receive_deliverer_data() => -2 : recv(ERROR)
+		 // receive_deliverer_data() => -3 : unrecovrable error
+		 pr_err("failed to receive_deliverer_data(): %d", ret);
 		 return ret;
 	}
 
 	return ret;
 }
 // ==========================================================
-// Worker Deliverer
+// Process Worker
 // ==========================================================
 #define DEFAULT_PRINTER_SETTINGS \
-	"resources/definitions/fdmprinter.def.json "
+	"resources/definitions/fdmprinter.def.json"
+#define SLICER_LOCATION \
+	"./CuraEngine"
+
+struct slicer_data {
+	int pid;
+	int rstream;
+
+	char stl[FILENAME_MAX];
+	char output[FILENAME_MAX];
+};
+
+typedef struct slicer_data *Slicer;
+
+static inline int launch_slicer(EventData data)
+{
+	int link[2], pid, ret = 0;
+	Slicer slicer;
+
+	slicer = malloc(sizeof(struct slicer_data));
+	if (slicer == NULL) {
+		pr_err("failed to malloc(): %s", strerror(errno));
+		ret = -1; goto RETURN_RET;
+	}
+
+	sprintf(slicer->stl, "%dto%d.stl", data->fd, data->header.id);
+	sprintf(slicer->output, "%dto%d.gcode", data->fd, data->header.id);
+
+	if (pipe(link) == -1) {
+		pr_err("failed to pipe(): %s", strerror(errno));
+		ret = -2; goto FREE_SLICER;
+	}
+
+	if ((pid = fork()) == -1) {
+		pr_err("failed to fork(): %s", strerror(errno));
+		ret = -3; goto BREAK_PIPE;
+	}
+	
+	if (pid == 0) {
+		if (dup2(link[1], STDERR_FILENO) < 0) {
+			pr_err("failed to dup2(): %s", strerror(errno));
+			exit(EXIT_FAILURE);
+		}
+
+		close(link[0]); close(link[1]);
+
+		execl(SLICER_LOCATION, "CuraEngine", "slice", 
+		      "-j", DEFAULT_PRINTER_SETTINGS,
+		      "-l", slicer->stl,
+		      "-o", slicer->output,
+		      NULL);
+		// the case should NEVER happen.
+		exit(EXIT_FAILURE);
+	}
+
+	close(link[1]); // read-only
+	
+	slicer->pid = pid;
+	slicer->rstream = link[0];
+	data->slicer = slicer;
+
+	return ret;
+BREAK_PIPE: close(link[0]); close(link[1]);
+FREE_SLICER: free(slicer);
+RETURN_RET: return ret;
+}
+
+static inline int send_progress_client(EventData data)
+{
+	char buffer[4096], *ptr;
+	int err, ret;
+	double dprog;
+	int32_t iprog;
+
+	err = read(data->slicer->rstream, buffer, sizeof(buffer) - 1);
+	pr_out("read return: %d\n%s\n", err, buffer);
+	if (err == 0 || err == -1) {
+		err = waitpid_timed(data->slicer->pid, &ret, 0, 1);
+		if (err != data->slicer->pid) {
+			pr_err("failed to waitpid_timed(): %s", strerror(errno));
+			return -5;
+		} else pr_out("waitpid_timed() return: %d", err);
+
+		if ( !WIFEXITED(ret) ) {
+			pr_err("WIFEXITED(pid %d) return false",
+				data->slicer->pid);
+			return -6;
+		} else if ((ret = WEXITSTATUS(ret)) != EXIT_SUCCESS) {
+			pr_err("failed to slice the file: %d", ret);
+			return -7;
+		}
+
+		iprog = 100;
+		err = send(data->fd, &iprog, sizeof(int32_t), O_NONBLOCK);
+		if (err == -1) {
+			pr_err("failed to send(): %s", strerror(errno));
+			return -3;
+		}
+
+		return 1;
+	}
+
+	ptr = last_strstr(buffer, "Progress:");
+	if (ptr == NULL) return 0;
+
+	if (sscanf(ptr, "Progress:%*[A-Za-z+]:%*d:%*d %lf", &dprog) != 1) {
+		pr_err("failed to sscanf(): %s", "return value isn't 1");
+		return 0;
+	} else iprog = (int) (dprog * 100.0);
+
+	err = send(data->fd, &iprog, sizeof(int32_t), O_NONBLOCK);
+	if (err == -1) {
+		pr_err("failed to send(): %s", strerror(errno));
+		return -3;
+	}
+
+	return (iprog == 100);
+}
+
+static inline void destroy_slicer(Slicer slicer)
+{
+	if (slicer->pid > 0)
+		kill(slicer->pid, SIGHUP);
+
+	close(slicer->rstream);
+	free(slicer);
+}
 
 static inline int process_worker_data(EventData data)
 {
-	char executable[1024];
-	HeaderData header = &data->header;
-	char fname[1024];
+	int err, ret;
+	int progress = data->header_recv;
 
-	sprintf(fname, "%dto%d.stl", data->fd, data->header.id);
+	if (data->slicer == NULL)
+		progress = data->header_recv = 0;
 
-	sprintf(executable, "./cura_engine slice "
-		"-j " DEFAULT_PRINTER_SETTINGS
-		"-l %s -o %dto%d.gcode",
-		fname, data->fd, header->id);
-
-	pr_out("execute: %s", executable);
-
-	FILE *fp = popen(executable, "r");
-	if (fp == NULL) {
-		pr_err("failed to popen(): %s", strerror(errno));
-		return -1;
+	switch (progress) {
+	case 0: err = launch_slicer(data);
+		if (err < 0) {
+			pr_err("failed to launch_slicer(): %d", err);
+			ret = -1; goto CLEANUP;
+		} else data->header_recv++;
+		break;
+	case 1: err = send_progress_client(data);
+		if (err < 0) {
+			pr_err("failed to send_progress(): %d", err);
+			ret = -2; goto CLEANUP;
+		} else if (err > 0) data->header_recv++;
+		break;
+	case 2: // err = send_output_to_device(data);
+		err = -1;
+		if (err < 0) {
+			pr_err("failed to send_output_to_device(): %d", err);
+			ret = -3; goto CLEANUP;
+		}
+		break;
 	}
 
-	fclose(fp);
-
 	return 0;
+CLEANUP:destroy_slicer(data->slicer);
+	return ret;
 }
 // ==========================================================
-// =			Public Function	    		    =
+// =			Public Function			    =
 // ==========================================================
 void *client_handler_listener(void *argument)
 {
@@ -428,20 +561,24 @@ void *client_handler_listener(void *argument)
 		if (ret < 0) {
 			pr_err("failed to epoll_handler_wait(): %d", ret);
 			continue;
-		} else for (int i = 0; i < ret; i++) {
+		} 
+
+		for (int i = 0; i < ret; i++) {
 			event = epoll_handler_pop(listener->listener);
 
 			if (event == NULL) {
-				pr_err("failed to epoll_handler_pop(): %p",
-						event);
+				pr_err("failed to epoll_handler_pop(): %p", 
+					event);
 				continue;
-			} else ret = process_listener_data(
-					event, listener, &trace
+			}
+
+			ret = process_listener_data(
+				event, listener, &trace
 			);
 
 			if (ret < 0) {
-				pr_err("failed to %s: %d",
-						"process_listener_data()", ret);
+				pr_err("failed to process_listener_data(): %d",
+					ret);
 				continue;
 			}
 		}
@@ -454,7 +591,7 @@ void *client_handler_deliverer(void *argument)
 {
 	CDelivererDataPtr deliverer = argument;
 	struct epoll_event *event;
-	int ret, nclient;
+	int ret, nclient, cast_count;
 
 	if ((ret = wait_other_thread(deliverer->sync)) < 0) {
 		pr_err("failed to wait_other_thread: %d", ret);
@@ -468,8 +605,9 @@ void *client_handler_deliverer(void *argument)
 		if (nclient < 0) {
 			pr_err("failed to epoll_handler_wait(): %d", ret);
 			continue;
-		} 
+		}
 
+		cast_count = 0;
 		for (int i = 0; i < nclient; i++) {
 			event = epoll_handler_pop(deliverer->epoll);
 
@@ -481,16 +619,21 @@ void *client_handler_deliverer(void *argument)
 				event, deliverer
 			);
 
+			// ret  0: close-request recv() => 0
+			// ret -1: recv() == -1, set errno: not EAGAIN
 			if (ret <= 0) sever_deliverer_data(
 				event->data.ptr,
 				deliverer->epoll,
 				ret
-			);
+			); else cast_count++; 
 		}
+
+		if (cast_count > 1) queue_broadcast(deliverer->queue);
+		else if (cast_count == 1) queue_wakeup(deliverer->queue);
 	}
 
 	// int x = 0xfull * 0xcafedeep-0f / 0xdeadbeef / 0x01dB1ade;
-	// full cafedeep-of deadbeef old blade
+	// full cafedeep of deadbeef OldBlade 
 
 	return (void *) 0;
 }
@@ -498,6 +641,7 @@ void *client_handler_deliverer(void *argument)
 void *client_handler_worker(void *argument)
 {
 	CWorkerDataPtr worker = argument;
+	EventData data;
 	int ret;
 
 	if ((ret = wait_other_thread(worker->sync)) < 0) {
@@ -508,22 +652,33 @@ void *client_handler_worker(void *argument)
 	pr_out("worker thread start: %d", worker->id);
 
 	while (true) {
-		EventData data = queue_dequeue(worker->queue);
+		data = queue_dequeue(worker->queue);
 		if (data == NULL) {
 			pr_err("failed to queue_dequeue: %p", data);
 			continue;
 		}
 
-		pr_out("dequeuing data from the deliverer: %d",
-				data->fd);
+		pr_out("dequeuing data from the deliverer: %d", data->fd);
 
-		if ((ret = process_worker_data(data)) < 0)
+		ret = process_worker_data(data);
+		switch (ret) {
+		case 0: // Processing data...
+			queue_enqueue(worker->queue, data);
+			queue_wakeup(worker->queue);
+			break;
+		default:// failed to handling
 			pr_err("failed to process_worker_data(%d): %d",
-					data->fd, ret);
+				data->fd, ret);
+		case 1: // processing success.
+			close(data->fd);
 
-		close(data->fd);
-		free(data);
+			close(data->bodyfd);
+			ftruncate(data->bodyfd, 0);
+			munmap(data->body, data->sz_body);
+			break;
+		}
 	}
 
 	return (void *) 0;
 }
+

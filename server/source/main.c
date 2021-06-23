@@ -1,5 +1,5 @@
 #include <stdio.h>		// fprintf, NULL
-#include <stdlib.h> 	// exit, EXIT_FAILURE
+#include <stdlib.h> 		// exit, EXIT_FAILURE
 #include <stdint.h>
 
 #include "client_server.h"
@@ -41,7 +41,7 @@ static inline int hash_func(void *key);
 static inline int comp_func(void *key1, void *key2);
 
 #define ERROR_HANDLING(FMT, ...)			\
-	fprintf(stderr, FMT "\n", __VA_ARGS__), \
+	fprintf(stderr, FMT "\n", __VA_ARGS__), 	\
 	exit(EXIT_FAILURE)
 
 int main(int argc, char *argv[])
@@ -97,10 +97,10 @@ int extract_parameter(struct parameter_data *data,
 	data->logger			= DEFAULT_LOGGER_NAME;
 
 	data->port[CLIENT]		= DEFAULT_CLIENT_PORT;
-	data->backlog[CLIENT]	= DEFAULT_CLIENT_BACKLOG;
+	data->backlog[CLIENT]		= DEFAULT_CLIENT_BACKLOG;
 
 	data->port[DEVICE]		= DEFAULT_DEVICE_PORT;
-	data->backlog[DEVICE]	= DEFAULT_DEVICE_BACKLOG;
+	data->backlog[DEVICE]		= DEFAULT_DEVICE_BACKLOG;
 
 	if (!(argc == 1 || argc == 5)) {
 		fprintf(stderr,

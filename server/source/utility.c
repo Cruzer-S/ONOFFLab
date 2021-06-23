@@ -9,6 +9,7 @@
 #include <errno.h>
 #include <string.h>
 #include <stdlib.h>
+#include <sys/wait.h>
 
 #include <sys/timerfd.h>
 
@@ -97,4 +98,37 @@ int parse_arguments(int cnt, char *vector[], ...)
 CLEANUP:
 	va_end(ap);
 	return ret;
+}
+
+char *last_strstr(const char *haystack, const char *needle)
+{
+    if (*needle == '\0')
+        return (char *) haystack;
+
+    char *result = NULL;
+    for (;;) {
+        char *p = strstr(haystack, needle);
+        if (p == NULL)
+            break;
+        result = p;
+        haystack = p + 1;
+    }
+
+    return result;
+}
+
+int waitpid_timed(int pid, int *stat, int flags, int timeout)
+{
+	int ret;
+
+	for (clock_t start, end = start = clock();
+	     (end - start) * CLOCKS_PER_SEC < timeout;
+	     end = clock())
+	{
+		ret = waitpid(pid, stat, flags | WNOHANG);
+		if (ret < 0) return ret;
+		else if (ret > 0) return ret;
+	}
+
+	return 0;
 }

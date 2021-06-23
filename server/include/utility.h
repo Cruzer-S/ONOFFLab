@@ -12,4 +12,8 @@ int set_timer(int fd, int timeout);
 
 int parse_arguments(int argc, char *argv[], ...);
 
+int waitpid_timed(int pid, int *stat, int flags, int timeout);
+
+char *last_strstr(const char *haystack, const char *needle);
+
 #endif
