@@ -130,6 +130,27 @@ void socket_data_destroy(struct socket_data *data)
 	free(data);
 }
 
+int send_timeout(int fd, void *ptr, int to_recv, int timeout)
+{
+	int ret, strike = 0;
+	const void *origin = ptr;
+
+	while (to_recv > 0) {
+		ret = send(fd, ptr, to_recv, MSG_DONTWAIT);
+		if (ret == -1) {
+			if (timeout > 0) {
+				timeout--;
+				sleep(1);
+				continue;
+			}
+
+			return -1;
+		} else ptr += ret, to_recv -= ret;
+	}
+
+	return 0;
+}
+
 int epoll_handler_register(EpollHandler Handler, int tgfd, void *ptr, int events)
 {
 	struct epoll_handler *handler = Handler;

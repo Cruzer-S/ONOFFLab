@@ -38,6 +38,8 @@ struct client_server {
 	CWorkerDataPtr wdata;
 
 	sem_t synchronizer[3];
+
+	Hashtab table;
 };
 
 typedef struct client_server *ServData;
@@ -64,6 +66,7 @@ static inline int test_and_set(ServData server, ClntServArg *arg)
 	server->body_size = arg->body_size;
 	server->header_size = arg->header_size;
 	server->timeout = arg->timeout;
+	server->table = arg->shared_table;
 
 	return 0;
 }
@@ -164,8 +167,7 @@ static inline void destroy_listener_data(CListenerDataPtr listener)
 // =====================================================
 // Deliverer Data
 // =====================================================
-static inline CDelivererDataPtr create_deliverer_data(
-		ServData server)
+static inline CDelivererDataPtr create_deliverer_data(ServData server)
 {
 	CDelivererDataPtr deliverer;
 	int cnt = server->dcount;
@@ -226,6 +228,8 @@ static inline CWorkerDataPtr create_worker_data(ServData server)
 		worker[i].id = (i + 1);
 
 		worker[i].sync = server->synchronizer;
+
+		worker[i].table = server->table;
 	}
 
 	worker[count].queue = NULL;
@@ -273,8 +277,7 @@ static inline void semaphore_destroy(ServData server)
 // XClient 
 // =====================================================
 static inline void destroy_xclient_thread(
-		void *tid, int count,
-		int size, sem_t *sem)
+		   void *tid, int count, int size, sem_t *sem)
 {
 	void *ret;
 	int func_ret;
@@ -292,11 +295,8 @@ static inline void destroy_xclient_thread(
 }
 
 static inline int start_xclient_thread(
-		int count,
-		int size,
-		void *args,
-		void *(*func)(void *),
-		sem_t *sem)
+		  int count, int size, void *args,
+		  void *(*func)(void *), sem_t *sem)
 {
 	int i, ret;
 	
@@ -395,22 +395,19 @@ ClntServ client_server_create(ClntServArg *arg)
 
 	server->ddata = create_deliverer_data(server);
 	if (server->ddata == NULL) {
-		pr_err("failed to create_deliverer_data(): %p",
-				server->ddata);
+		pr_err("failed to create_deliverer_data(): %p", server->ddata);
 		goto QUEUE_DESTROY;
 	}
 
 	server->ldata = create_listener_data(server, server->ddata);
 	if (server->ldata == NULL) {
-		pr_err("failed to create_listener_data(): %p",
-				server->ldata);
+		pr_err("failed to create_listener_data(): %p", server->ldata);
 		goto DESTROY_DDATA;
 	}
 
 	server->wdata = create_worker_data(server);
 	if (server->wdata == NULL) {
-		pr_err("failed to create_worker_data(): %p",
-				server->wdata);
+		pr_err("failed to create_worker_data(): %p", server->wdata);
 		goto DESTROY_LDATA;
 	}
 
@@ -419,21 +416,16 @@ ClntServ client_server_create(ClntServArg *arg)
 	if (server->listener == NULL)
 		goto DESTROY_WDATA;
 
+	server->table = arg->shared_table;
+
 	return server;
-DESTROY_WDATA:
-	destroy_worker_data(server->wdata);
-DESTROY_LDATA:
-	destroy_listener_data(server->ldata);
-DESTROY_DDATA:
-	destroy_deliverer_data(server->ddata);
-QUEUE_DESTROY:
-	queue_destroy(server->queue);
-DESTROY_SYNC:
-	semaphore_destroy(server);
-FREE_SERVER:
-	free(server);
-RETURN_NULL:
-	return NULL;
+DESTROY_WDATA:	destroy_worker_data(server->wdata);
+DESTROY_LDATA:	destroy_listener_data(server->ldata);
+DESTROY_DDATA:	destroy_deliverer_data(server->ddata);
+QUEUE_DESTROY:	queue_destroy(server->queue);
+DESTROY_SYNC:	semaphore_destroy(server);
+FREE_SERVER:	free(server);
+RETURN_NULL:	return NULL;
 }
 
 int client_server_wait(ClntServ clnt_serv)
@@ -493,8 +485,7 @@ int client_server_start(ClntServ clnt_serv)
 			server->listener->fd,
 			NULL,
 			EPOLLIN | EPOLLET)) < 0)
-		pr_err("failed to epoll_handler_register(): %d",
-				err);
+		pr_err("failed to epoll_handler_register(): %d", err);
 
 	for (int i = 0; i < 3; i++) {
 		if (start_xclient_thread(

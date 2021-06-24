@@ -9,6 +9,7 @@
 
 #include "socket_manager.h"
 #include "queue.h"
+#include "hashtab.h"
 
 struct client_listener_data {
 	pthread_t tid;
@@ -40,7 +41,8 @@ struct client_deliverer_data {
 struct client_worker_data {
 	pthread_t tid;
 
-	Queue queue;	
+	Queue queue;
+	Hashtab table;
 
 	int id;
 	sem_t *sync;

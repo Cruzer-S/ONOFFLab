@@ -42,6 +42,7 @@ typedef struct socket_data *SockData;
 int socket_reuseaddr(int sock);
 int change_nonblocking(int fd);
 
+int send_timeout(int fd, void *ptr, int to_recv, int timeout);
 
 struct socket_data *socket_data_create(uint16_t port, int backlog, enum make_listener_option option);
 void socket_data_destroy(struct socket_data *data);

@@ -2,6 +2,7 @@
 
 #include "logger.h"
 #include "utility.h"
+#include "hashtab.h"
 
 #include <inttypes.h>
 #include <sys/epoll.h>
@@ -392,6 +393,15 @@ struct slicer_data {
 
 typedef struct slicer_data *Slicer;
 
+static inline void event_data_cleanup(EventData data)
+{
+	close(data->fd);
+
+	close(data->bodyfd);
+	ftruncate(data->bodyfd, 0);
+	munmap(data->body, data->sz_body);
+}
+
 static inline int launch_slicer(EventData data)
 {
 	int link[2], pid, ret = 0;
@@ -506,7 +516,40 @@ static inline void destroy_slicer(Slicer slicer)
 	free(slicer);
 }
 
-static inline int process_worker_data(EventData data)
+static inline int send_output_device(EventData data, Hashtab table)
+{
+	void *find_ptr;
+	int ret;
+	int devfd, id;
+
+	id = data->header.id;
+
+	find_ptr = hashtab_find(table, (void *) (intptr_t) id, false);
+	if (!find_ptr) {
+		pr_err("failed to hashtab_find(%d)", id);
+		return -1;
+	} else devfd = (intptr_t) find_ptr;
+
+	ret = send_timeout(devfd, &data->header, data->sz_header, 3);
+	if (ret < 0) {
+		pr_err("failed to send_timeout(header): %d, %s",
+			ret, strerror(errno));
+		hashtab_find(table, (void *) (intptr_t) id, true);
+		return -2;
+	}
+	
+	ret = send_timeout(devfd, data->body, data->sz_body, 3);
+	if (ret < 0) {
+		pr_err("failed to send_timed(body): %d, %s",
+			ret, strerror(errno));
+		hashtab_find(table, (void *) (intptr_t) id, true);
+		return -3;
+	}
+
+	return 0;
+}
+
+static inline int process_worker_data(EventData data, Hashtab table)
 {
 	int err, ret;
 	int progress = data->header_recv;
@@ -527,12 +570,14 @@ static inline int process_worker_data(EventData data)
 			ret = -2; goto CLEANUP;
 		} else if (err > 0) data->header_recv++;
 		break;
-	case 2: // err = send_output_to_device(data);
+	case 2: err = send_output_device(data, table);
 		err = -1;
 		if (err < 0) {
 			pr_err("failed to send_output_to_device(): %d", err);
 			ret = -3; goto CLEANUP;
 		}
+		break;
+	case 3: destroy_slicer(data->slicer);
 		break;
 	}
 
@@ -643,6 +688,7 @@ void *client_handler_worker(void *argument)
 	CWorkerDataPtr worker = argument;
 	EventData data;
 	int ret;
+	int32_t result;
 
 	if ((ret = wait_other_thread(worker->sync)) < 0) {
 		pr_err("failed to wait_other_thread: %d", ret);
@@ -660,7 +706,7 @@ void *client_handler_worker(void *argument)
 
 		pr_out("dequeuing data from the deliverer: %d", data->fd);
 
-		ret = process_worker_data(data);
+		ret = process_worker_data(data, worker->table);
 		switch (ret) {
 		case 0: // Processing data...
 			queue_enqueue(worker->queue, data);
@@ -670,11 +716,9 @@ void *client_handler_worker(void *argument)
 			pr_err("failed to process_worker_data(%d): %d",
 				data->fd, ret);
 		case 1: // processing success.
-			close(data->fd);
-
-			close(data->bodyfd);
-			ftruncate(data->bodyfd, 0);
-			munmap(data->body, data->sz_body);
+			result = ret;
+			send(data->fd, &result, sizeof(int32_t), MSG_DONTWAIT);
+			event_data_cleanup(data);
 			break;
 		}
 	}
