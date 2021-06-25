@@ -4,11 +4,12 @@
 #include "utility.h"
 #include "hashtab.h"
 
-#include <inttypes.h>
 #include <sys/epoll.h>
 #include <sys/mman.h>
-#include <signal.h>
 #include <sys/wait.h>
+
+#include <signal.h>
+#include <inttypes.h>
 
 struct header_data {
 	uint32_t id;			// 4
