@@ -41,9 +41,6 @@ clean:
 	@rm -f logg.txt
 	@rm -f *.stl *.gcode
 
-logg:
-	@rm -f logg.txt
-
 union:
 ifeq ($(DEBUG), 1)
 	@make -C $(UNION_DIR) DEBUG=1

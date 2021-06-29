@@ -38,11 +38,12 @@ uint32_t calc_checksum(struct header_data *data)
 int main(int argc, char *argv[])
 {
 	struct header_data packet;
-	FILE *fp;
+	FILE *fp, *readf;
 	uint32_t u32;
 	uint8_t u8;
 	uint64_t u64;
 	int what;
+	char fname[FILENAME_MAX];
 
 	if (argc < 2) {
 		fprintf(stderr, "usage: %s <filename>\n", argv[0]);
@@ -78,6 +79,28 @@ int main(int argc, char *argv[])
 		scanf("%" PRIu64, &u64);
 		packet.filesize = u64;
 
+		if (packet.filesize == 0) {
+			printf("filename: ");
+			scanf("%s", fname);
+
+			readf = fopen(fname, "rb");
+			if (readf == NULL) {
+				fprintf(stderr, "fopen error: %s", strerror(errno));
+				exit(EXIT_FAILURE);
+			}
+
+			if (fseek(readf, 0L, SEEK_END) == -1) {
+				fprintf(stderr, "fseek error: %s", strerror(errno));
+				exit(EXIT_FAILURE);
+			}
+
+			packet.filesize = ftell(readf);
+			fseek(readf, 0L, SEEK_SET);
+			fclose(readf);
+
+			readf = fopen(fname, "rb");
+		} else readf = NULL;
+
 		printf("checksum: ");
 		if (scanf("%" PRIu32, &u32) != 0) {
 			packet.checksum = u32;
@@ -90,7 +113,8 @@ int main(int argc, char *argv[])
 
 		fp = fopen(argv[1], "wb");
 		if (fp == NULL) {
-			fprintf(stderr, "failed to open file: %s\n", strerror(errno));
+			fprintf(stderr, "failed to open file: %s\n", 
+					strerror(errno));
 			exit(EXIT_FAILURE);
 		}
 
@@ -99,7 +123,7 @@ int main(int argc, char *argv[])
 			exit(EXIT_FAILURE);
 		}
 
-		do {
+		if (readf == NULL) {
 			uint8_t *body = malloc(packet.filesize);
 			if (body == NULL)
 				exit(EXIT_FAILURE);
@@ -108,7 +132,16 @@ int main(int argc, char *argv[])
 				fprintf(stderr, "failed to write file from data\n");
 				exit(EXIT_FAILURE);
 			}
-		} while (false);
+		} else {
+			char buffer[1024];
+			int len;
+
+			while ((len = fread(buffer, sizeof(char), sizeof(buffer), readf)) > 0)
+				fwrite(buffer, 1, len, fp);
+		}
+
+		if (readf)
+			fclose(readf);
 
 		fclose(fp);
 		break;
@@ -155,8 +188,6 @@ int main(int argc, char *argv[])
 			if (write(sock, &buffer, read) == -1)
 				fprintf(stderr, "failed to write(): %s",
 						strerror(errno));
-
-		sleep(5);
 
 		close(sock);
 		fclose(fp);

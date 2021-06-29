@@ -1,0 +1,96 @@
+[Jun 28 08:45:24] [INF] [source/client_server.c/announce_client_server:115] client server running at 0.0.0.0:1584 (30)
+listener thread: 1	worker thread: 4	deliverer thread: 8
+[Jun 28 08:45:24] [INF] [source/client_handler.c/client_handler_worker:715] worker thread start: 1
+[Jun 28 08:45:24] [INF] [source/client_handler.c/client_handler_deliverer:663] deliverer thread start: 5
+[Jun 28 08:45:24] [INF] [source/client_handler.c/client_handler_worker:715] worker thread start: 2
+[Jun 28 08:45:24] [INF] [source/client_handler.c/client_handler_worker:715] worker thread start: 4
+[Jun 28 08:45:24] [INF] [source/client_handler.c/client_handler_deliverer:663] deliverer thread start: 7
+[Jun 28 08:45:24] [INF] [source/client_handler.c/client_handler_deliverer:663] deliverer thread start: 2
+[Jun 28 08:45:24] [INF] [source/client_handler.c/client_handler_deliverer:663] deliverer thread start: 8
+[Jun 28 08:45:24] [INF] [source/client_handler.c/client_handler_deliverer:663] deliverer thread start: 1
+[Jun 28 08:45:24] [INF] [source/client_handler.c/client_handler_deliverer:663] deliverer thread start: 6
+[Jun 28 08:45:24] [INF] [source/client_handler.c/client_handler_deliverer:663] deliverer thread start: 3
+[Jun 28 08:45:24] [INF] [source/client_handler.c/client_handler_worker:715] worker thread start: 3
+[Jun 28 08:45:24] [INF] [source/client_handler.c/client_handler_listener:619] listener thread start: 1
+[Jun 28 08:45:24] [INF] [source/client_handler.c/client_handler_deliverer:663] deliverer thread start: 4
+[Jun 28 08:45:27] [INF] [source/client_handler.c/process_listener_data:177] foreign client connect to server [fd:16 => deliverer:0]
+[Jun 28 08:45:27] [INF] [source/client_handler.c/show_deliverer_data:239] received body data
+id: 158444
+passwd: CruzerS
+method: 30
+quality: 100
+filesize: 6529784
+checksum: 6408237
+[Jun 28 08:45:27] [ERR] [source/client_handler.c/client_handler_worker:720] failed to queue_dequeue: (nil)
+[Jun 28 08:45:27] [INF] [source/client_handler.c/process_deliverer_data:347] received all the data from client: 16
+[Jun 28 08:45:27] [INF] [source/client_handler.c/process_deliverer_data:356] enqueu client 16 data: deliverer 1 > worker
+[Jun 28 08:45:27] [INF] [source/client_handler.c/client_handler_worker:724] dequeuing data from the deliverer: 16
+[Jun 28 08:45:27] [INF] [source/client_handler.c/client_handler_worker:724] dequeuing data from the deliverer: 16
+[Jun 28 08:45:27] [INF] [source/client_handler.c/send_progress_client:475] read return: 1
+
+
+
+[Jun 28 08:45:27] [INF] [source/client_handler.c/client_handler_worker:724] dequeuing data from the deliverer: 16
+[Jun 28 08:45:27] [INF] [source/client_handler.c/send_progress_client:475] read return: 695
+Cura_SteamEngine version master
+Copyright (C) 2021 Ultimaker
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU Affero General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+
+[Jun 28 08:45:27] [INF] [source/client_handler.c/client_handler_worker:724] dequeuing data from the deliverer: 16
+[Jun 28 08:45:27] [INF] [source/client_handler.c/send_progress_client:475] read return: 10
+[WARNING] 
+
+[Jun 28 08:45:27] [INF] [source/client_handler.c/client_handler_worker:724] dequeuing data from the deliverer: 16
+[Jun 28 08:45:27] [INF] [source/client_handler.c/send_progress_client:475] read return: 217
+Unrecognized data type in JSON setting machine_disallowed_areas
+[WARNING] Unrecognized data type in JSON setting nozzle_disallowed_areas
+[WARNING] Unrecognized data type in JSON setting machine_head_with_fans_polygon
+
+
+[Jun 28 08:45:27] [INF] [source/client_handler.c/client_handler_worker:724] dequeuing data from the deliverer: 16
+[Jun 28 08:45:27] [INF] [source/client_handler.c/send_progress_client:475] read return: 10
+[WARNING] 
+
+[Jun 28 08:45:27] [INF] [source/client_handler.c/client_handler_worker:724] dequeuing data from the deliverer: 16
+[Jun 28 08:45:27] [INF] [source/client_handler.c/send_progress_client:475] read return: 108
+Face count reported by file (2669674496) is not equal to actual face count (130594). File could be corrupt!
+ibute it and/or modify
+it under the terms of the GNU Affero General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without øŒÍš
+
+[Jun 28 08:45:27] [INF] [source/client_handler.c/client_handler_worker:724] dequeuing data from the deliverer: 16
+[Jun 28 08:45:27] [INF] [source/client_handler.c/send_progress_client:475] read return: 10
+[WARNING] 
+
+[Jun 28 08:45:27] [INF] [source/client_handler.c/client_handler_worker:724] dequeuing data from the deliverer: 16
+[Jun 28 08:45:27] [INF] [source/client_handler.c/send_progress_client:475] read return: 67
+Mesh has disconnected faces!
+[WARNING] Mesh has overlapping faces!
+RNING] Unrecognized data type in JSON setting nozzle_disallowed_areas
+[WARNING] Unrecognized data type in JSON setting machine_head_with_fans_polygon
+
+
+[Jun 28 08:45:27] [INF] [source/client_handler.c/client_handler_worker:724] dequeuing data from the deliverer: 16
+[Jun 28 08:45:30] [INF] [source/client_handler.c/send_progress_client:475] read return: 0
+[WARNING] 
+
+[Jun 28 08:45:33] [ERR] [source/client_handler.c/send_progress_client:479] failed to waitpid_timed(): Resource temporarily unavailable
+[Jun 28 08:45:33] [ERR] [source/client_handler.c/process_worker_data:587] failed to send_progress_client(): -1
+[Jun 28 08:45:33] [ERR] [source/client_handler.c/client_handler_worker:733] failed to process_worker_data(16): -2

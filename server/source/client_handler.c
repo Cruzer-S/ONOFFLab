@@ -1,5 +1,6 @@
 #include "client_handler.h"
 
+#include "device_server.h"
 #include "logger.h"
 #include "utility.h"
 #include "hashtab.h"
@@ -18,8 +19,6 @@ struct header_data {
 	uint8_t quality;		// 38
 	uint32_t filesize;		// 42
 	uint32_t checksum;		// 46
-
-	uint8_t dummy[1024 - 46];
 } __attribute__((packed));
 
 struct event_data {
@@ -390,6 +389,8 @@ struct slicer_data {
 
 	char stl[FILENAME_MAX];
 	char output[FILENAME_MAX];
+
+	struct device_data *dev_data;
 };
 
 typedef struct slicer_data *Slicer;
@@ -403,15 +404,22 @@ static inline void event_data_cleanup(EventData data)
 	munmap(data->body, data->sz_body);
 }
 
-static inline int launch_slicer(EventData data)
+static inline int launch_slicer(EventData data, Hashtab table)
 {
 	int link[2], pid, ret = 0;
 	Slicer slicer;
+	int id;
 
 	slicer = malloc(sizeof(struct slicer_data));
 	if (slicer == NULL) {
 		pr_err("failed to malloc(): %s", strerror(errno));
 		ret = -1; goto RETURN_RET;
+	} else id = data->header.id;
+
+	slicer->dev_data = hashtab_find(table, &id, false);
+	if (!slicer->dev_data) {
+		pr_err("failed to hashtab_find(%d)", id);
+		return -5; goto FREE_SLICER;
 	}
 
 	sprintf(slicer->stl, "%dto%d.stl", data->fd, data->header.id);
@@ -422,13 +430,12 @@ static inline int launch_slicer(EventData data)
 		ret = -2; goto FREE_SLICER;
 	}
 
-	if ((pid = fork()) == -1) {
-		pr_err("failed to fork(): %s", strerror(errno));
+	switch (pid = fork()) {
+	case -1:pr_err("failed to fork(): %s", strerror(errno));
 		ret = -3; goto BREAK_PIPE;
-	}
-	
-	if (pid == 0) {
-		if (dup2(link[1], STDERR_FILENO) < 0) {
+		break;
+
+	case 0: if (dup2(link[1], STDERR_FILENO) < 0) {
 			pr_err("failed to dup2(): %s", strerror(errno));
 			exit(EXIT_FAILURE);
 		}
@@ -442,15 +449,25 @@ static inline int launch_slicer(EventData data)
 		      NULL);
 		// the case should NEVER happen.
 		exit(EXIT_FAILURE);
-	}
 
-	close(link[1]); // read-only
-	
-	slicer->pid = pid;
-	slicer->rstream = link[0];
-	data->slicer = slicer;
+	default:close(link[1]); // read-only
+
+		if (change_nonblocking(link[0]) < 0) {
+			pr_err("failed to change_nonblocking(): %s",
+				strerror(errno));
+			ret = -4;
+			goto KILL_CHILD;
+		}
+		
+		slicer->pid = pid;
+		slicer->rstream = link[0];
+		data->slicer = slicer;
+
+		break;
+	}	
 
 	return ret;
+KILL_CHILD: kill(slicer->pid, SIGABRT);
 BREAK_PIPE: close(link[0]); close(link[1]);
 FREE_SLICER: free(slicer);
 RETURN_RET: return ret;
@@ -463,15 +480,23 @@ static inline int send_progress_client(EventData data)
 	double dprog;
 	int32_t iprog;
 
-	err = read(data->slicer->rstream, buffer, sizeof(buffer) - 1);
+	err = read_timed(data->slicer->rstream, buffer, sizeof(buffer) - 1, 3);
 	pr_out("read return: %d\n%s\n", err, buffer);
-	if (err == 0 || err == -1) {
-		err = waitpid_timed(data->slicer->pid, &ret, 0, 1);
-		if (err != data->slicer->pid) {
+	if (err <= 0) { // time-out or error
+		err = waitpid_timed(data->slicer->pid, &ret, 0, 3);
+		if (err <= 0) { // time-out or error
 			pr_err("failed to waitpid_timed(): %s", strerror(errno));
-			return -5;
-		} else pr_out("waitpid_timed() return: %d", err);
 
+			if (kill(data->slicer->pid, SIGABRT) != 0)
+				pr_err("failed to kill(): %s", strerror(errno));
+
+			if (waitpid_timed(data->slicer->pid, &ret, 0, 3) <= 0)
+				pr_err("failed to waitpid_timed(): %s",
+					strerror(errno));
+
+			return -1;
+		}
+		
 		if ( !WIFEXITED(ret) ) {
 			pr_err("WIFEXITED(pid %d) return false",
 				data->slicer->pid);
@@ -502,7 +527,7 @@ static inline int send_progress_client(EventData data)
 	err = send(data->fd, &iprog, sizeof(int32_t), O_NONBLOCK);
 	if (err == -1) {
 		pr_err("failed to send(): %s", strerror(errno));
-		return -3;
+		return -2;
 	}
 
 	return (iprog == 100);
@@ -519,19 +544,15 @@ static inline void destroy_slicer(Slicer slicer)
 
 static inline int send_output_device(EventData data, Hashtab table)
 {
-	void *find_ptr;
+	struct device_data *dev_data;
 	int ret;
-	int devfd, id;
+	uint8_t passwd[32];
+	uint32_t id;
 
-	id = data->header.id;
-
-	find_ptr = hashtab_find(table, (void *) (intptr_t) id, false);
-	if (!find_ptr) {
-		pr_err("failed to hashtab_find(%d)", id);
-		return -1;
-	} else devfd = (intptr_t) find_ptr;
-
-	ret = send_timeout(devfd, &data->header, data->sz_header, 3);
+	dev_data = data->slicer->dev_data;
+	id = dev_data->id;
+	
+	ret = send_timeout(dev_data->fd, &data->header, data->sz_header, 3);
 	if (ret < 0) {
 		pr_err("failed to send_timeout(header): %d, %s",
 			ret, strerror(errno));
@@ -539,7 +560,7 @@ static inline int send_output_device(EventData data, Hashtab table)
 		return -2;
 	}
 	
-	ret = send_timeout(devfd, data->body, data->sz_body, 3);
+	ret = send_timeout(dev_data->fd, data->body, data->sz_body, 3);
 	if (ret < 0) {
 		pr_err("failed to send_timed(body): %d, %s",
 			ret, strerror(errno));
@@ -559,7 +580,7 @@ static inline int process_worker_data(EventData data, Hashtab table)
 		progress = data->header_recv = 0;
 
 	switch (progress) {
-	case 0: err = launch_slicer(data);
+	case 0: err = launch_slicer(data, table);
 		if (err < 0) {
 			pr_err("failed to launch_slicer(): %d", err);
 			ret = -1; goto CLEANUP;
@@ -567,12 +588,11 @@ static inline int process_worker_data(EventData data, Hashtab table)
 		break;
 	case 1: err = send_progress_client(data);
 		if (err < 0) {
-			pr_err("failed to send_progress(): %d", err);
+			pr_err("failed to send_progress_client(): %d", err);
 			ret = -2; goto CLEANUP;
 		} else if (err > 0) data->header_recv++;
 		break;
 	case 2: err = send_output_device(data, table);
-		err = -1;
 		if (err < 0) {
 			pr_err("failed to send_output_to_device(): %d", err);
 			ret = -3; goto CLEANUP;

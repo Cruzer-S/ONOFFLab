@@ -1,8 +1,12 @@
+#define _GNU_SOURCE
+
 #include <stdio.h>		// fprintf, NULL
 #include <stdlib.h> 		// exit, EXIT_FAILURE
 #include <stdint.h>
+#include <signal.h>
 
 #include "client_server.h"
+#include "device_server.h"
 #include "hashtab.h"
 #include "utility.h"
 #include "logger.h"
@@ -47,9 +51,13 @@ static inline int comp_func(void *key1, void *key2);
 int main(int argc, char *argv[])
 {
 	struct parameter_data param_data;
+
 	ClntServArg cserv_arg;
-	Hashtab shared_table;
 	ClntServ clnt_serv;
+
+	Hashtab shared_table;
+	DevServ dev_serv;
+
 	int ret;
 	
 	if ((ret = extract_parameter(&param_data, argc, argv)) < 0)
@@ -65,24 +73,39 @@ int main(int argc, char *argv[])
 		ERROR_HANDLING("failed to %s", "hashtab_create()");
 
 	fill_client_server_argument(
-		&cserv_arg, &param_data, shared_table
-	);
+		&cserv_arg, &param_data, shared_table);
+
+	dev_serv = device_server_create(
+		DEFAULT_DEVICE_PORT, DEFAULT_CLIENT_BACKLOG, shared_table);
+	if (ret < 0)
+		ERROR_HANDLING("failed to device_server_start(): %d", ret);
 
 	if ((clnt_serv = client_server_create(&cserv_arg)) == NULL)
 		ERROR_HANDLING("failed to %s", "client_server_create()");
+
+	if ((ret = device_server_start(dev_serv)) < 0) {
+		fprintf(stderr, "failed to device_server_start(): %d", ret);
+		ret = EXIT_FAILURE; goto CLEANUP;
+	}
 
 	if ((ret = client_server_start(clnt_serv)) < 0) {
 		fprintf(stderr, "failed to client_server_start(): %d", ret);
 		ret = EXIT_FAILURE; goto CLEANUP;
 	}
 
-	if (client_server_wait(clnt_serv) < 0) {
+	if ((ret = device_server_wait(dev_serv)) < 0) {
+		fprintf(stderr, "failed to device_server_wait(): %d", ret);
+		ret = EXIT_FAILURE; goto CLEANUP;
+	}
+
+	if ((ret = client_server_wait(clnt_serv)) < 0) {
 		fprintf(stderr, "failed to client_server_wait(): %d", ret);
 		ret = EXIT_FAILURE; goto CLEANUP;
 	}
 
 	ret = EXIT_SUCCESS;
-CLEANUP:client_server_destroy(clnt_serv);
+CLEANUP:device_server_destroy(dev_serv);
+	client_server_destroy(clnt_serv);
 	hashtab_destroy(shared_table);
 	logger_destroy();
 
@@ -146,11 +169,13 @@ static inline void fill_client_server_argument(
 
 static inline int hash_func(void *key)
 {
-	return 0;	// empty 
+	return *(uint32_t *) key % 100;
 }
 
 static inline int comp_func(void *key1, void *key2)
 {
-	return 0;	// empty
-}
+	if (*(uint32_t *) key1 == *(uint32_t *) key2)
+		return true;
 
+	return false;
+}

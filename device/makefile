@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -std=c11 -lwiringPi
+CFLAGS = -std=c11
 DEBUG = DEBUG
 
 ifeq ($(DEBUG), 1)

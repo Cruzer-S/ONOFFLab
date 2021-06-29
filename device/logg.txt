@@ -1,0 +1,3 @@
+[Jun 25 01:33:25] [ERR] [source/main.c/main:043] failed to connect(): Connection refused
+[Jun 25 01:35:29] [ERR] [source/main.c/main:043] failed to connect(): Connection refused
+[Jun 25 03:34:33] [INF] [source/main.c/main:047] connected to server: 127.0.0.1:3606
