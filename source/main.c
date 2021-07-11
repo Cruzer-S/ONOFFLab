@@ -73,15 +73,16 @@ int get_current_time(char *string, int length)
 void *recorder(void *arg)
 {
 	char filename[FILENAME_MAX];
+	char timestr[100];
 	int ret;
 
 	for (int try = 0; try < 10; try++) {
-		if ((ret = get_current_time(filename, sizeof(filename))) < 0) {
+		if ((ret = get_current_time(timestr, sizeof(timestr))) < 0) {
 			pr_err("failed to get_current_time(): %d", ret);
 			continue;
 		}
 
-		strncat(filename, ".h264", sizeof(filename) - 1);
+		sprintf(filename, "\"%s.h264\"", timestr);
 		if ((ret = record_video(filename, VIDEO_LENGTH)) < 0) {
 			pr_err("failed to record_video(): %d", ret);
 			continue;
