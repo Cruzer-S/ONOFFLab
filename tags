@@ -7,13 +7,13 @@
 CC	makefile	/^CC = gcc$/;"	m
 CFLAGS	makefile	/^CFLAGS = -std=c11 -lpthread -lrt$/;"	m
 DEBUG	makefile	/^DEBUG = DEBUG$/;"	m
-ENCODE_PROGRAM	source/video.c	15;"	d	file:
+ENCODE_PROGRAM	source/video.c	16;"	d	file:
 GET_TIME0	source/logger.c	7;"	d	file:
 INC_DIR	makefile	/^INC_DIR = .\/include$/;"	m
 LOGGER_H__	include/logger.h	2;"	d
 OBJS	makefile	/^OBJS = $(patsubst %.c, $(OBJ_DIR)\/%.o, $(notdir $(SRCS)))$/;"	m
 OBJ_DIR	makefile	/^OBJ_DIR = .\/build$/;"	m
-RECORD_PROGRAM	source/video.c	14;"	d	file:
+RECORD_PROGRAM	source/video.c	15;"	d	file:
 SRCS	makefile	/^SRCS = $(wildcard $(SRC_DIR)\/*.c)$/;"	m
 SRC_DIR	makefile	/^SRC_DIR = .\/source$/;"	m
 TARGET	makefile	/^TARGET = output$/;"	m

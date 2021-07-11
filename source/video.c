@@ -3,6 +3,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <errno.h>
+#include <stdarg.h>
 
 #include <sys/wait.h>
 #include <sys/types.h>
