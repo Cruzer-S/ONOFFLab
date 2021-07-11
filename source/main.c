@@ -18,10 +18,16 @@
 #include "logger.h"
 
 #define RECORD_PROGRAM "/bin/raspivid"
-#define VIDEO_LENGTH (10 * 60 * 1000)
+#define VIDEO_LENGTH (10 * 1000)
 
 struct serv_info {
 	uint16_t port;
+};
+
+enum VIDSIZE {
+	VIDSIZE_SMALL = 1,
+	VIDSIZE_NORMAL,
+	VIDSIZE_LARGE
 };
 
 static inline char *strap_path(const char *path)
@@ -29,12 +35,42 @@ static inline char *strap_path(const char *path)
 	return strrchr(path, '/') + 1;
 }
 
-int record_video(char *filename, int length)
+static inline int get_video_size(enum VIDSIZE size, char *width, char *height)
+{
+	switch (size) {
+	case VIDSIZE_SMALL:	// 480p
+		sprintf(width, "%d", 854);
+		sprintf(height, "%d", 480);
+		break;
+
+	case VIDSIZE_NORMAL:	// 720p
+		sprintf(width, "%d", 1280);
+		sprintf(height, "%d", 720);
+		break;
+
+	case VIDSIZE_LARGE:	// 1080p
+		sprintf(width, "%d", 1920);
+		sprintf(height, "%d", 1080);
+		break;
+
+	default: return -1;
+	}
+
+	return 0;
+}
+
+int record_video(char *filename, int length,
+		 enum VIDSIZE size)
 {
 	int pid;
-	int ret;
-	int err;
+	int ret, err;
 	char timestr[1024];
+	char width[100], height[100];
+
+	if ((ret = get_video_size(size, width, height)) < 0) {
+		pr_err("failed to get_video_size(): %d", ret);
+		return -5;
+	}
 
 	sprintf(timestr, "%d", length);
 	if ((pid = vfork()) == -1) {
@@ -86,14 +122,14 @@ void *recorder(void *arg)
 		}
 
 		sprintf(filename, "%s.h264", timestr);
-		if ((ret = record_video(filename, VIDEO_LENGTH)) < 0) {
+		if ((ret = record_video(filename, VIDEO_LENGTH, VIDSIZE_SMALL)) < 0) {
 			pr_err("failed to record_video(): %d", ret);
 			continue;
 		}
 
 		pr_out("video saved successfully: %s", filename);
 
-		return arg;
+		try = 0;
 	}
 
 	pr_out("%s", "failed to save video!\n");

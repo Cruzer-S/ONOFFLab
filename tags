@@ -17,11 +17,16 @@ SRCS	makefile	/^SRCS = $(wildcard $(SRC_DIR)\/*.c)$/;"	m
 SRC_DIR	makefile	/^SRC_DIR = .\/source$/;"	m
 TARGET	makefile	/^TARGET = output$/;"	m
 VIDEO_LENGTH	source/main.c	21;"	d	file:
+VIDSIZE	source/main.c	/^enum VIDSIZE {$/;"	g	file:
+VIDSIZE_LARGE	source/main.c	/^	VIDSIZE_LARGE$/;"	e	enum:VIDSIZE	file:
+VIDSIZE_NORMAL	source/main.c	/^	VIDSIZE_NORMAL,$/;"	e	enum:VIDSIZE	file:
+VIDSIZE_SMALL	source/main.c	/^	VIDSIZE_SMALL = 1,$/;"	e	enum:VIDSIZE	file:
 _XOPEN_SOURCE	source/main.c	1;"	d	file:
 __print_message	source/logger.c	/^void __print_message(FILE *fp, const char *fmt, ...)$/;"	f
 ftp_server	source/main.c	/^void *ftp_server(void *arg)$/;"	f
 get_current_time	source/main.c	/^int get_current_time(char *string, int length)$/;"	f
 get_time0	source/logger.c	/^static char *get_time0(char *buf, size_t sz_buf)$/;"	f	file:
+get_video_size	source/main.c	/^static inline int get_video_size(enum VIDSIZE size, char *width, char *height)$/;"	f	file:
 logger_create	source/logger.c	/^inline int logger_create(const char *filename)$/;"	f
 logger_destroy	source/logger.c	/^inline void logger_destroy(void)$/;"	f
 main	source/main.c	/^int main(void)$/;"	f
@@ -30,7 +35,7 @@ pr_crt	include/logger.h	20;"	d
 pr_err	include/logger.h	19;"	d
 pr_out	include/logger.h	18;"	d
 print_message	include/logger.h	12;"	d
-record_video	source/main.c	/^int record_video(char *filename, int length)$/;"	f
+record_video	source/main.c	/^int record_video(char *filename, int length,$/;"	f
 recorder	source/main.c	/^void *recorder(void *arg)$/;"	f
 redirect	source/logger.c	/^static FILE *redirect = NULL;$/;"	v	file:
 serv_info	source/main.c	/^struct serv_info {$/;"	s	file:
