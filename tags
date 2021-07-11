@@ -7,26 +7,30 @@
 CC	makefile	/^CC = gcc$/;"	m
 CFLAGS	makefile	/^CFLAGS = -std=c11 -lpthread -lrt$/;"	m
 DEBUG	makefile	/^DEBUG = DEBUG$/;"	m
+ENCODE_PROGRAM	source/video.c	15;"	d	file:
 GET_TIME0	source/logger.c	7;"	d	file:
 INC_DIR	makefile	/^INC_DIR = .\/include$/;"	m
 LOGGER_H__	include/logger.h	2;"	d
 OBJS	makefile	/^OBJS = $(patsubst %.c, $(OBJ_DIR)\/%.o, $(notdir $(SRCS)))$/;"	m
 OBJ_DIR	makefile	/^OBJ_DIR = .\/build$/;"	m
-RECORD_PROGRAM	source/main.c	20;"	d	file:
+RECORD_PROGRAM	source/video.c	14;"	d	file:
 SRCS	makefile	/^SRCS = $(wildcard $(SRC_DIR)\/*.c)$/;"	m
 SRC_DIR	makefile	/^SRC_DIR = .\/source$/;"	m
 TARGET	makefile	/^TARGET = output$/;"	m
-VIDEO_LENGTH	source/main.c	21;"	d	file:
-VIDSIZE	source/main.c	/^enum VIDSIZE {$/;"	g	file:
-VIDSIZE_LARGE	source/main.c	/^	VIDSIZE_LARGE$/;"	e	enum:VIDSIZE	file:
-VIDSIZE_NORMAL	source/main.c	/^	VIDSIZE_NORMAL,$/;"	e	enum:VIDSIZE	file:
-VIDSIZE_SMALL	source/main.c	/^	VIDSIZE_SMALL = 1,$/;"	e	enum:VIDSIZE	file:
-_XOPEN_SOURCE	source/main.c	1;"	d	file:
+VIDEO_H__	include/video.h	2;"	d
+VIDEO_LENGTH	source/main.c	17;"	d	file:
+VIDSIZE	include/video.h	/^enum VIDSIZE {$/;"	g
+VIDSIZE_LARGE	include/video.h	/^	VIDSIZE_LARGE$/;"	e	enum:VIDSIZE
+VIDSIZE_NORMAL	include/video.h	/^	VIDSIZE_NORMAL,$/;"	e	enum:VIDSIZE
+VIDSIZE_SMALL	include/video.h	/^	VIDSIZE_SMALL = 1,$/;"	e	enum:VIDSIZE
+_XOPEN_SOURCE	source/video.c	1;"	d	file:
 __print_message	source/logger.c	/^void __print_message(FILE *fp, const char *fmt, ...)$/;"	f
+change_extension	source/main.c	/^static inline char *change_extension(char *filename, char *extension)$/;"	f	file:
+encode_video	source/video.c	/^int encode_video(char *origin, char *dest, bool del_origin, bool is_wait)$/;"	f
 ftp_server	source/main.c	/^void *ftp_server(void *arg)$/;"	f
 get_current_time	source/main.c	/^int get_current_time(char *string, int length)$/;"	f
 get_time0	source/logger.c	/^static char *get_time0(char *buf, size_t sz_buf)$/;"	f	file:
-get_video_size	source/main.c	/^static inline int get_video_size(enum VIDSIZE size, char *width, char *height)$/;"	f	file:
+get_video_size	source/video.c	/^static inline int get_video_size(enum VIDSIZE size, char *width, char *height)$/;"	f	file:
 logger_create	source/logger.c	/^inline int logger_create(const char *filename)$/;"	f
 logger_destroy	source/logger.c	/^inline void logger_destroy(void)$/;"	f
 main	source/main.c	/^int main(void)$/;"	f
@@ -35,8 +39,8 @@ pr_crt	include/logger.h	20;"	d
 pr_err	include/logger.h	19;"	d
 pr_out	include/logger.h	18;"	d
 print_message	include/logger.h	12;"	d
-record_video	source/main.c	/^int record_video(char *filename, int length,$/;"	f
+record_video	source/video.c	/^int record_video(char *filename, int length,$/;"	f
 recorder	source/main.c	/^void *recorder(void *arg)$/;"	f
 redirect	source/logger.c	/^static FILE *redirect = NULL;$/;"	v	file:
 serv_info	source/main.c	/^struct serv_info {$/;"	s	file:
-strap_path	source/main.c	/^static inline char *strap_path(const char *path)$/;"	f	file:
+strap_path	source/video.c	/^static inline char *strap_path(const char *path)$/;"	f	file:
