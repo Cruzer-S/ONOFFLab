@@ -1,3 +1,5 @@
+#define _XOPEN_SOURCE 500
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
@@ -110,7 +112,7 @@ int main(void)
 		if ((ret = pthread_create(&record, &attr, recorder, &record)) != 0)
 			pr_crt("failed to pthread_create(): %d", ret);
 
-		sleep(VIDEO_LENGTH);
+		usleep(VIDEO_LENGTH);
 	}
 	
 	logger_destroy();
