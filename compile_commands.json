@@ -1,0 +1,36 @@
+[
+  {
+    "arguments": [
+      "/usr/lib64/ccache/gcc",
+      "-c",
+      "-I",
+      "./include",
+      "-I",
+      "../union/include",
+      "-std=c11",
+      "-o",
+      "build/logger.o",
+      "source/logger.c"
+    ],
+    "directory": "/home/mythos/work/blackbox/pi-zero",
+    "file": "/home/mythos/work/blackbox/pi-zero/source/logger.c",
+    "output": "/home/mythos/work/blackbox/pi-zero/build/logger.o"
+  },
+  {
+    "arguments": [
+      "/usr/lib64/ccache/gcc",
+      "-c",
+      "-I",
+      "./include",
+      "-I",
+      "../union/include",
+      "-std=c11",
+      "-o",
+      "build/main.o",
+      "source/main.c"
+    ],
+    "directory": "/home/mythos/work/blackbox/pi-zero",
+    "file": "/home/mythos/work/blackbox/pi-zero/source/main.c",
+    "output": "/home/mythos/work/blackbox/pi-zero/build/main.o"
+  }
+]

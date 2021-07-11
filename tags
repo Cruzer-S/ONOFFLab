@@ -4,23 +4,37 @@
 !_TAG_PROGRAM_NAME	Exuberant Ctags	//
 !_TAG_PROGRAM_URL	http://ctags.sourceforge.net	/official site/
 !_TAG_PROGRAM_VERSION	5.8	//
-GET_TIME0	logger.c	7;"	d	file:
-LOGGER_H__	logger.h	2;"	d
-RECORD_PROGRAM	main.c	18;"	d	file:
-VIDEO_LENGTH	main.c	19;"	d	file:
-__print_message	logger.c	/^void __print_message(FILE *fp, const char *fmt, ...)$/;"	f
-ftp_server	main.c	/^void *ftp_server(void *arg)$/;"	f
-get_current_time	main.c	/^int get_current_time(char *string, int length)$/;"	f
-get_time0	logger.c	/^static char *get_time0(char *buf, size_t sz_buf)$/;"	f	file:
-logger_create	logger.c	/^inline int logger_create(const char *filename)$/;"	f
-logger_destroy	logger.c	/^inline void logger_destroy(void)$/;"	f
-main	main.c	/^int main(void)$/;"	f
-port	main.c	/^	uint16_t port;$/;"	m	struct:serv_info	file:
-pr_crt	logger.h	20;"	d
-pr_err	logger.h	19;"	d
-pr_out	logger.h	18;"	d
-print_message	logger.h	12;"	d
-record_video	main.c	/^int record_video(char *filename, int length)$/;"	f
-recorder	main.c	/^void *recorder(void *arg)$/;"	f
-redirect	logger.c	/^static FILE *redirect = NULL;$/;"	v	file:
-serv_info	main.c	/^struct serv_info {$/;"	s	file:
+CC	makefile	/^CC = gcc$/;"	m
+CFLAGS	makefile	/^CFLAGS = -std=c11 -lpthread -lrt$/;"	m
+DEBUG	makefile	/^DEBUG = DEBUG$/;"	m
+GET_TIME0	source/logger.c	7;"	d	file:
+INC_DIR	makefile	/^INC_DIR = .\/include $(UNION_DIR)\/include$/;"	m
+LIBS	makefile	/^LIBS = $(shell find $(UNION_DIR)\/build\/*.o)$/;"	m
+LOGGER_H__	include/logger.h	2;"	d
+OBJS	makefile	/^OBJS = $(patsubst %.c, $(OBJ_DIR)\/%.o, $(notdir $(SRCS)))$/;"	m
+OBJ_DIR	makefile	/^OBJ_DIR = .\/build$/;"	m
+RECORD_PROGRAM	source/main.c	20;"	d	file:
+SRCS	makefile	/^SRCS = $(wildcard $(SRC_DIR)\/*.c)$/;"	m
+SRC_DIR	makefile	/^SRC_DIR = .\/source$/;"	m
+TARGET	makefile	/^TARGET = output$/;"	m
+UNION_DIR	makefile	/^UNION_DIR = ..\/union$/;"	m
+UNION_FLAGS	makefile	/^	UNION_FLAGS = all$/;"	m
+UNION_FLAGS	makefile	/^	UNION_FLAGS = debug$/;"	m
+VIDEO_LENGTH	source/main.c	21;"	d	file:
+_XOPEN_SOURCE	source/main.c	1;"	d	file:
+__print_message	source/logger.c	/^void __print_message(FILE *fp, const char *fmt, ...)$/;"	f
+ftp_server	source/main.c	/^void *ftp_server(void *arg)$/;"	f
+get_current_time	source/main.c	/^int get_current_time(char *string, int length)$/;"	f
+get_time0	source/logger.c	/^static char *get_time0(char *buf, size_t sz_buf)$/;"	f	file:
+logger_create	source/logger.c	/^inline int logger_create(const char *filename)$/;"	f
+logger_destroy	source/logger.c	/^inline void logger_destroy(void)$/;"	f
+main	source/main.c	/^int main(void)$/;"	f
+port	source/main.c	/^	uint16_t port;$/;"	m	struct:serv_info	file:
+pr_crt	include/logger.h	20;"	d
+pr_err	include/logger.h	19;"	d
+pr_out	include/logger.h	18;"	d
+print_message	include/logger.h	12;"	d
+record_video	source/main.c	/^int record_video(char *filename, int length)$/;"	f
+recorder	source/main.c	/^void *recorder(void *arg)$/;"	f
+redirect	source/logger.c	/^static FILE *redirect = NULL;$/;"	v	file:
+serv_info	source/main.c	/^struct serv_info {$/;"	s	file:
