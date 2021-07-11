@@ -61,13 +61,11 @@ void *recorder(void *arg)
 		}
 
 		if ((ret = pthread_create(&tid, arg, recorder, arg)) != 0)
-			pr_crt("failed to pthread_create(): %d", ret);
+			pr_crt("failed to pthread_create(): %s", strerror(ret));
 
 		strcpy(convname, filename);
-		if ((ret = encode_video(filename, change_extension(convname, ".mp4"), true)) < 0) {
+		if ((ret = encode_video(filename, change_extension(convname, ".mp4"), true)) < 0)
 			pr_err("failed to encode_video(): %d", ret);
-			continue;
-		}
 
 		pr_out("video saved successfully: %s", filename);
 
