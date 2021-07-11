@@ -66,7 +66,7 @@ int get_current_time(char *string, int length)
 	time_t now = time(NULL);
 	int ret;
 	
-	ret = strftime(string, length, "%x %X", localtime(&now));
+	ret = strftime(string, length, "%c", localtime(&now));
 
 	return (ret != 0);
 }
