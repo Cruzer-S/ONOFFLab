@@ -8,8 +8,7 @@ CC	makefile	/^CC = gcc$/;"	m
 CFLAGS	makefile	/^CFLAGS = -std=c11 -lpthread -lrt$/;"	m
 DEBUG	makefile	/^DEBUG = DEBUG$/;"	m
 GET_TIME0	source/logger.c	7;"	d	file:
-INC_DIR	makefile	/^INC_DIR = .\/include $(UNION_DIR)\/include$/;"	m
-LIBS	makefile	/^LIBS = $(shell find $(UNION_DIR)\/build\/*.o)$/;"	m
+INC_DIR	makefile	/^INC_DIR = .\/include$/;"	m
 LOGGER_H__	include/logger.h	2;"	d
 OBJS	makefile	/^OBJS = $(patsubst %.c, $(OBJ_DIR)\/%.o, $(notdir $(SRCS)))$/;"	m
 OBJ_DIR	makefile	/^OBJ_DIR = .\/build$/;"	m
@@ -17,9 +16,6 @@ RECORD_PROGRAM	source/main.c	20;"	d	file:
 SRCS	makefile	/^SRCS = $(wildcard $(SRC_DIR)\/*.c)$/;"	m
 SRC_DIR	makefile	/^SRC_DIR = .\/source$/;"	m
 TARGET	makefile	/^TARGET = output$/;"	m
-UNION_DIR	makefile	/^UNION_DIR = ..\/union$/;"	m
-UNION_FLAGS	makefile	/^	UNION_FLAGS = all$/;"	m
-UNION_FLAGS	makefile	/^	UNION_FLAGS = debug$/;"	m
 VIDEO_LENGTH	source/main.c	21;"	d	file:
 _XOPEN_SOURCE	source/main.c	1;"	d	file:
 __print_message	source/logger.c	/^void __print_message(FILE *fp, const char *fmt, ...)$/;"	f

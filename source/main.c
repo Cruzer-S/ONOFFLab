@@ -17,7 +17,7 @@
 
 #include "logger.h"
 
-#define RECORD_PROGRAM "raspivid"
+#define RECORD_PROGRAM "/bin/raspivid"
 #define VIDEO_LENGTH (10 * 60 * 1000)
 
 struct serv_info {
@@ -73,19 +73,13 @@ int get_current_time(char *string, int length)
 void *recorder(void *arg)
 {
 	char filename[FILENAME_MAX];
-	int ret, try = 0;
+	int ret;
 
-	while (true) {
-		if (try >= 10) {
-			pr_err("unrecoverable error is occured: %d", try);
-			return NULL;
-		}
-
+	for (int try = 0; try < 10; try++) {
 		if ((ret = get_current_time(filename, sizeof(filename))) < 0) {
 			pr_err("failed to get_current_time(): %d", ret);
-			try++;
 			continue;
-		} else try = 0;
+		}
 
 		strncat(filename, ".h264", sizeof(filename) - 1);
 		if ((ret = record_video(filename, VIDEO_LENGTH)) < 0) {
@@ -94,9 +88,13 @@ void *recorder(void *arg)
 		}
 
 		pr_out("video saved successfully: %s", filename);
+
+		return arg;
 	}
 
-	return arg;
+	pr_out("%s", "failed to save video!\n");
+
+	return NULL;
 }
 
 void *ftp_server(void *arg)
