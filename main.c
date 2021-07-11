@@ -79,7 +79,7 @@ void *recorder(void *arg)
 			return NULL;
 		}
 
-		if ((ret = get_current_time(filename)) < 0) {
+		if ((ret = get_current_time(filename, sizeof(filename))) < 0) {
 			pr_err("failed to get_current_time(): %d", ret);
 			try++;
 			continue;
