@@ -36,32 +36,28 @@ int record_video(char *filename, int length)
 	int err;
 	char timestr[1024];
 
-	switch (pid = vfork()) {
-	case -1:pr_err("failed to vfork(): %s", strerror(errno));
+	sprintf(timestr, "%d", length);
+	if ((pid = vfork()) == -1) {
+		pr_err("failed to vfork(): %s", strerror(errno));
 		return -1; // failed to fork()
-		break;
-
-	case  0:sprintf(timestr, "%d", length);
+	} else if (pid == 0) {
 		ret = execl(RECORD_PROGRAM, strap_path(RECORD_PROGRAM),
 			    "-o", filename,
 			    "-t", timestr,
 			    NULL);
-		pr_err("failed to execl(): %s", strerror(errno));
-		return -2;
-		break;
+		_exit(-2);
+	}
 
-	defualt:err = waitpid(pid, &ret, 0);
-		if (err == -1) {
-			pr_err("failed to waitpid(): %s", strerror(errno));
-			return -3;
-		}
+	err = waitpid(pid, &ret, 0);
+	if (err == -1) {
+		pr_err("failed to waitpid(): %s", strerror(errno));
+		return -3;
+	}
 
-		if (!WIFSIGNALED(ret)) {
-			pr_err("failed to execl(): %s (%d)",
-				RECORD_PROGRAM, WTERMSIG(ret));
-			return -4;
-		}
-		break;
+	if (!WIFSIGNALED(ret)) {
+		pr_err("failed to execl(): %s (%d)",
+			RECORD_PROGRAM, WTERMSIG(ret));
+		return -4;
 	}
 
 	return 0;
