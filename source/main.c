@@ -60,11 +60,11 @@ static inline int get_video_size(enum VIDSIZE size, char *width, char *height)
 }
 
 int record_video(char *filename, int length,
-		 enum VIDSIZE size)
+		 enum VIDSIZE size, int fps)
 {
 	int pid;
 	int ret, err;
-	char timestr[1024];
+	char timestr[1024], fpsstr[100];
 	char width[100], height[100];
 
 	if ((ret = get_video_size(size, width, height)) < 0) {
@@ -72,14 +72,16 @@ int record_video(char *filename, int length,
 		return -5;
 	}
 
+	sprintf(fpsstr, "%d", fps);
 	sprintf(timestr, "%d", length);
 	if ((pid = vfork()) == -1) {
 		pr_err("failed to vfork(): %s", strerror(errno));
 		return -1; // failed to fork()
 	} else if (pid == 0) {
 		ret = execl(RECORD_PROGRAM, strap_path(RECORD_PROGRAM),
-			    "-o", filename,
-			    "-t", timestr,
+			    "-o", filename, "-t", timestr,
+			    "-w", width, "-h", height,
+			    "-fps", fpsstr,
 			    NULL);
 		_exit(-2);
 	}
@@ -90,7 +92,7 @@ int record_video(char *filename, int length,
 		return -3;
 	}
 
-	if (!WIFSIGNALED(ret)) {
+	if (WIFSIGNALED(ret)) {
 		pr_err("failed to execl(): %s (%d)",
 			RECORD_PROGRAM, WTERMSIG(ret));
 		return -4;
@@ -122,7 +124,7 @@ void *recorder(void *arg)
 		}
 
 		sprintf(filename, "%s.h264", timestr);
-		if ((ret = record_video(filename, VIDEO_LENGTH, VIDSIZE_SMALL)) < 0) {
+		if ((ret = record_video(filename, VIDEO_LENGTH, VIDSIZE_SMALL, 30)) < 0) {
 			pr_err("failed to record_video(): %d", ret);
 			continue;
 		}
