@@ -36,9 +36,10 @@ int record_video(char *filename, int length)
 		break;
 
 	case  0:sprintf(timestr, "%d", length);
-		ret = execl(RECORD_PROGRAM, 
+		ret = execl(RECORD_PROGRAM, "raspivid",
 			    "-o", filename,
-			    "-t", timestr);
+			    "-t", timestr,
+			    NULL);
 		pr_err("failed to execl(): %s", strerror(errno));
 		return -2;
 		break;
