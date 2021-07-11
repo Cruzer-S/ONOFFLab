@@ -112,7 +112,7 @@ int main(void)
 		if ((ret = pthread_create(&record, &attr, recorder, &record)) != 0)
 			pr_crt("failed to pthread_create(): %d", ret);
 
-		usleep(VIDEO_LENGTH);
+		sleep(VIDEO_LENGTH / 1000);
 	}
 	
 	logger_destroy();
