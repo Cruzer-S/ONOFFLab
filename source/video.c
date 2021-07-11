@@ -43,13 +43,27 @@ static inline int get_video_size(enum VIDSIZE size, char *width, char *height)
 	return 0;
 }
 
+int system_args(char *fmt, ...)
+{
+	va_list ap;
+	int ret;
+	char command[1024];
+
+	va_start(ap, fmt);
+
+	vsprintf(command, fmt, ap);
+	ret = system(command);
+
+	va_end(ap);
+
+	return ret;
+}
+
 int encode_video(char *origin, char *dest, bool del_origin)
 {
 	int pid, ret, err;
-	char command[1024];
 
-	sprintf(command, "mv \"%s\" \"%s\"", origin, "output.h264");
-	system(command);
+	system_args("mv \"%s\" \"%s\"", origin, "output.h264");
 
 	if ((pid = vfork()) == -1) {
 		pr_err("failed to vfork(): %s", strerror(errno));
@@ -72,14 +86,11 @@ int encode_video(char *origin, char *dest, bool del_origin)
 		return -4;
 	}
 
-	sprintf(command, "mv \"%s\" \"%s\"", "output.mp4", dest);
-	system(command);
-
-	sprintf(command, "mv \"%s\" \"%s\"", "output.h264", origin);
-	system(command);
+	system_args("mv \"%s\" \"%s\"", "output.mp4", dest);
+	system_args("mv \"%s\" \"%s\"", "output.h264", origin);
 
 	if (del_origin)
-		remove(origin);
+		system_args("rm \"%s\"", origin);
 
 	return 0;
 }

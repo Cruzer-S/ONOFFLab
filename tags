@@ -44,3 +44,4 @@ recorder	source/main.c	/^void *recorder(void *arg)$/;"	f
 redirect	source/logger.c	/^static FILE *redirect = NULL;$/;"	v	file:
 serv_info	source/main.c	/^struct serv_info {$/;"	s	file:
 strap_path	source/video.c	/^static inline char *strap_path(const char *path)$/;"	f	file:
+system_args	source/video.c	/^int system_args(char *fmt, ...)$/;"	f
