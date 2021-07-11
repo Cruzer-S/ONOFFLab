@@ -24,6 +24,11 @@ struct serv_info {
 	uint16_t port;
 };
 
+static inline char *strap_path(const char *path)
+{
+	return strrchr(path, '/') + 1;
+}
+
 int record_video(char *filename, int length)
 {
 	int pid;
@@ -32,11 +37,12 @@ int record_video(char *filename, int length)
 	char timestr[1024];
 
 	switch (pid = vfork()) {
-	case -1:return -1; // failed to fork()
+	case -1:pr_err("failed to vfork(): %s", strerror(errno));
+		return -1; // failed to fork()
 		break;
 
 	case  0:sprintf(timestr, "%d", length);
-		ret = execl(RECORD_PROGRAM, "raspivid",
+		ret = execl(RECORD_PROGRAM, strap_path(RECORD_PROGRAM),
 			    "-o", filename,
 			    "-t", timestr,
 			    NULL);
@@ -83,7 +89,7 @@ void *recorder(void *arg)
 			continue;
 		}
 
-		sprintf(filename, "\"%s.h264\"", timestr);
+		sprintf(filename, "%s.h264", timestr);
 		if ((ret = record_video(filename, VIDEO_LENGTH)) < 0) {
 			pr_err("failed to record_video(): %d", ret);
 			continue;
