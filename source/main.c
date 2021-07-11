@@ -71,7 +71,8 @@ void *recorder(void *arg)
 			continue;
 		}
 
-		if ((ret = encode_video(filename, change_extension(filename, ".mp4"), 
+		strcpy(filename, convname);
+		if ((ret = encode_video(filename, change_extension(convname, ".mp4"), 
 					false, false)) < 0) {
 			pr_err("failed to encode_video(): %d", ret);
 			continue;
