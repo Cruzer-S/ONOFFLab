@@ -1,5 +1,3 @@
-#define _XOPEN_SOURCE 500
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
@@ -9,97 +7,18 @@
 #include <stdint.h>
 
 #include <sys/socket.h>
-
-#include <pthread.h>
-#include <unistd.h>
-
 #include <sys/wait.h>
 
+#include <pthread.h>
+
+#include "video.h"
 #include "logger.h"
 
-#define RECORD_PROGRAM "/bin/raspivid"
 #define VIDEO_LENGTH (10 * 1000)
 
 struct serv_info {
 	uint16_t port;
 };
-
-enum VIDSIZE {
-	VIDSIZE_SMALL = 1,
-	VIDSIZE_NORMAL,
-	VIDSIZE_LARGE
-};
-
-static inline char *strap_path(const char *path)
-{
-	return strrchr(path, '/') + 1;
-}
-
-static inline int get_video_size(enum VIDSIZE size, char *width, char *height)
-{
-	switch (size) {
-	case VIDSIZE_SMALL:	// 480p
-		sprintf(width, "%d", 854);
-		sprintf(height, "%d", 480);
-		break;
-
-	case VIDSIZE_NORMAL:	// 720p
-		sprintf(width, "%d", 1280);
-		sprintf(height, "%d", 720);
-		break;
-
-	case VIDSIZE_LARGE:	// 1080p
-		sprintf(width, "%d", 1920);
-		sprintf(height, "%d", 1080);
-		break;
-
-	default: return -1;
-	}
-
-	return 0;
-}
-
-int record_video(char *filename, int length,
-		 enum VIDSIZE size, int fps)
-{
-	int pid;
-	int ret, err;
-	char timestr[1024], fpsstr[100];
-	char width[100], height[100];
-
-	if ((ret = get_video_size(size, width, height)) < 0) {
-		pr_err("failed to get_video_size(): %d", ret);
-		return -5;
-	}
-
-	sprintf(fpsstr, "%d", fps);
-	sprintf(timestr, "%d", length);
-	if ((pid = vfork()) == -1) {
-		pr_err("failed to vfork(): %s", strerror(errno));
-		return -1; // failed to fork()
-	} else if (pid == 0) {
-		ret = execl(RECORD_PROGRAM, strap_path(RECORD_PROGRAM),
-			    "-o", filename, "-t", timestr,
-			    "-w", width, "-h", height,
-			    "-fps", fpsstr,
-			    NULL);
-		_exit(-2);
-	}
-
-	err = waitpid(pid, &ret, 0);
-	if (err == -1) {
-		pr_err("failed to waitpid(): %s", strerror(errno));
-		return -3;
-	}
-
-	if (WIFSIGNALED(ret)) {
-		pr_err("failed to execl(): %s (%d)",
-			RECORD_PROGRAM, WTERMSIG(ret));
-		return -4;
-	}
-
-	return 0;
-}
 
 int get_current_time(char *string, int length)
 {
@@ -111,27 +30,59 @@ int get_current_time(char *string, int length)
 	return (ret != 0);
 }
 
+static inline char *change_extension(char *filename, char *extension)
+{
+	return strcpy(strrchr(filename, '.'), extension);
+}
+
 void *recorder(void *arg)
 {
 	char filename[FILENAME_MAX];
+	char convname[FILENAME_MAX];
 	char timestr[100];
-	int ret;
+	int ret, pid, err;
+
+	bool first = true;
 
 	for (int try = 0; try < 10; try++) {
+		if (first == false) {
+			err = waitpid(pid, &ret, WNOHANG);
+			if (err == -1) {
+				pr_err("failed to waitpid(): %s", strerror(errno));
+				first = true;
+				continue;
+			} else if (err == 0) {
+				pr_err("failed to waitpid(): %s", "WNOHANG");
+				first = true;
+				continue;
+			}
+		}
+
+		first = true;
+
 		if ((ret = get_current_time(timestr, sizeof(timestr))) < 0) {
 			pr_err("failed to get_current_time(): %d", ret);
 			continue;
 		}
 
 		sprintf(filename, "%s.h264", timestr);
-		if ((ret = record_video(filename, VIDEO_LENGTH, VIDSIZE_SMALL, 30)) < 0) {
+		if ((ret = record_video(filename, VIDEO_LENGTH, VIDSIZE_SMALL, 30, true)) < 0) {
 			pr_err("failed to record_video(): %d", ret);
 			continue;
 		}
 
+		if ((ret = encode_video(filename, 
+					change_extension(filename, ".mp4"), 
+					false, false)) < 0) {
+			pr_err("failed to encode_video(): %d", ret);
+			continue;
+		}
+
+
 		pr_out("video saved successfully: %s", filename);
 
 		try = 0;
+		first = false;
 	}
 
 	pr_out("%s", "failed to save video!\n");
