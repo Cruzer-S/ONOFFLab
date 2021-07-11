@@ -93,7 +93,7 @@ int main(void)
 	pthread_t prev, record, ftp;
 	pthread_attr_t attr;
 
-	if ((ret = logger_create("logg.txt")) < 0) {
+	if ((ret = logger_create("logg.txt")) < 0)
 		pr_crt("failed to logger_create(): %d", ret);
 
 	if (pthread_attr_init(&attr) != 0)
