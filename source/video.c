@@ -78,7 +78,7 @@ int encode_video(char *origin, char *dest, bool del_origin)
 	sprintf(command, "mv \"%s\" \"%s\"", "output.h264", origin);
 	system(command);
 
-	if (del_origin) {
+	if (del_origin)
 		remove(origin);
 
 	return 0;

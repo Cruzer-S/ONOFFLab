@@ -39,6 +39,7 @@ pr_crt	include/logger.h	20;"	d
 pr_err	include/logger.h	19;"	d
 pr_out	include/logger.h	18;"	d
 print_message	include/logger.h	12;"	d
+record_video	source/video.c	/^int record_video(char *filename, int length, enum VIDSIZE size, int fps)$/;"	f
 recorder	source/main.c	/^void *recorder(void *arg)$/;"	f
 redirect	source/logger.c	/^static FILE *redirect = NULL;$/;"	v	file:
 serv_info	source/main.c	/^struct serv_info {$/;"	s	file:
