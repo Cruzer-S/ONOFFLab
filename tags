@@ -18,7 +18,7 @@ SRCS	makefile	/^SRCS = $(wildcard $(SRC_DIR)\/*.c)$/;"	m
 SRC_DIR	makefile	/^SRC_DIR = .\/source$/;"	m
 TARGET	makefile	/^TARGET = output$/;"	m
 VIDEO_H__	include/video.h	2;"	d
-VIDEO_LENGTH	source/main.c	17;"	d	file:
+VIDEO_LENGTH	source/main.c	18;"	d	file:
 VIDSIZE	include/video.h	/^enum VIDSIZE {$/;"	g
 VIDSIZE_LARGE	include/video.h	/^	VIDSIZE_LARGE$/;"	e	enum:VIDSIZE
 VIDSIZE_NORMAL	include/video.h	/^	VIDSIZE_NORMAL,$/;"	e	enum:VIDSIZE

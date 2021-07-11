@@ -6,6 +6,7 @@
 #include <errno.h>
 #include <stdint.h>
 
+#include <unistd.h>
 #include <sys/socket.h>
 #include <sys/wait.h>
 
@@ -64,7 +65,7 @@ void *recorder(void *arg)
 
 		pr_out("video saved successfully: %s", filename);
 
-		try = 0;
+		return 0;
 	}
 
 	pr_out("%s", "failed to save video!\n");
@@ -89,22 +90,29 @@ int main(void)
 {
 	int ret;
 	void *retval;
-	pthread_t record, ftp;
+	pthread_t prev, record, ftp;
+	pthread_attr_t attr;
 
-	logger_create("logg.txt");
+	if ((ret = logger_create("logg.txt")) < 0) {
+		pr_crt("failed to logger_create(): %d", ret);
 
-	if ((ret = pthread_create(&record, NULL, recorder, &record)) != 0)
+	if (pthread_attr_init(&attr) != 0)
+		pr_crt("failed to pthread_attr_init(): %s", strerror(errno));
+
+	if (pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED) != 0)
+		pr_crt("failed to pthread_attr_setdetachstate(): %s",
+			strerror(errno));
+	
+	if ((ret = pthread_create(&ftp, &attr, ftp_server, &ftp)) != 0)
 		pr_crt("failed to pthread_create(): %d", ret);
 
-	if ((ret = pthread_create(&ftp, NULL, ftp_server, &ftp)) != 0)
-		pr_crt("failed to pthread_create(): %d", ret);
+	while (true) {
+		if ((ret = pthread_create(&record, &attr, recorder, &record)) != 0)
+			pr_crt("failed to pthread_create(): %d", ret);
 
-	if ((ret = pthread_join(record, retval)) != 0)
-		pr_crt("failed to pthread_join(): %s", "record()");
-
-	if ((ret = pthread_join(ftp, retval)) != 0)
-		pr_crt("failed to pthread_join(): %s", "ftp_server()");
-
+		sleep(VIDEO_LENGTH);
+	}
+	
 	logger_destroy();
 	
 	return 0;
