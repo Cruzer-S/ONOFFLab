@@ -110,11 +110,13 @@ int main(void)
 	if ((ret = pthread_create(&ftp, &attr, ftp_server, &attr)) != 0)
 		pr_crt("failed to pthread_create(): %d", ret);
 
-	if ((ret = pthread_create(&record, &attr, recorder, &record)) != 0)
+	if ((ret = pthread_create(&record, &attr, recorder, &attr)) != 0)
 		pr_crt("failed to pthread_create(): %d", ret);
 
 	while (true)
 		sleep(10);
+
+	pthread_attr_destroy(&attr);
 	
 	logger_destroy();
 	
