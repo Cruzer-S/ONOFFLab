@@ -43,42 +43,48 @@ static inline int get_video_size(enum VIDSIZE size, char *width, char *height)
 	return 0;
 }
 
-int encode_video(char *origin, char *dest, bool del_origin, bool is_wait)
+int encode_video(char *origin, char *dest, bool del_origin)
 {
 	int pid, ret, err;
+	char command[1024];
+
+	sprintf(command, "mv \"%s\" \"%s\"", origin, "output.h264");
+	system(command);
 
 	if ((pid = vfork()) == -1) {
 		pr_err("failed to vfork(): %s", strerror(errno));
 		return -1; // failed to fork()
 	} else if (pid == 0) {
 		ret = execl(ENCODE_PROGRAM, strap_path(ENCODE_PROGRAM),
-			    "-add", origin, dest, NULL);
+			    "-add", "output.h264", "output.mp4", NULL);
 		_exit(-2);
 	}
 
-	if (is_wait) {
-		err = waitpid(pid, &ret, 0);
-		if (err == -1) {
-			pr_err("failed to waitpid(): %s", strerror(errno));
-			return -3;
-		}
+	err = waitpid(pid, &ret, 0);
+	if (err == -1) {
+		pr_err("failed to waitpid(): %s", strerror(errno));
+		return -3;
+	}
 
-		if (WIFSIGNALED(ret)) {
-			pr_err("failed to execl(): %s (%d)",
-				RECORD_PROGRAM, WTERMSIG(ret));
-			return -4;
-		}
+	if (WIFSIGNALED(ret)) {
+		pr_err("failed to execl(): %s (%d)",
+			RECORD_PROGRAM, WTERMSIG(ret));
+		return -4;
+	}
 
-		ret = 0;
+	sprintf(command, "mv \"%s\" \"%s\"", "output.mp4", dest);
+	system(command);
 
-		if (del_origin) remove(origin);
-	} else ret = pid;
+	sprintf(command, "mv \"%s\" \"%s\"", "output.h264", origin);
+	system(command);
 
-	return ret;
+	if (del_origin) {
+		remove(origin);
+
+	return 0;
 }
 
-int record_video(char *filename, int length,
-		 enum VIDSIZE size, int fps, bool is_wait)
+int record_video(char *filename, int length, enum VIDSIZE size, int fps)
 {
 	int pid;
 	int ret, err;
@@ -104,21 +110,17 @@ int record_video(char *filename, int length,
 		_exit(-2);
 	}
 
-	if (is_wait) {
-		err = waitpid(pid, &ret, 0);
-		if (err == -1) {
-			pr_err("failed to waitpid(): %s", strerror(errno));
-			return -3;
-		}
+	err = waitpid(pid, &ret, 0);
+	if (err == -1) {
+		pr_err("failed to waitpid(): %s", strerror(errno));
+		return -3;
+	}
 
-		if (WIFSIGNALED(ret)) {
-			pr_err("failed to execl(): %s (%d)",
-				RECORD_PROGRAM, WTERMSIG(ret));
-			return -4;
-		}
+	if (WIFSIGNALED(ret)) {
+		pr_err("failed to execl(): %s (%d)",
+			RECORD_PROGRAM, WTERMSIG(ret));
+		return -4;
+	}
 
-		ret = 0;
-	} else ret = pid;
-
-	return ret;
+	return 0;
 }

@@ -10,7 +10,7 @@ enum VIDSIZE {
 };
 
 int record_video(char *filename, int length,
-		 enum VIDSIZE size, int fps, bool is_wait);
-int encode_video(char *origin, char *dest, bool del_origin, bool is_wait);
+		 enum VIDSIZE size, int fps);
+int encode_video(char *origin, char *dest, bool del_origin);
 
 #endif

@@ -26,7 +26,7 @@ VIDSIZE_SMALL	include/video.h	/^	VIDSIZE_SMALL = 1,$/;"	e	enum:VIDSIZE
 _XOPEN_SOURCE	source/video.c	1;"	d	file:
 __print_message	source/logger.c	/^void __print_message(FILE *fp, const char *fmt, ...)$/;"	f
 change_extension	source/main.c	/^static inline char *change_extension(char *filename, char *extension)$/;"	f	file:
-encode_video	source/video.c	/^int encode_video(char *origin, char *dest, bool del_origin, bool is_wait)$/;"	f
+encode_video	source/video.c	/^int encode_video(char *origin, char *dest, bool del_origin)$/;"	f
 ftp_server	source/main.c	/^void *ftp_server(void *arg)$/;"	f
 get_current_time	source/main.c	/^int get_current_time(char *string, int length)$/;"	f
 get_time0	source/logger.c	/^static char *get_time0(char *buf, size_t sz_buf)$/;"	f	file:
@@ -39,7 +39,6 @@ pr_crt	include/logger.h	20;"	d
 pr_err	include/logger.h	19;"	d
 pr_out	include/logger.h	18;"	d
 print_message	include/logger.h	12;"	d
-record_video	source/video.c	/^int record_video(char *filename, int length,$/;"	f
 recorder	source/main.c	/^void *recorder(void *arg)$/;"	f
 redirect	source/logger.c	/^static FILE *redirect = NULL;$/;"	v	file:
 serv_info	source/main.c	/^struct serv_info {$/;"	s	file:

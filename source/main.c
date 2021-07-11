@@ -39,41 +39,24 @@ void *recorder(void *arg)
 {
 	char filename[FILENAME_MAX];
 	char convname[FILENAME_MAX];
+
 	char timestr[100];
 	int ret, pid, err;
 
-	bool first = true;
-
 	for (int try = 0; try < 10; try++) {
-		if (first == false) {
-			err = waitpid(pid, &ret, WNOHANG);
-			if (err == -1) {
-				pr_err("failed to waitpid(): %s", strerror(errno));
-				first = true;
-				continue;
-			} else if (err == 0) {
-				pr_err("failed to waitpid(): %s", "WNOHANG");
-				first = true;
-				continue;
-			}
-		}
-
-		first = true;
-
 		if ((ret = get_current_time(timestr, sizeof(timestr))) < 0) {
 			pr_err("failed to get_current_time(): %d", ret);
 			continue;
 		}
 
 		sprintf(filename, "%s.h264", timestr);
-		if ((ret = record_video(filename, VIDEO_LENGTH, VIDSIZE_SMALL, 30, true)) < 0) {
+		if ((ret = record_video(filename, VIDEO_LENGTH, VIDSIZE_SMALL, 30)) < 0) {
 			pr_err("failed to record_video(): %d", ret);
 			continue;
 		}
 
 		strcpy(convname, filename);
-		if ((ret = encode_video(filename, change_extension(convname, ".mp4"), 
-					false, false)) < 0) {
+		if ((ret = encode_video(filename, change_extension(convname, ".mp4"), false)) < 0) {
 			pr_err("failed to encode_video(): %d", ret);
 			continue;
 		}
@@ -81,7 +64,6 @@ void *recorder(void *arg)
 		pr_out("video saved successfully: %s", filename);
 
 		try = 0;
-		first = false;
 	}
 
 	pr_out("%s", "failed to save video!\n");
