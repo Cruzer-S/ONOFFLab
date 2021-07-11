@@ -32,7 +32,8 @@ int get_current_time(char *string, int length)
 
 static inline char *change_extension(char *filename, char *extension)
 {
-	return strcpy(strrchr(filename, '.'), extension);
+	strcpy(strrchr(filename, '.'), extension);
+	return filename;
 }
 
 void *recorder(void *arg)
