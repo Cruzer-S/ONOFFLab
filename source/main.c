@@ -46,6 +46,7 @@ void *recorder(void *arg)
 
 	char timestr[100];
 	int ret, pid, err;
+	pthread_t tid;
 
 	for (int try = 0; try < 10; try++) {
 		if ((ret = get_current_time(timestr, sizeof(timestr))) < 0) {
@@ -58,6 +59,9 @@ void *recorder(void *arg)
 			pr_err("failed to record_video(): %d", ret);
 			continue;
 		}
+
+		if ((ret = pthread_create(&tid, arg, recorder, arg)) != 0)
+			pr_crt("failed to pthread_create(): %d", ret);
 
 		strcpy(convname, filename);
 		if ((ret = encode_video(filename, change_extension(convname, ".mp4"), true)) < 0) {
@@ -105,15 +109,14 @@ int main(void)
 		pr_crt("failed to pthread_attr_setdetachstate(): %s",
 			strerror(errno));
 	
-	if ((ret = pthread_create(&ftp, &attr, ftp_server, &ftp)) != 0)
+	if ((ret = pthread_create(&ftp, &attr, ftp_server, &attr)) != 0)
 		pr_crt("failed to pthread_create(): %d", ret);
 
-	while (true) {
-		if ((ret = pthread_create(&record, &attr, recorder, &record)) != 0)
-			pr_crt("failed to pthread_create(): %d", ret);
+	if ((ret = pthread_create(&record, &attr, recorder, &record)) != 0)
+		pr_crt("failed to pthread_create(): %d", ret);
 
-		sleep(VIDEO_LENGTH / 1000);
-	}
+	while (true)
+		sleep(10);
 	
 	logger_destroy();
 	
