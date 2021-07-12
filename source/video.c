@@ -100,13 +100,14 @@ int record_video(char *filename, int length, enum VIDSIZE size,
 	int ret, err;
 	char timestr[1024], fpsstr[100], modestr[100];
 
+	sprintf(fpsstr, "%d", fps);
+	sprintf(timestr, "%d", length);
+
 	if ((ret = get_video_size(size, modestr)) < 0) {
 		pr_err("failed to get_video_size(): %d", ret);
 		return -5;
 	}
-
-	sprintf(fpsstr, "%d", fps);
-	sprintf(timestr, "%d", length);
+	
 	if ((pid = vfork()) == -1) {
 		pr_err("failed to vfork(): %s", strerror(errno));
 		return -1; // failed to fork()
@@ -114,12 +115,12 @@ int record_video(char *filename, int length, enum VIDSIZE size,
 		if (!show_time)
 			ret = execl(RECORD_PROGRAM, strap_path(RECORD_PROGRAM),
 				    "-o", filename, "-t", timestr,
-				    "-m", 
+				    "-md", modestr,
 				    "-fps", fpsstr, NULL);
 		else
 			ret = execl(RECORD_PROGRAM, strap_path(RECORD_PROGRAM),
 				    "-o", filename, "-t", timestr,
-				    "-m", 
+				    "-md", modestr,
 				    "-fps", fpsstr, "-a 12",
 				    NULL);
 
