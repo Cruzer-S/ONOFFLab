@@ -162,7 +162,7 @@ int main(int argc, char *argv[])
 	pthread_t prev, record, ftp;
 	struct recorder_argument *rec_arg;
 
-	if (argc != 3)
+	if (argc != 2)
 		pr_crt("usage: %s <length>", argv[0]);
 
 	if ((ret = logger_create("logg.txt")) < 0)
