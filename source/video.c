@@ -20,22 +20,19 @@ static inline char *strap_path(const char *path)
 	return strrchr(path, '/') + 1;
 }
 
-static inline int get_video_size(enum VIDSIZE size, char *width, char *height)
+static inline int get_video_size(enum VIDSIZE size, char *mode)
 {
 	switch (size) {
 	case VIDSIZE_SMALL:	// 480p
-		sprintf(width, "%d", 854);
-		sprintf(height, "%d", 480);
+		sprintf(mode, "6");
 		break;
 
 	case VIDSIZE_NORMAL:	// 720p
-		sprintf(width, "%d", 1280);
-		sprintf(height, "%d", 720);
+		sprintf(mode, "5");
 		break;
 
 	case VIDSIZE_LARGE:	// 1080p
-		sprintf(width, "%d", 1920);
-		sprintf(height, "%d", 1080);
+		sprintf(mode, "1");
 		break;
 
 	default: return -1;
@@ -96,14 +93,14 @@ int encode_video(char *origin, char *dest, bool del_origin)
 	return 0;
 }
 
-int record_video(char *filename, int length, enum VIDSIZE size, int fps)
+int record_video(char *filename, int length, enum VIDSIZE size,
+		 int fps, bool show_time)
 {
 	int pid;
 	int ret, err;
-	char timestr[1024], fpsstr[100];
-	char width[100], height[100];
+	char timestr[1024], fpsstr[100], modestr[100];
 
-	if ((ret = get_video_size(size, width, height)) < 0) {
+	if ((ret = get_video_size(size, modestr)) < 0) {
 		pr_err("failed to get_video_size(): %d", ret);
 		return -5;
 	}
@@ -114,11 +111,18 @@ int record_video(char *filename, int length, enum VIDSIZE size, int fps)
 		pr_err("failed to vfork(): %s", strerror(errno));
 		return -1; // failed to fork()
 	} else if (pid == 0) {
-		ret = execl(RECORD_PROGRAM, strap_path(RECORD_PROGRAM),
-			    "-o", filename, "-t", timestr,
-			    "-w", width, "-h", height,
-			    "-fps", fpsstr,
-			    NULL);
+		if (!show_time)
+			ret = execl(RECORD_PROGRAM, strap_path(RECORD_PROGRAM),
+				    "-o", filename, "-t", timestr,
+				    "-m", 
+				    "-fps", fpsstr, NULL);
+		else
+			ret = execl(RECORD_PROGRAM, strap_path(RECORD_PROGRAM),
+				    "-o", filename, "-t", timestr,
+				    "-m", 
+				    "-fps", fpsstr, "-a 12",
+				    NULL);
+
 		_exit(-2);
 	}
 
